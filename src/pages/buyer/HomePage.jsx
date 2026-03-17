@@ -9,7 +9,7 @@ export default function HomePage() {
 
   useEffect(() => {
     getAllProducts()
-      .then((res) => setProducts(res.data))
+      .then((res) => setProducts(res.data.data || res.data))
       .catch(() => setError('Failed to load products. Please try again.'))
       .finally(() => setLoading(false));
   }, []);

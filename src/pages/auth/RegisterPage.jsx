@@ -10,6 +10,8 @@ export default function RegisterPage() {
     phone: '',
     password: '',
     password_confirmation: '',
+    address: '',
+    state: '',
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -36,6 +38,14 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+
+  const nigerianStates = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
+    'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
+    'FCT', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi',
+    'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun',
+    'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+  ];
 
   return (
     <div style={styles.container}>
@@ -78,11 +88,38 @@ export default function RegisterPage() {
               style={styles.input}
               type="tel"
               name="phone"
-              placeholder="Enter your phone number"
+              placeholder="e.g. 08012345678"
               value={formData.phone}
               onChange={handleChange}
               required
             />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Address</label>
+            <input
+              style={styles.input}
+              type="text"
+              name="address"
+              placeholder="Enter your home address"
+              value={formData.address}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>State</label>
+            <select
+              style={styles.input}
+              name="state"
+              value={formData.state}
+              onChange={handleChange}
+            >
+              <option value="">Select your state</option>
+              {nigerianStates.map((state) => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
           </div>
 
           <div style={styles.field}>
@@ -132,6 +169,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f0f4f0',
+    padding: '40px 16px',
   },
   card: {
     backgroundColor: '#ffffff',
@@ -153,9 +191,7 @@ const styles = {
     marginBottom: '24px',
     fontSize: '14px',
   },
-  field: {
-    marginBottom: '16px',
-  },
+  field: { marginBottom: '16px' },
   label: {
     display: 'block',
     marginBottom: '6px',
@@ -170,6 +206,7 @@ const styles = {
     borderRadius: '5px',
     fontSize: '14px',
     boxSizing: 'border-box',
+    fontFamily: 'inherit',
   },
   button: {
     width: '100%',
