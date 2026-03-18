@@ -10,6 +10,7 @@ export default function ProductPage() {
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     getProduct(id)
@@ -19,16 +20,30 @@ export default function ProductPage() {
   }, [id]);
 
   const handleAddToCart = () => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const existing = cart.find((item) => item.id === product.id);
-    if (existing) {
-      existing.quantity += quantity;
-    } else {
-      cart.push({ ...product, quantity });
+    try {
+      const cartRaw = localStorage.getItem('cart');
+      const cart = cartRaw ? JSON.parse(cartRaw) : [];
+      const existing = cart.find((item) => item.id === product.id);
+      if (existing) {
+        existing.quantity += quantity;
+      } else {
+        cart.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity: quantity,
+          emoji: '🌿',
+          seller: product.seller,
+        });
+      }
+      localStorage.setItem('cart', JSON.stringify(cart));
+      setAdded(true);
+      setToast(`${product.name} added to cart!`);
+      setTimeout(() => setAdded(false), 2000);
+      setTimeout(() => setToast(''), 2000);
+    } catch (err) {
+      console.error('Cart error:', err);
     }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
   };
 
   if (loading) return <div style={s.center}>Loading product...</div>;
