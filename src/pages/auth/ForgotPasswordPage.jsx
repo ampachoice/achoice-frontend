@@ -1,28 +1,23 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { login } from '../../services/authService';
+import api from '../../services/api';
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(null);
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const res = await login(formData);
-      localStorage.setItem('token', res.data.token);
-      navigate('/');
+      await api.post('/forgot-password', { email });
+      setSuccess(true);
     } catch (err) {
-      setError('Invalid email or password. Please try again.');
+      setError('Email not found. Please check and try again.');
     } finally {
       setLoading(false);
     }
@@ -30,24 +25,21 @@ export default function LoginPage() {
 
   return (
     <div style={s.page}>
-    
-      {/* Top Bar */}
       <div style={s.topBar}>
         <div style={s.topBarLeft}>
-          <span>📍 Port Harcourt, Lagos, Abuja</span>
-          <span>✉ support@achoice.ng</span>
+          <span>Port Harcourt, Lagos, Abuja</span>
+          <span>support@achoice.ng</span>
         </div>
         <div style={s.topBarRight}>
-          <span>📞 08143608577</span>
+          <span>08143608577</span>
           <span>Mon - Sat: 07:00am to 06:00pm</span>
         </div>
       </div>
 
-      {/* Navbar */}
       <nav style={s.nav}>
         <div style={s.navBrand} onClick={() => navigate('/')}>
           <div style={s.navLogo}>
-            <span style={s.logoIcon}>🌾</span>
+            <div style={s.logoBox}>A</div>
             <div>
               <div style={s.logoName}>ACHOICE LIMITED</div>
               <div style={s.logoTagline}>Buy Fresh, Pay Less</div>
@@ -59,73 +51,60 @@ export default function LoginPage() {
           <a href="/" style={s.navLink}>About</a>
           <a href="/" style={s.navLink}>Product</a>
           <a href="/" style={s.navLink}>Contact</a>
-          <div style={s.cartIcon}>
-            🛒
-            <span style={s.cartBadge}>0</span>
-          </div>
-          <button style={s.loginBtn} onClick={() => navigate('/login')}>
-            Login
-          </button>
+          <button style={s.loginBtn} onClick={() => navigate('/login')}>Login</button>
         </div>
       </nav>
 
       <div style={s.body}>
         <div style={s.formCard}>
-          <h2 style={s.formTitle}>Login</h2>
-          {error && <div style={s.error}>{error}</div>}
-          <form onSubmit={handleSubmit}>
-            <div style={s.field}>
-              <input
-                style={s.input}
-                type="email"
-                name="email"
-                placeholder="Email Address"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
+          {success ? (
+            <div style={s.successBox}>
+              <div style={s.successIcon}>&#10003;</div>
+              <h2 style={s.successTitle}>Check your email</h2>
+              <p style={s.successText}>
+                We sent a password reset link to <strong>{email}</strong>.
+                Check your inbox and click the link to reset your password.
+              </p>
+              <button style={s.backBtn} onClick={() => navigate('/login')}>
+                Back to Login
+              </button>
             </div>
-            <div style={s.field}>
-              <div style={s.passwordWrapper}>
-                <input
-                  style={s.passwordInput}
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
+          ) : (
+            <>
+              <h2 style={s.formTitle}>Forgot Password</h2>
+              <p style={s.formSubtitle}>
+                Enter your email address and we will send you a link to reset your password.
+              </p>
+              {error && <div style={s.error}>{error}</div>}
+              <form onSubmit={handleSubmit}>
+                <div style={s.field}>
+                  <input
+                    style={s.input}
+                    type="email"
+                    placeholder="Email Address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
                 <button
-                  type="button"
-                  style={s.eyeBtn}
-                  onClick={() => setShowPassword(!showPassword)}
+                  style={loading ? s.submitBtnDisabled : s.submitBtn}
+                  type="submit"
+                  disabled={loading}
                 >
-                  {showPassword ? 'Hide' : 'Show'}
+                  {loading ? 'Sending...' : 'Send Reset Link'}
                 </button>
-              </div>
-            </div>
-            <div style={s.recoverRow}>
-              <Link to="/forgot-password" style={s.recoverLink}>
-                Recover password
-              </Link>
-            </div>
-            <button
-              style={loading ? s.submitBtnDisabled : s.submitBtn}
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-          <p style={s.registerText}>
-            Don't have account?{' '}
-            <Link to="/register" style={s.registerLink}>Register</Link>
-          </p>
+              </form>
+              <p style={s.loginText}>
+                Remember your password?{' '}
+                <Link to="/login" style={s.loginLink}>Login</Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Footer */}
+        {/* Footer */}
       <footer style={s.footer}>
         <div style={s.footerGrid}>
           <div>
@@ -185,24 +164,23 @@ const s = {
   logoTagline: { fontSize: 11, color: '#888' },
   navRight: { display: 'flex', alignItems: 'center', gap: 24 },
   navLink: { textDecoration: 'none', color: '#333', fontSize: 14 },
-  cartIcon: { position: 'relative', fontSize: 14, cursor: 'pointer', color: '#333' },
-  cartBadge: { position: 'absolute', top: -6, right: -8, background: '#f0c050', color: '#1a1a1a', fontSize: 10, fontWeight: 700, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   loginBtn: { background: '#1f4d1f', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: 6, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' },
   body: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 16px' },
   formCard: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: '40px', width: '100%', maxWidth: '420px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' },
-  formTitle: { fontSize: 26, fontWeight: 700, color: '#111', textAlign: 'center', marginBottom: 28 },
+  formTitle: { fontSize: 26, fontWeight: 700, color: '#111', textAlign: 'center', marginBottom: 10 },
+  formSubtitle: { fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 1.6 },
   error: { background: '#fff0f0', color: '#cc0000', padding: '10px 14px', borderRadius: 6, fontSize: 13, marginBottom: 16 },
   field: { marginBottom: 16 },
   input: { width: '100%', padding: '12px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box', fontFamily: 'inherit', outline: 'none' },
-  passwordWrapper: { display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: 6, overflow: 'hidden' },
-  passwordInput: { flex: 1, padding: '12px 14px', border: 'none', fontSize: 14, fontFamily: 'inherit', outline: 'none' },
-  eyeBtn: { background: '#f0c050', border: 'none', padding: '12px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 500, fontFamily: 'inherit' },
-  recoverRow: { textAlign: 'center', marginBottom: 20 },
-  recoverLink: { color: '#1f4d1f', fontSize: 13, textDecoration: 'none' },
   submitBtn: { width: '100%', padding: '13px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 6, fontSize: 15, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' },
-  submitBtnDisabled: { width: '100%', padding: '13px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 6, fontSize: 15, fontWeight: 500, cursor: 'not-allowed', fontFamily: 'inherit' },
-  registerText: { textAlign: 'center', marginTop: 20, fontSize: 13, color: '#666' },
-  registerLink: { color: '#1f4d1f', fontWeight: 600, textDecoration: 'none' },
+  submitBtnDisabled: { width: '100%', padding: '13px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 6, fontSize: 15, cursor: 'not-allowed', fontFamily: 'inherit' },
+  loginText: { textAlign: 'center', marginTop: 20, fontSize: 13, color: '#666' },
+  loginLink: { color: '#1f4d1f', fontWeight: 600, textDecoration: 'none' },
+  successBox: { textAlign: 'center', padding: '20px 0' },
+  successIcon: { fontSize: 48, color: '#1f4d1f', marginBottom: 16 },
+  successTitle: { fontSize: 22, fontWeight: 700, color: '#111', marginBottom: 12 },
+  successText: { fontSize: 14, color: '#666', lineHeight: 1.7, marginBottom: 28 },
+  backBtn: { background: '#1f4d1f', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 6, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' },
   footer: { background: '#1f4d1f', color: '#fff', padding: '48px 60px 0' },
   footerGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40, marginBottom: 40 },
   footerName: { fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 },
