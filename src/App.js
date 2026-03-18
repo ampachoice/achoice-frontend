@@ -1,8 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 // Auth
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // Buyer
 import HomePage from './pages/buyer/HomePage';
@@ -20,30 +22,30 @@ import ManageProductsPage from './pages/admin/ManageProductsPage';
 import ManageOrdersPage from './pages/admin/ManageOrdersPage';
 import ManageLoansPage from './pages/admin/ManageLoansPage';
 
+const router = createBrowserRouter([
+  // Auth
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
+
+  // Buyer
+  { path: '/', element: <HomePage /> },
+  { path: '/product/:id', element: <ProductPage /> },
+  { path: '/cart', element: <CartPage /> },
+  { path: '/checkout', element: <CheckoutPage /> },
+  { path: '/orders', element: <OrderHistoryPage /> },
+  { path: '/loans/apply', element: <LoanApplyPage /> },
+  { path: '/loans/repay', element: <LoanRepayPage /> },
+
+  // Admin
+  { path: '/admin', element: <AdminLoginPage /> },
+  { path: '/admin/sellers', element: <ManageSellersPage /> },
+  { path: '/admin/products', element: <ManageProductsPage /> },
+  { path: '/admin/orders', element: <ManageOrdersPage /> },
+  { path: '/admin/loans', element: <ManageLoansPage /> },
+]);
+
 export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Auth */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-
-        {/* Buyer */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/product/:id" element={<ProductPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route path="/orders" element={<OrderHistoryPage />} />
-        <Route path="/loans/apply" element={<LoanApplyPage />} />
-        <Route path="/loans/repay" element={<LoanRepayPage />} />
-
-        {/* Admin */}
-        <Route path="/admin" element={<AdminLoginPage />} />
-        <Route path="/admin/sellers" element={<ManageSellersPage />} />
-        <Route path="/admin/products" element={<ManageProductsPage />} />
-        <Route path="/admin/orders" element={<ManageOrdersPage />} />
-        <Route path="/admin/loans" element={<ManageLoansPage />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }
