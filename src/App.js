@@ -21,6 +21,7 @@ import ManageSellersPage from './pages/admin/ManageSellersPage';
 import ManageProductsPage from './pages/admin/ManageProductsPage';
 import ManageOrdersPage from './pages/admin/ManageOrdersPage';
 import ManageLoansPage from './pages/admin/ManageLoansPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
 const router = createBrowserRouter([
   // Auth
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
   { path: '/admin/products', element: <ManageProductsPage /> },
   { path: '/admin/orders', element: <ManageOrdersPage /> },
   { path: '/admin/loans', element: <ManageLoansPage /> },
+ { path: '/admin/dashboard', element: <AdminDashboardPage /> },
 ]);
 
 export default function App() {
