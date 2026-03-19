@@ -343,4 +343,6 @@ const s = {
   outlineBtn: { width: '100%', padding: '12px', background: '#fff', color: '#1f4d1f', border: '2px solid #1f4d1f', borderRadius: 6, fontSize: 15, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' },
   farmerImg: { width: '100%', height: 200, objectFit: 'cover', borderRadius: 10 },
   farmerImg: { width: '100%', height: '100%', objectFit: 'cover', minHeight: 280 },
+  heroLeft: { overflow: 'hidden' },
+farmerImg: { width: '100%', height: '100%', objectFit: 'cover', minHeight: 280, display: 'block' },
 };

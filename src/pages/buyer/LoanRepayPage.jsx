@@ -129,7 +129,7 @@ export default function LoanRepayPage() {
                   <div style={s.heroStatDivider}></div>
                   <div style={s.heroStat}>
                     <div style={s.heroStatVal}>
-                      {activeLoan.duration_months} month
+                      {activeLoan.duration_months} mo
                     </div>
                     <div style={s.heroStatLabel}>Duration</div>
                   </div>
