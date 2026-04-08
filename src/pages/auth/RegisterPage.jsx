@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../../services/authService';
 
+const LOGO_PATH = "/achoice logo.png";
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -16,6 +18,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null); // ✅ NEW: success state
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -30,12 +33,46 @@ export default function RegisterPage() {
     }
     setLoading(true);
     setError(null);
+    setSuccess(null);
+
     try {
+      console.log("Attempting registration with:", formData);
       const res = await register(formData);
-      localStorage.setItem('token', res.data.token);
-      navigate('/');
+      console.log("Registration Successful:", res.data);
+
+      // ✅ DO NOT store token yet — user should log in manually
+      // ✅ SMS: Your Laravel backend should fire a notification/SMS
+      //    inside the register controller using Termii, Twilio, etc.
+      //    If it needs a separate frontend call, add: await sendSmsOtp(formData.phone);
+
+      // ✅ Show success message
+      setSuccess('🎉 Account created successfully! Redirecting to login...');
+
+      // ✅ Redirect to /login after 2 seconds so user sees the message
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+
     } catch (err) {
-      setError('Registration failed. Please check your details and try again.');
+      console.error("Full Error Object:", err);
+
+      if (err.response) {
+        console.error("Server Error Data:", err.response.data);
+        console.error("Server Status:", err.response.status);
+
+        // Laravel validation errors come as err.response.data.errors (object)
+        if (err.response.data.errors) {
+          const firstError = Object.values(err.response.data.errors)[0][0];
+          setError(firstError);
+        } else {
+          setError(err.response.data.message || "Registration failed. Please try again.");
+        }
+      } else if (err.request) {
+        console.error("No response received from server.");
+        setError("Cannot connect to server. Please check if your backend is running.");
+      } else {
+        setError("An unexpected error occurred.");
+      }
     } finally {
       setLoading(false);
     }
@@ -55,11 +92,11 @@ export default function RegisterPage() {
       {/* Top Bar */}
       <div style={s.topBar}>
         <div style={s.topBarLeft}>
-          <span>📍 Port Harcourt, Lagos, Abuja</span>
+          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
           <span>✉ support@achoice.ng</span>
         </div>
         <div style={s.topBarRight}>
-          <span>📞 08143608577</span>
+          <span>📞 09067794991</span>
           <span>Mon - Sat: 07:00am to 06:00pm</span>
         </div>
       </div>
@@ -68,10 +105,10 @@ export default function RegisterPage() {
       <nav style={s.nav}>
         <div style={s.navBrand} onClick={() => navigate('/')}>
           <div style={s.navLogo}>
-            <span style={s.logoIcon}>🌾</span>
+            <img src={LOGO_PATH} alt="Achoice Logo" style={s.navLogoImg} />
             <div>
               <div style={s.logoName}>ACHOICE LIMITED</div>
-              <div style={s.logoTagline}>Buy Fresh, Pay Less</div>
+              <div style={s.logoTagline}>Your needs our solutions, Explore the best online chopping and loan experience.</div>
             </div>
           </div>
         </div>
@@ -80,10 +117,6 @@ export default function RegisterPage() {
           <a href="/" style={s.navLink}>About</a>
           <a href="/" style={s.navLink}>Product</a>
           <a href="/" style={s.navLink}>Contact</a>
-          <div style={s.cartIcon}>
-            🛒
-            <span style={s.cartBadge}>0</span>
-          </div>
           <button style={s.loginBtn} onClick={() => navigate('/login')}>
             Login
           </button>
@@ -95,6 +128,10 @@ export default function RegisterPage() {
         <div style={s.formCard}>
           <h2 style={s.formTitle}>Create Account</h2>
 
+          {/* ✅ Success Banner */}
+          {success && <div style={s.successBox}>{success}</div>}
+
+          {/* Error Banner */}
           {error && <div style={s.error}>{error}</div>}
 
           <form onSubmit={handleSubmit}>
@@ -202,11 +239,11 @@ export default function RegisterPage() {
             </div>
 
             <button
-              style={loading ? s.submitBtnDisabled : s.submitBtn}
+              style={loading || success ? s.submitBtnDisabled : s.submitBtn}
               type="submit"
-              disabled={loading}
+              disabled={loading || !!success}
             >
-              {loading ? 'Creating account...' : 'Register'}
+              {loading ? 'Creating account...' : success ? 'Redirecting...' : 'Register'}
             </button>
           </form>
 
@@ -222,10 +259,10 @@ export default function RegisterPage() {
         <div style={s.footerGrid}>
           <div>
             <div style={s.footerBrand}>
-              <span style={s.footerIcon}>🌾</span>
+              <img src={LOGO_PATH} alt="Achoice Logo" style={s.footerLogoImg} />
               <div>
                 <div style={s.footerName}>ACHOICE LIMITED</div>
-                <div style={s.footerTagline}>Buy Fresh, Pay Less</div>
+                <div style={s.footerTagline}>Your needs our solutions, Explore the best online chopping and loan experience.</div>
               </div>
             </div>
             <p style={s.footerDesc}>
@@ -250,9 +287,9 @@ export default function RegisterPage() {
           </div>
           <div>
             <div style={s.footerHeading}>Contact</div>
-            <div style={s.footerLink}>📍 Port Harcourt, Lagos, Abuja</div>
+            <div style={s.footerLink}>📍 No 6 faith avenue off ekenwan Rd Benin City</div>
             <div style={s.footerLink}>✉ support@achoice.ng</div>
-            <div style={s.footerLink}>📞 08143608577</div>
+            <div style={s.footerLink}>📞 09067794991</div>
           </div>
         </div>
         <div style={s.footerBottom}>
@@ -272,7 +309,7 @@ const s = {
   nav: { background: '#fff', padding: '14px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e8e4dc' },
   navBrand: { cursor: 'pointer' },
   navLogo: { display: 'flex', alignItems: 'center', gap: 10 },
-  logoIcon: { fontSize: 36, background: '#1f4d1f', borderRadius: 8, padding: '4px 8px' },
+  navLogoImg: { width: 45, height: 45, objectFit: 'contain' },
   logoName: { fontSize: 16, fontWeight: 700, color: '#1f4d1f' },
   logoTagline: { fontSize: 11, color: '#888' },
   navRight: { display: 'flex', alignItems: 'center', gap: 24 },
@@ -283,6 +320,10 @@ const s = {
   body: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 16px' },
   formCard: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: '40px', width: '100%', maxWidth: '420px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' },
   formTitle: { fontSize: 26, fontWeight: 700, color: '#111', textAlign: 'center', marginBottom: 28 },
+
+  // ✅ NEW: success box style
+  successBox: { background: '#f0fff4', color: '#1f4d1f', border: '1px solid #a8d5a8', padding: '12px 14px', borderRadius: 6, fontSize: 14, fontWeight: 500, marginBottom: 16, textAlign: 'center' },
+
   error: { background: '#fff0f0', color: '#cc0000', padding: '10px 14px', borderRadius: 6, fontSize: 13, marginBottom: 16 },
   field: { marginBottom: 16 },
   input: { width: '100%', padding: '12px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box', fontFamily: 'inherit', outline: 'none' },
@@ -296,7 +337,7 @@ const s = {
   footer: { background: '#1f4d1f', color: '#fff', padding: '48px 60px 0' },
   footerGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40, marginBottom: 40 },
   footerBrand: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 },
-  footerIcon: { fontSize: 32 },
+  footerLogoImg: { width: 40, height: 40, objectFit: 'contain' },
   footerName: { fontSize: 15, fontWeight: 700, color: '#fff' },
   footerTagline: { fontSize: 11, color: '#a8d5a8' },
   footerDesc: { fontSize: 13, color: '#a8d5a8', lineHeight: 1.7 },

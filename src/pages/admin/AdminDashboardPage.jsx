@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { getAdminOrders, getAdminLoans, getSellers } from '../../services/adminService';
 import { getAllProducts } from '../../services/productService';
 
+// ADDED: Logo Path
+const LOGO_PATH = "/achoice logo.png";
+
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
@@ -72,7 +75,8 @@ export default function AdminDashboardPage() {
       {/* Sidebar */}
       <div style={s.sidebar}>
         <div style={s.sidebarLogo}>
-          <div style={s.sidebarLogoIcon}>A</div>
+          {/* UPDATED: Replaced Letter Box with Logo Image */}
+          <img src={LOGO_PATH} alt="Logo" style={s.sidebarLogoImg} />
           <div>
             <div style={s.sidebarLogoName}>ACHOICE</div>
             <div style={s.sidebarLogoSub}>Admin Panel</div>
@@ -98,12 +102,16 @@ export default function AdminDashboardPage() {
               <span style={s.badge}>{stats.pendingLoans}</span>
             )}
           </div>
+          <div style={s.sidebarItem} onClick={() => navigate('/admin/loan-settings')}>
+            <span style={s.sidebarIcon}>⚙️</span> Loan Settings
+          </div>
         </nav>
 
         <div style={s.sidebarFooter}>
           <div style={s.sidebarUser}>
             <div style={s.sidebarAvatar}>
-              {user.name ? user.name.charAt(0).toUpperCase() : 'A'}
+              {/* UPDATED: Replaced Initial Letter with Logo */}
+              <img src={LOGO_PATH} alt="Admin" style={s.avatarImg} />
             </div>
             <div>
               <div style={s.sidebarUserName}>{user.name || 'Admin'}</div>
@@ -225,8 +233,9 @@ export default function AdminDashboardPage() {
 const s = {
   page: { display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: 'Arial, sans-serif' },
   sidebar: { width: 240, background: '#1f4d1f', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh' },
-  sidebarLogo: { display: 'flex', alignItems: 'center', gap: 10, padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
-  sidebarLogoIcon: { width: 36, height: 36, background: '#f0c050', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1f4d1f', fontWeight: 900, fontSize: 18 },
+  sidebarLogo: { display: 'flex', alignItems: 'center', gap: 10, padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
+  // ADDED: Sidebar Logo Styling
+  sidebarLogoImg: { width: 40, height: 40, objectFit: 'contain' },
   sidebarLogoName: { fontSize: 14, fontWeight: 700, color: '#fff' },
   sidebarLogoSub: { fontSize: 10, color: '#a8d5a8', marginTop: 1 },
   sidebarNav: { flex: 1, padding: '16px 0' },
@@ -235,9 +244,11 @@ const s = {
   badge: { marginLeft: 'auto', background: '#cc0000', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 99 },
   sidebarFooter: { padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.1)' },
   sidebarUser: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 },
-  sidebarAvatar: { width: 32, height: 32, background: '#f0c050', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1f4d1f', fontWeight: 700, fontSize: 14 },
+  // UPDATED: Avatar styling to accommodate image
+  sidebarAvatar: { width: 34, height: 34, background: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '2px solid #f0c050' },
+  avatarImg: { width: '100%', height: '100%', objectFit: 'cover' },
   sidebarUserName: { fontSize: 13, fontWeight: 600, color: '#fff' },
-sidebarUserRole: { fontSize: 11, color: '#a8d5a8' },
+  sidebarUserRole: { fontSize: 11, color: '#a8d5a8' },
   logoutBtn: { width: '100%', padding: '8px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
   main: { flex: 1, marginLeft: 240, padding: '32px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },

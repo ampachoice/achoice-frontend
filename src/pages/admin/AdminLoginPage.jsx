@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
+const LOGO_PATH = "/achoice logo.png";
+
 export default function AdminLoginPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -52,7 +54,7 @@ export default function AdminLoginPage() {
       <nav style={s.nav}>
         <div style={s.navBrand} onClick={() => navigate('/')}>
           <div style={s.navLogo}>
-            <span style={s.logoIcon}>🌾</span>
+            <img src={LOGO_PATH} alt="Logo" style={s.navLogoImg} />
             <div>
               <div style={s.logoName}>ACHOICE LIMITED</div>
               <div style={s.logoTagline}>Admin Portal</div>
@@ -74,7 +76,7 @@ export default function AdminLoginPage() {
       <div style={s.body}>
         <div style={s.formCard}>
           <div style={s.logoBox}>
-            <div style={s.logoIconBox}>A</div>
+            <img src={LOGO_PATH} alt="Logo" style={s.formLogoImg} />
             <div>
               <div style={s.logoName2}>ACHOICE LIMITED</div>
               <div style={s.logoBadge}>Admin Portal</div>
@@ -141,7 +143,7 @@ export default function AdminLoginPage() {
         <div style={s.footerGrid}>
           <div>
             <div style={s.footerBrand}>
-              <span style={s.footerIcon}>🌾</span>
+              <img src={LOGO_PATH} alt="Logo" style={s.footerLogoImg} />
               <div>
                 <div style={s.footerName}>ACHOICE LIMITED</div>
                 <div style={s.footerTagline}>Buy Fresh, Pay Less</div>
@@ -189,7 +191,7 @@ const s = {
   nav: { background: '#fff', padding: '14px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e8e4dc' },
   navBrand: { cursor: 'pointer' },
   navLogo: { display: 'flex', alignItems: 'center', gap: 10 },
-  logoIcon: { fontSize: 36, background: '#1f4d1f', borderRadius: 8, padding: '4px 8px' },
+  navLogoImg: { width: 45, height: 45, objectFit: 'contain' },
   logoName: { fontSize: 16, fontWeight: 700, color: '#1f4d1f' },
   logoTagline: { fontSize: 11, color: '#c8860a', fontWeight: 600 },
   navRight: { display: 'flex', alignItems: 'center', gap: 24 },
@@ -198,7 +200,7 @@ const s = {
   body: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 16px' },
   formCard: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: '40px', width: '100%', maxWidth: '420px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' },
   logoBox: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 },
-  logoIconBox: { width: 44, height: 44, background: '#1f4d1f', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f0c050', fontWeight: 900, fontSize: 20 },
+  formLogoImg: { width: 44, height: 44, objectFit: 'contain' },
   logoName2: { fontSize: 15, fontWeight: 700, color: '#1f4d1f' },
   logoBadge: { fontSize: 11, color: '#c8860a', fontWeight: 600, marginTop: 2 },
   formTitle: { fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 6 },
@@ -216,7 +218,7 @@ const s = {
   footer: { background: '#1f4d1f', color: '#fff', padding: '48px 60px 0' },
   footerGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40, marginBottom: 40 },
   footerBrand: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 },
-  footerIcon: { fontSize: 32 },
+  footerLogoImg: { width: 40, height: 40, objectFit: 'contain' },
   footerName: { fontSize: 15, fontWeight: 700, color: '#fff' },
   footerTagline: { fontSize: 11, color: '#a8d5a8' },
   footerDesc: { fontSize: 13, color: '#a8d5a8', lineHeight: 1.7 },

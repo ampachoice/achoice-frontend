@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
 
+const LOGO_PATH = "/achoice logo.png";
+
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -44,11 +46,11 @@ export default function ResetPasswordPage() {
     <div style={s.page}>
       <div style={s.topBar}>
         <div style={s.topBarLeft}>
-          <span>Port Harcourt, Lagos, Abuja</span>
+          <span>No 6 faith avenue off ekenwan Rd Benin City</span>
           <span>support@achoice.ng</span>
         </div>
         <div style={s.topBarRight}>
-          <span>08143608577</span>
+          <span>09067794991</span>
           <span>Mon - Sat: 07:00am to 06:00pm</span>
         </div>
       </div>
@@ -56,10 +58,10 @@ export default function ResetPasswordPage() {
       <nav style={s.nav}>
         <div style={s.navBrand} onClick={() => navigate('/')}>
           <div style={s.navLogo}>
-            <div style={s.logoBox}>A</div>
+            <img src={LOGO_PATH} alt="Logo" style={s.navLogoImg} />
             <div>
               <div style={s.logoName}>ACHOICE LIMITED</div>
-              <div style={s.logoTagline}>Buy Fresh, Pay Less</div>
+              <div style={s.logoTagline}>Your needs our solutions, Explore the best online chopping and loan experience.</div>
             </div>
           </div>
         </div>
@@ -137,10 +139,10 @@ export default function ResetPasswordPage() {
         <div style={s.footerGrid}>
           <div>
             <div style={s.footerBrand}>
-              <span style={s.footerIcon}>🌾</span>
+              <img src={LOGO_PATH} alt="Logo" style={s.footerLogoImg} />
               <div>
                 <div style={s.footerName}>ACHOICE LIMITED</div>
-                <div style={s.footerTagline}>Buy Fresh, Pay Less</div>
+                <div style={s.footerTagline}>Your needs our solutions, Explore the best online chopping and loan experience.</div>
               </div>
             </div>
             <p style={s.footerDesc}>
@@ -165,9 +167,9 @@ export default function ResetPasswordPage() {
           </div>
           <div>
             <div style={s.footerHeading}>Contact</div>
-            <div style={s.footerLink}>📍 Port Harcourt, Lagos, Abuja</div>
+            <div style={s.footerLink}>📍 No 6 faith avenue off ekenwan Rd Benin City</div>
             <div style={s.footerLink}>✉ support@achoice.ng</div>
-            <div style={s.footerLink}>📞 08143608577</div>
+            <div style={s.footerLink}>📞 09067794991</div>
           </div>
         </div>
         <div style={s.footerBottom}>
@@ -186,7 +188,7 @@ const s = {
   nav: { background: '#fff', padding: '14px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e8e4dc' },
   navBrand: { cursor: 'pointer' },
   navLogo: { display: 'flex', alignItems: 'center', gap: 10 },
-  logoBox: { width: 40, height: 40, background: '#1f4d1f', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f0c050', fontWeight: 700, fontSize: 18 },
+  navLogoImg: { width: 45, height: 45, objectFit: 'contain' },
   logoName: { fontSize: 16, fontWeight: 700, color: '#1f4d1f' },
   logoTagline: { fontSize: 11, color: '#888' },
   navRight: { display: 'flex', alignItems: 'center', gap: 24 },
@@ -210,6 +212,8 @@ const s = {
   backBtn: { background: '#1f4d1f', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 6, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' },
   footer: { background: '#1f4d1f', color: '#fff', padding: '48px 60px 0' },
   footerGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40, marginBottom: 40 },
+  footerBrand: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 },
+  footerLogoImg: { width: 40, height: 40, objectFit: 'contain' },
   footerName: { fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 },
   footerTagline: { fontSize: 11, color: '#a8d5a8', marginBottom: 12 },
   footerDesc: { fontSize: 13, color: '#a8d5a8', lineHeight: 1.7 },
