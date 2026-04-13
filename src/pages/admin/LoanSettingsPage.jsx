@@ -5,49 +5,113 @@ import api from '../../services/api';
 export default function LoanSettingsPage() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState({
-    interest_rate: '10.00',
-    min_amount: '50000',
-    max_amount: '5000000',
-    duration_options: '3,6,9,12',
-    allowed_purposes: 'Farm Expansion,Equipment Purchase,Seeds and Fertilizer,Irrigation Setup,Processing and Storage,Working Capital,Other',
+    interest_rate: '',
+    min_amount: '',
+    max_amount: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [error, setError] = useState(null);
+  const [purposes, setPurposes] = useState([]);
+  const [durations, setDurations] = useState([]);
+  const [newPurpose, setNewPurpose] = useState('');
+  const [newDuration, setNewDuration] = useState({ months: '', label: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const saved = localStorage.getItem('loan_settings');
-    if (saved) setSettings(JSON.parse(saved));
+    api.get('/settings/loan')
+      .then((res) => {
+        const data = res.data;
+        setSettings({
+          interest_rate: data.default_interest || '',
+          min_amount: data.min_amount || '',
+          max_amount: data.max_amount || '',
+        });
+        setPurposes(data.purposes || []);
+        setDurations(data.durations || []);
+      })
+      .catch(() => setError('Failed to load loan settings.'))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleChange = (e) => {
-    setSettings({ ...settings, [e.target.name]: e.target.value });
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
   };
 
-  const handleSave = async (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMessage(null);
-    setError(null);
+    setSaving(true);
+    setError('');
     try {
-      await api.post('/admin/loan-settings', settings);
-      localStorage.setItem('loan_settings', JSON.stringify(settings));
-      setMessage('Loan settings saved successfully!');
-      setTimeout(() => setMessage(null), 3000);
+      await api.post('/admin/settings', {
+        settings: [
+          { key: 'loan_min_amount', value: String(settings.min_amount) },
+          { key: 'loan_max_amount', value: String(settings.max_amount) },
+          { key: 'loan_default_interest', value: String(settings.interest_rate) },
+        ]
+      });
+      showToast('Settings saved successfully!');
     } catch (err) {
-      localStorage.setItem('loan_settings', JSON.stringify(settings));
-      setMessage('Settings saved locally. Backend sync pending.');
-      setTimeout(() => setMessage(null), 3000);
+      setError('Failed to save settings. ' + (err.response?.data?.message || ''));
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const durationOptions = settings.duration_options.split(',').map(d => d.trim()).filter(Boolean);
-  const purposeList = settings.allowed_purposes.split(',').map(p => p.trim()).filter(Boolean);
+  const handleAddPurpose = async () => {
+    if (!newPurpose.trim()) return;
+    try {
+      const res = await api.post('/admin/settings/loan-purposes', { name: newPurpose.trim() });
+      setPurposes([...purposes, res.data.purpose || res.data]);
+      setNewPurpose('');
+      showToast('Purpose added!');
+    } catch (err) {
+      setError('Failed to add purpose.');
+    }
+  };
+
+  const handleDeletePurpose = async (id) => {
+    if (!window.confirm('Delete this purpose?')) return;
+    try {
+      await api.delete(`/admin/settings/loan-purposes/${id}`);
+      setPurposes(purposes.filter(p => p.id !== id));
+      showToast('Purpose deleted!');
+    } catch (err) {
+      setError('Failed to delete purpose.');
+    }
+  };
+
+  const handleAddDuration = async () => {
+    if (!newDuration.months || !newDuration.label) return;
+    try {
+      const res = await api.post('/admin/settings/loan-durations', {
+        months: Number(newDuration.months),
+        label: newDuration.label,
+      });
+      setDurations([...durations, res.data.duration || res.data]);
+      setNewDuration({ months: '', label: '' });
+      showToast('Duration added!');
+    } catch (err) {
+      setError('Failed to add duration.');
+    }
+  };
+
+  const handleDeleteDuration = async (id) => {
+    if (!window.confirm('Delete this duration?')) return;
+    try {
+      await api.delete(`/admin/settings/loan-durations/${id}`);
+      setDurations(durations.filter(d => d.id !== id));
+      showToast('Duration deleted!');
+    } catch (err) {
+      setError('Failed to delete duration.');
+    }
+  };
 
   return (
     <div style={s.page}>
+      {toast && <div style={s.toast}>{toast}</div>}
+
       {/* Sidebar */}
       <div style={s.sidebar}>
         <div style={s.sidebarLogo}>
@@ -89,163 +153,203 @@ export default function LoanSettingsPage() {
       {/* Main */}
       <div style={s.main}>
         <div style={s.header}>
-          <div>
-            <h1 style={s.headerTitle}>Loan Settings</h1>
-            <p style={s.headerSub}>Configure default values for all loan applications</p>
-          </div>
+          <h1 style={s.headerTitle}>Loan Settings</h1>
+          <p style={s.headerSub}>Configure loan terms — changes reflect immediately on the buyer loan form</p>
         </div>
 
-        <div style={s.layout}>
-          {/* Settings Form */}
-          <div style={s.formCard}>
-            <h2 style={s.formTitle}>Global Loan Configuration</h2>
-            <p style={s.formSub}>These settings control what buyers see when applying for a loan.</p>
+        {error && <div style={s.error}>{error}</div>}
+        {loading && <p style={s.message}>Loading settings...</p>}
 
-            {message && <div style={s.success}>{message}</div>}
-            {error && <div style={s.errorMsg}>{error}</div>}
+        {!loading && (
+          <div style={s.layout}>
 
-            <form onSubmit={handleSave}>
-              <div style={s.field}>
-                <label style={s.label}>Default Interest Rate (%)</label>
-                <input
-                  style={s.input}
-                  type="number"
-                  step="0.01"
-                  name="interest_rate"
-                  value={settings.interest_rate}
-                  onChange={handleChange}
-                  placeholder="e.g. 10.00"
-                  required
-                />
-                <div style={s.hint}>This rate is applied to all approved loans (e.g. 10 = 10% flat)</div>
+            {/* Left Column */}
+            <div style={s.leftCol}>
+
+              {/* Interest Rate, Min, Max */}
+              <div style={s.card}>
+                <h2 style={s.cardTitle}>Loan Amounts & Interest Rate</h2>
+                <p style={s.cardSub}>These values are validated on the backend when buyers submit applications.</p>
+                <form onSubmit={handleSaveSettings}>
+                  <div style={s.field}>
+                    <label style={s.label}>Default Interest Rate (%)</label>
+                    <input
+                      style={s.input}
+                      type="number"
+                      step="0.01"
+                      value={settings.interest_rate}
+                      onChange={(e) => setSettings({ ...settings, interest_rate: e.target.value })}
+                      placeholder="e.g. 10"
+                      required
+                    />
+                  </div>
+                  <div style={s.fieldRow}>
+                    <div style={s.field}>
+                      <label style={s.label}>Minimum Loan Amount (₦)</label>
+                      <input
+                        style={s.input}
+                        type="number"
+                        value={settings.min_amount}
+                        onChange={(e) => setSettings({ ...settings, min_amount: e.target.value })}
+                        placeholder="e.g. 50000"
+                        required
+                      />
+                    </div>
+                    <div style={s.field}>
+                      <label style={s.label}>Maximum Loan Amount (₦)</label>
+                      <input
+                        style={s.input}
+                        type="number"
+                        value={settings.max_amount}
+                        onChange={(e) => setSettings({ ...settings, max_amount: e.target.value })}
+                        placeholder="e.g. 5000000"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button style={saving ? s.btnDisabled : s.btn} type="submit" disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Loan Settings'}
+                  </button>
+                </form>
               </div>
 
-              <div style={s.fieldRow}>
-                <div style={s.field}>
-                  <label style={s.label}>Minimum Loan Amount (₦)</label>
+              {/* Purposes */}
+              <div style={s.card}>
+                <h2 style={s.cardTitle}>Loan Purposes</h2>
+                <p style={s.cardSub}>Add or remove purposes shown to buyers in the application form.</p>
+
+                <div style={s.addRow}>
                   <input
                     style={s.input}
-                    type="number"
-                    name="min_amount"
-                    value={settings.min_amount}
-                    onChange={handleChange}
-                    placeholder="e.g. 50000"
-                    required
+                    type="text"
+                    placeholder="e.g. Fish Farming"
+                    value={newPurpose}
+                    onChange={(e) => setNewPurpose(e.target.value)}
                   />
+                  <button style={s.addBtn} onClick={handleAddPurpose}>Add</button>
                 </div>
-                <div style={s.field}>
-                  <label style={s.label}>Maximum Loan Amount (₦)</label>
+
+                <div style={s.listBox}>
+                  {purposes.map((p) => (
+                    <div key={p.id} style={s.listItem}>
+                      <span style={s.listItemText}>{p.name}</span>
+                      <button style={s.deleteBtn} onClick={() => handleDeletePurpose(p.id)}>
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                  {purposes.length === 0 && (
+                    <p style={s.emptyText}>No purposes yet. Add one above.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Durations */}
+              <div style={s.card}>
+                <h2 style={s.cardTitle}>Loan Durations</h2>
+                <p style={s.cardSub}>Add or remove duration options shown to buyers.</p>
+
+                <div style={s.addRow}>
+                  <input
+                    style={{ ...s.input, width: 100 }}
+                    type="number"
+                    placeholder="Months"
+                    value={newDuration.months}
+                    onChange={(e) => setNewDuration({ ...newDuration, months: e.target.value })}
+                  />
                   <input
                     style={s.input}
-                    type="number"
-                    name="max_amount"
-                    value={settings.max_amount}
-                    onChange={handleChange}
-                    placeholder="e.g. 5000000"
-                    required
+                    type="text"
+                    placeholder="Label e.g. 6 Months"
+                    value={newDuration.label}
+                    onChange={(e) => setNewDuration({ ...newDuration, label: e.target.value })}
                   />
+                  <button style={s.addBtn} onClick={handleAddDuration}>Add</button>
                 </div>
-              </div>
 
-              <div style={s.field}>
-                <label style={s.label}>Duration Options (months, comma separated)</label>
-                <input
-                  style={s.input}
-                  type="text"
-                  name="duration_options"
-                  value={settings.duration_options}
-                  onChange={handleChange}
-                  placeholder="e.g. 3,6,9,12"
-                  required
-                />
-                <div style={s.hint}>Buyers will see these as dropdown options when applying</div>
-              </div>
-
-              <div style={s.field}>
-                <label style={s.label}>Allowed Loan Purposes (comma separated)</label>
-                <textarea
-                  style={{ ...s.input, height: 100, resize: 'vertical' }}
-                  name="allowed_purposes"
-                  value={settings.allowed_purposes}
-                  onChange={handleChange}
-                  placeholder="e.g. Farm Expansion, Equipment Purchase"
-                  required
-                />
-                <div style={s.hint}>These will appear in the Purpose dropdown on the loan application form</div>
-              </div>
-
-              <button
-                style={loading ? s.submitBtnDisabled : s.submitBtn}
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? 'Saving...' : 'Save Loan Settings'}
-              </button>
-            </form>
-          </div>
-
-          {/* Preview Panel */}
-          <div style={s.previewCol}>
-            <div style={s.previewCard}>
-              <div style={s.previewTitle}>Live Preview</div>
-              <p style={s.previewSub}>This is what buyers will see</p>
-
-              <div style={s.previewItem}>
-                <div style={s.previewLabel}>Interest Rate</div>
-                <div style={s.previewValue}>{settings.interest_rate}% flat</div>
-              </div>
-
-              <div style={s.previewItem}>
-                <div style={s.previewLabel}>Loan Range</div>
-                <div style={s.previewValue}>
-                  ₦{Number(settings.min_amount).toLocaleString()} — ₦{Number(settings.max_amount).toLocaleString()}
-                </div>
-              </div>
-
-              <div style={s.previewItem}>
-                <div style={s.previewLabel}>Duration Options</div>
-                <div style={s.durationTags}>
-                  {durationOptions.map((d) => (
-                    <div key={d} style={s.durationTag}>{d} months</div>
+                <div style={s.listBox}>
+                  {durations.map((d) => (
+                    <div key={d.id} style={s.listItem}>
+                      <span style={s.listItemText}>{d.label} ({d.months} months)</span>
+                      <button style={s.deleteBtn} onClick={() => handleDeleteDuration(d.id)}>
+                        Delete
+                      </button>
+                    </div>
                   ))}
-                </div>
-              </div>
-
-              <div style={s.previewItem}>
-                <div style={s.previewLabel}>Allowed Purposes</div>
-                <div style={s.purposeList}>
-                  {purposeList.map((p) => (
-                    <div key={p} style={s.purposeItem}>• {p}</div>
-                  ))}
+                  {durations.length === 0 && (
+                    <p style={s.emptyText}>No durations yet. Add one above.</p>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div style={s.calcCard}>
-              <div style={s.calcTitle}>Sample Calculation</div>
-              <div style={s.calcDesc}>For a ₦500,000 loan at {settings.interest_rate}% for {durationOptions[1] || 6} months:</div>
-              <div style={s.calcRow}>
-                <span style={s.calcLabel}>Principal</span>
-                <span style={s.calcValue}>₦500,000</span>
+            {/* Right Column — Live Preview */}
+            <div style={s.rightCol}>
+              <div style={s.previewCard}>
+                <div style={s.previewTitle}>Live Preview</div>
+                <p style={s.previewSub}>This is what buyers currently see</p>
+
+                <div style={s.previewItem}>
+                  <div style={s.previewLabel}>INTEREST RATE</div>
+                  <div style={s.previewValue}>{settings.interest_rate}% flat</div>
+                </div>
+                <div style={s.previewItem}>
+                  <div style={s.previewLabel}>LOAN RANGE</div>
+                  <div style={s.previewValue}>
+                    ₦{Number(settings.min_amount).toLocaleString()} — ₦{Number(settings.max_amount).toLocaleString()}
+                  </div>
+                </div>
+                <div style={s.previewItem}>
+                  <div style={s.previewLabel}>DURATION OPTIONS</div>
+                  <div style={s.durationTags}>
+                    {durations.map((d) => (
+                      <div key={d.id} style={s.durationTag}>{d.label}</div>
+                    ))}
+                  </div>
+                </div>
+                <div style={s.previewItem}>
+                  <div style={s.previewLabel}>ALLOWED PURPOSES</div>
+                  <div style={s.purposeList}>
+                    {purposes.map((p) => (
+                      <div key={p.id} style={s.purposeItem}>• {p.name}</div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div style={s.calcRow}>
-                <span style={s.calcLabel}>Interest ({settings.interest_rate}%)</span>
-                <span style={s.calcValue}>₦{(500000 * Number(settings.interest_rate) / 100).toLocaleString()}</span>
-              </div>
-              <div style={s.calcDivider}></div>
-              <div style={s.calcRow}>
-                <span style={s.calcLabel}>Total Repayable</span>
-                <span style={s.calcTotal}>₦{(500000 * (1 + Number(settings.interest_rate) / 100)).toLocaleString()}</span>
-              </div>
-              <div style={s.calcRow}>
-                <span style={s.calcLabel}>Monthly Instalment</span>
-                <span style={s.calcTotal}>
-                  ₦{Math.ceil((500000 * (1 + Number(settings.interest_rate) / 100)) / (Number(durationOptions[1]) || 6)).toLocaleString()}
-                </span>
+
+              {/* Sample Calculation */}
+              <div style={s.calcCard}>
+                <div style={s.calcTitle}>Sample Calculation</div>
+                <div style={s.calcDesc}>
+                  ₦500,000 at {settings.interest_rate}% for {durations[2]?.months || 6} months
+                </div>
+                <div style={s.calcRow}>
+                  <span style={s.calcLabel}>Principal</span>
+                  <span style={s.calcValue}>₦500,000</span>
+                </div>
+                <div style={s.calcRow}>
+                  <span style={s.calcLabel}>Interest ({settings.interest_rate}%)</span>
+                  <span style={s.calcValue}>
+                    ₦{(500000 * Number(settings.interest_rate) / 100).toLocaleString()}
+                  </span>
+                </div>
+                <div style={s.calcDivider}></div>
+                <div style={s.calcRow}>
+                  <span style={s.calcLabel}>Total Repayable</span>
+                  <span style={s.calcTotal}>
+                    ₦{(500000 * (1 + Number(settings.interest_rate) / 100)).toLocaleString()}
+                  </span>
+                </div>
+                <div style={s.calcRow}>
+                  <span style={s.calcLabel}>Monthly Payment</span>
+                  <span style={s.calcTotal}>
+                    ₦{Math.ceil((500000 * (1 + Number(settings.interest_rate) / 100)) / (durations[2]?.months || 6)).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -253,6 +357,7 @@ export default function LoanSettingsPage() {
 
 const s = {
   page: { display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5', fontFamily: 'Arial, sans-serif' },
+  toast: { position: 'fixed', top: 20, right: 20, background: '#1f4d1f', color: '#fff', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 500, zIndex: 999 },
   sidebar: { width: 240, background: '#1f4d1f', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, height: '100vh' },
   sidebarLogo: { display: 'flex', alignItems: 'center', gap: 10, padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)' },
   sidebarLogoIcon: { width: 36, height: 36, background: '#f0c050', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1f4d1f', fontWeight: 900, fontSize: 18 },
@@ -265,32 +370,39 @@ const s = {
   sidebarFooter: { padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.1)' },
   logoutBtn: { width: '100%', padding: '8px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' },
   main: { flex: 1, marginLeft: 240, padding: '32px' },
-  header: { marginBottom: 28 },
+  header: { marginBottom: 24 },
   headerTitle: { fontSize: 24, fontWeight: 700, color: '#111', marginBottom: 4 },
   headerSub: { fontSize: 14, color: '#888' },
-  layout: { display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 },
-  formCard: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: 28 },
-  formTitle: { fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 6 },
-  formSub: { fontSize: 13, color: '#888', marginBottom: 24 },
-  success: { background: '#eafaf0', color: '#1a7a3a', padding: '12px 16px', borderRadius: 6, marginBottom: 20, fontSize: 13, border: '1px solid #c8e6c9' },
-  errorMsg: { background: '#fff0f0', color: '#cc0000', padding: '12px 16px', borderRadius: 6, marginBottom: 20, fontSize: 13 },
-  field: { marginBottom: 20, flex: 1 },
-  fieldRow: { display: 'flex', gap: 16, marginBottom: 4 },
+  error: { background: '#fff0f0', color: '#cc0000', padding: '12px 16px', borderRadius: 6, marginBottom: 16, fontSize: 13 },
+  message: { textAlign: 'center', color: '#666', padding: 40 },
+  layout: { display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24 },
+  leftCol: { display: 'flex', flexDirection: 'column', gap: 20 },
+  card: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: 24 },
+  cardTitle: { fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 4 },
+  cardSub: { fontSize: 13, color: '#888', marginBottom: 20 },
+  field: { marginBottom: 16, flex: 1 },
+  fieldRow: { display: 'flex', gap: 16 },
   label: { display: 'block', fontSize: 13, color: '#333', fontWeight: 500, marginBottom: 6 },
-  input: { width: '100%', padding: '11px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box', fontFamily: 'inherit', outline: 'none' },
-  hint: { fontSize: 11, color: '#888', marginTop: 4 },
-  submitBtn: { width: '100%', padding: '13px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 6, fontSize: 15, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' },
-  submitBtnDisabled: { width: '100%', padding: '13px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 6, fontSize: 15, cursor: 'not-allowed', fontFamily: 'inherit' },
-  previewCol: { display: 'flex', flexDirection: 'column', gap: 16 },
+  input: { width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, boxSizing: 'border-box', fontFamily: 'inherit', outline: 'none' },
+  btn: { width: '100%', padding: '12px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' },
+  btnDisabled: { width: '100%', padding: '12px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, cursor: 'not-allowed', fontFamily: 'inherit' },
+  addRow: { display: 'flex', gap: 10, marginBottom: 16 },
+  addBtn: { padding: '10px 20px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  listBox: { display: 'flex', flexDirection: 'column', gap: 8 },
+  listItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f7f5f0', borderRadius: 6 },
+  listItemText: { fontSize: 14, color: '#333' },
+  deleteBtn: { padding: '5px 12px', background: '#fff', color: '#cc0000', border: '1px solid #cc0000', borderRadius: 5, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' },
+  emptyText: { fontSize: 13, color: '#888', textAlign: 'center', padding: '16px 0' },
+  rightCol: { display: 'flex', flexDirection: 'column', gap: 16 },
   previewCard: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: 20 },
   previewTitle: { fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 4 },
   previewSub: { fontSize: 12, color: '#888', marginBottom: 16 },
   previewItem: { marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #f0f0f0' },
-  previewLabel: { fontSize: 11, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  previewLabel: { fontSize: 10, color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 },
   previewValue: { fontSize: 14, fontWeight: 600, color: '#111' },
-  durationTags: { display: 'flex', gap: 6, flexWrap: 'wrap' },
+  durationTags: { display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 },
   durationTag: { background: '#f0f7ec', color: '#1f4d1f', fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 99 },
-  purposeList: { display: 'flex', flexDirection: 'column', gap: 4 },
+  purposeList: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 },
   purposeItem: { fontSize: 13, color: '#555' },
   calcCard: { background: '#1f4d1f', borderRadius: 10, padding: 20 },
   calcTitle: { fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 6 },

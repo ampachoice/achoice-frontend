@@ -19,10 +19,17 @@ export default function LoanApplyPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
 
+  // REPLACE your existing useEffect with this:
+
   useEffect(() => {
     api.get('/settings/loan')
-      .then((res) => setLoanConfig(res.data))
+      .then((res) => {
+        setLoanConfig(res.data);
+        // ✅ Always overwrite localStorage with fresh API data
+        localStorage.removeItem('loan_settings');
+      })
       .catch(() => {
+        // Only fall back to localStorage if API completely fails
         const saved = localStorage.getItem('loan_settings');
         if (saved) {
           const s = JSON.parse(saved);
