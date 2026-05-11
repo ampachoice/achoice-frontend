@@ -409,16 +409,7 @@ export default function HomePage() {
             <div style={s.footerContactItem}>✉ support@achoice.ng</div>
             <div style={s.footerContactItem}>📞 09067794991</div>
             <div style={s.footerContactItem}>🕐 Mon-Sat: 07:00am - 06:00pm</div>
-            <div style={s.footerNewsletterBox}>
-              <input
-                style={s.footerNewsletterInput}
-                type="email"
-                placeholder="Your email"
-                value={newsletter.email}
-                onChange={(e) => setNewsletter({ ...newsletter, email: e.target.value })}
-              />
-              <button style={s.footerNewsletterBtn} onClick={handleNewsletterSubmit}>Subscribe</button>
-            </div>
+            
           </div>
         </div>
         <div style={s.footerBottom}>

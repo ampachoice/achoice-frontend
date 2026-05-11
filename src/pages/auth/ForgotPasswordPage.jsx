@@ -139,7 +139,7 @@ export default function ForgotPasswordPage() {
           </div>
           <div>
             <div style={s.footerHeading}>Contact</div>
-            <div style={s.footerLink}>📍 Port Harcourt, Lagos, Abuja</div>
+            <div style={s.footerLink}>📍No 6 faith avenue off ekenwan Rd Benin City, Nigeria</div>
             <div style={s.footerLink}>✉ support@achoice.ng</div>
             <div style={s.footerLink}>📞 09067794991</div>
           </div>

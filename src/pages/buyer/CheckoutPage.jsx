@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createOrder } from '../../services/orderService';
 import api from '../../services/api';
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -19,14 +20,23 @@ export default function CheckoutPage() {
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryDays, setDeliveryDays] = useState(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
-  const [deliveryZones, setDeliveryZones] = useState([]); // all zones for state dropdown
+  const [deliveryZones, setDeliveryZones] = useState([]);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('cart') || '[]');
+
+    // ✅ Detect cancelled Paystack payment — buyer comes back to checkout
+    const params = new URLSearchParams(location.search);
+    const cancelled = params.get('cancelled') || params.get('trxref');
+    if (cancelled || location.search.includes('trxref')) {
+      // Payment was cancelled — redirect to cart with message
+      navigate('/cart?payment=cancelled');
+      return;
+    }
+
     if (saved.length === 0) navigate('/products');
     setCart(saved);
 
-    // ✅ Fetch all delivery zones to populate state dropdown with fee info
     api.get('/delivery-zones')
       .then((res) => {
         const zones = res.data?.data || res.data || [];
@@ -82,8 +92,8 @@ export default function CheckoutPage() {
         delivery_address: formData.delivery_address,
         delivery_state: formData.delivery_state,
         delivery_lga: formData.delivery_lga,
-        note: formData.note,
-        delivery_fee: deliveryFee, // ✅ send fee to backend
+        notes: formData.note,        // ✅ Mr. Sherrif uses 'notes' not 'note'
+        delivery_fee: deliveryFee,   // ✅ exact fee from delivery-zones API
       };
 
       const res = await createOrder(orderData);

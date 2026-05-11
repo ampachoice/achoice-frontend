@@ -140,6 +140,9 @@ export default function LoanSettingsPage() {
           <div style={{ ...s.sidebarItem, ...s.sidebarItemActive }}>
             <span style={s.sidebarIcon}>⚙️</span> Loan Settings
           </div>
+          <div style={s.sidebarItem} onClick={() => navigate('/admin/delivery-zones')}>
+            <span style={s.sidebarIcon}>🚚</span> Delivery zones
+          </div>
         </nav>
         <div style={s.sidebarFooter}>
           <button style={s.logoutBtn} onClick={() => {
