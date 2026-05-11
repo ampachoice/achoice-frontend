@@ -96,15 +96,19 @@ export default function CheckoutPage() {
         delivery_fee: deliveryFee,   // ✅ exact fee from delivery-zones API
       };
 
-      const res = await createOrder(orderData);
+     const res = await createOrder(orderData);
 
-      if (res.data.payment_url) {
-        localStorage.removeItem('cart');
-        window.location.href = res.data.payment_url;
-      } else {
-        localStorage.removeItem('cart');
-        navigate('/orders');
-      }
+if (res.data.payment_url) {
+  // Save reference before redirecting to Paystack
+  if (res.data.reference) {
+    localStorage.setItem('last_order_reference', res.data.reference);
+  }
+  localStorage.removeItem('cart');
+  window.location.href = res.data.payment_url;
+} else {
+  localStorage.removeItem('cart');
+  navigate('/orders');
+}
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to place order. Please try again.');
     } finally {

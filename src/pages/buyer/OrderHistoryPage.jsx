@@ -53,19 +53,23 @@ export default function OrderHistoryPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [lastRef, setLastRef] = useState(null);
  
 
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 0), 0));
 
-    const params = new URLSearchParams(location.search);
-    const reference = params.get('reference') || params.get('trxref');
-    if (reference) {
-      setLastRef(reference);
-      window.history.replaceState({}, '', '/orders');
-    }
+   const params = new URLSearchParams(location.search);
+const urlRef = params.get('reference') || params.get('trxref');
+const savedRef = localStorage.getItem('last_order_reference');
+const reference = urlRef || savedRef;
 
+if (reference) {
+  setLastRef(reference);
+  localStorage.removeItem('last_order_reference');
+  window.history.replaceState({}, '', '/orders');
+}
     getMyOrders()
       .then(res => {
         const raw = res.data;
@@ -77,7 +81,16 @@ export default function OrderHistoryPage() {
   }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
-
+  const handleConfirmDelivery = async (orderId) => {
+  if (!window.confirm('Confirm that you have received this order?')) return;
+  try {
+    await confirmDelivery(orderId);
+    setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o));
+    showToast('Delivery confirmed successfully!');
+  } catch {
+    showToast('Failed to confirm delivery. Please try again.');
+  }
+};
  
 
   const getStatusStyle = (status) => ({
