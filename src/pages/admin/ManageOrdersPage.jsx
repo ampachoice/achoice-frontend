@@ -45,7 +45,8 @@ export default function ManageOrdersPage() {
     if (!ref) return;
     setVerifying(orderId);
     try {
-      const res = await api.post('/orders/verify-payment', { reference: ref });
+      //const res = await api.post('/orders/verify-payment', { reference: ref });
+      const res = await api.post(`/admin/orders/${orderId}/verify-payment`, { reference: ref });
       showToast(res.data?.message || 'Payment verified! Order confirmed.');
       const r = await getAdminOrders();
       const raw = r.data;
@@ -109,6 +110,7 @@ export default function ManageOrdersPage() {
             { icon: '💰', label: 'Loans', path: '/admin/loans' },
             { icon: '⚙️', label: 'Loan Settings', path: '/admin/loan-settings' },
             { icon: '🚚', label: 'Delivery Zones', path: '/admin/delivery-zones' },
+             { icon: '👥', label: 'Staff', path: '/admin/staff'},
           ].map(item => (
             <div key={item.label}
               style={{ ...s.sidebarItem, ...(item.active ? s.sidebarItemActive : {}) }}

@@ -4,13 +4,18 @@ import {
   Navigate
 } from 'react-router-dom';
 
-// AUTH
+// =========================
+// AUTH PAGES
+// =========================
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 
-// BUYER
+// =========================
+// BUYER PAGES
+// =========================
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/buyer/ProductPage';
 import CartPage from './pages/buyer/CartPage';
@@ -20,7 +25,16 @@ import LoanApplyPage from './pages/buyer/LoanApplyPage';
 import LoanRepayPage from './pages/buyer/LoanRepayPage';
 import ProfilePage from './pages/buyer/ProfilePage';
 
-// ADMIN
+// =========================
+// STAFF PAGES
+// =========================
+import ManageStaffPage from './pages/admin/ManageStaffPage';
+import AgroStaffDashboard from './pages/staff/AgroStaffDashboard';
+import LoanStaffDashboard from './pages/staff/LoanStaffDashboard';
+
+// =========================
+// ADMIN PAGES
+// =========================
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import ManageSellersPage from './pages/admin/ManageSellersPage';
@@ -30,11 +44,12 @@ import ManageLoansPage from './pages/admin/ManageLoansPage';
 import LoanSettingsPage from './pages/admin/LoanSettingsPage';
 import DeliveryZonesPage from './pages/admin/DeliveryZonesPage';
 
+// =========================
 // PROTECTED ROUTE
+// =========================
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 const router = createBrowserRouter([
-
   // =========================
   // PUBLIC ROUTES
   // =========================
@@ -61,6 +76,11 @@ const router = createBrowserRouter([
   {
     path: '/reset-password',
     element: <ResetPasswordPage />
+  },
+
+  {
+    path: '/change-password',
+    element: <ChangePasswordPage />
   },
 
   // =========================
@@ -139,12 +159,41 @@ const router = createBrowserRouter([
   },
 
   // =========================
+  // STAFF ROUTES
+  // =========================
+  {
+    path: '/staff',
+    element: (
+      <ProtectedRoute adminOnly>
+        <ManageStaffPage />
+      </ProtectedRoute>
+    )
+  },
+
+  {
+    path: '/staff/agro',
+    element: (
+      <ProtectedRoute>
+        <AgroStaffDashboard />
+      </ProtectedRoute>
+    )
+  },
+
+  {
+    path: '/staff/loans',
+    element: (
+      <ProtectedRoute>
+        <LoanStaffDashboard />
+      </ProtectedRoute>
+    )
+  },
+
+  // =========================
   // ADMIN ROUTES
   // =========================
   {
     path: '/admin',
     children: [
-
       {
         index: true,
         element: <AdminLoginPage />
@@ -211,6 +260,15 @@ const router = createBrowserRouter([
             <DeliveryZonesPage />
           </ProtectedRoute>
         )
+      },
+
+      {
+        path: 'staff',
+        element: (
+          <ProtectedRoute adminOnly>
+            <ManageStaffPage />
+          </ProtectedRoute>
+        )
       }
     ]
   },
@@ -222,7 +280,6 @@ const router = createBrowserRouter([
     path: '*',
     element: <Navigate to="/" replace />
   }
-
 ]);
 
 export default function App() {

@@ -205,7 +205,15 @@ export default function ManageProductsPage() {
   const totalProducts = products.length;
   const totalAvailable = products.filter(p => p.status === 'available').length;
   const totalOutOfStock = products.filter(p => p.status === 'out_of_stock').length;
-  const totalSold = products.reduce((acc, p) => acc + (p.views || 0), 0);
+ const totalSold = products.reduce((acc, p) => {
+  return acc + Number(
+    p.sold_quantity ||
+    p.total_sold ||
+    p.orders_count ||
+    p.order_count ||
+    0
+  );
+}, 0);
 
   if (loading) return <div style={s.loader}>Loading Products...</div>;
 
@@ -312,6 +320,7 @@ export default function ManageProductsPage() {
             { icon: '💰', label: 'Loans', path: '/admin/loans' },
             { icon: '⚙️', label: 'Loan Settings', path: '/admin/loan-settings' },
             { icon: '🚚', label: 'Delivery Zones', path: '/admin/delivery-zones' },
+             { icon: '👥', label: 'Staff', path: '/admin/staff'},
           ].map(item => (
             <div key={item.label}
               style={{ ...s.sidebarItem, ...(item.active ? s.sidebarItemActive : {}) }}
@@ -465,10 +474,25 @@ export default function ManageProductsPage() {
             </thead>
             <tbody>
               {filtered.map(p => {
-                const totalStock = Number(p.quantity || 0);
-                const sold = Number(p.reviews_count || 0);
-                const remaining = totalStock;
-                const stockPct = totalStock > 0 ? Math.min((remaining / totalStock) * 100, 100) : 0;
+               const totalStock = Number(p.quantity || 0);
+
+// Get sold quantity from backend
+const sold = Number(
+  p.sold_quantity ||
+  p.total_sold ||
+  p.orders_count ||
+  p.order_count ||
+  0
+);
+
+// Remaining stock
+const remaining = Math.max(totalStock - sold, 0);
+
+// Stock percentage
+const stockPct =
+  totalStock > 0
+    ? Math.min((remaining / totalStock) * 100, 100)
+    : 0;
 
                 return (
                   <tr key={p.id} style={s.tableRow}>
@@ -502,7 +526,7 @@ export default function ManageProductsPage() {
                       <div style={s.stockVal}>{totalStock} {p.unit}</div>
                     </td>
                     <td style={s.td}>
-                      <div style={s.soldVal}>{p.reviews_count || 0} orders</div>
+                    <div style={s.soldVal}>{sold} sold</div>
                     </td>
                     <td style={s.td}>
                       <div style={s.remainingVal}>{remaining} {p.unit}</div>

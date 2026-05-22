@@ -265,6 +265,8 @@ export default function ManageLoansPage() {
             { icon: '📦', label: 'Orders',         path: '/admin/orders' },
             { icon: '💰', label: 'Loans',          path: '/admin/loans', active: true },
             { icon: '⚙️', label: 'Loan Settings', path: '/admin/loan-settings' },
+             { icon: '🚚', label: 'Delivery Zones', path: '/admin/delivery-zones' },
+             { icon: '👥', label: 'Staff', path: '/admin/staff'},
           ].map(item => (
             <div key={item.label}
               style={{ ...s.sidebarItem, ...(item.active ? s.sidebarItemActive : {}) }}

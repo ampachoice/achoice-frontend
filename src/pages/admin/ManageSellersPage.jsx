@@ -195,6 +195,7 @@ export default function ManageSellersPage() {
             { icon: '💰', label: 'Loans', path: '/admin/loans' },
             { icon: '⚙️', label: 'Loan Settings', path: '/admin/loan-settings' },
             { icon: '🚚', label: 'Delivery Zones', path: '/admin/delivery-zones' },
+             { icon: '👥', label: 'Staff', path: '/admin/staff'},
           ].map(item => (
             <div key={item.label}
               style={{ ...s.sidebarItem, ...(item.active ? s.sidebarItemActive : {}) }}

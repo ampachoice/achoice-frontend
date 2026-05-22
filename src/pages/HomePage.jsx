@@ -235,7 +235,7 @@ export default function HomePage() {
       {/* Why Choose Us */}
       <section style={s.whySection}>
         <div style={s.sectionLabel}>Why ACHOICE</div>
-        <h2 style={s.sectionTitle}>Buy Fresh, Pay Less — Every Time</h2>
+        <h2 style={s.sectionTitle}>Buy Fresh, Pay Less Every Time</h2>
         <div style={s.whyGrid}>
           {[
             { icon: '✅', title: 'Farm Fresh Quality', desc: 'All products sourced directly from verified farms. No middlemen, no markup.' },
