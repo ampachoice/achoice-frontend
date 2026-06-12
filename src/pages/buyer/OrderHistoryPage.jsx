@@ -70,6 +70,21 @@ if (reference) {
   localStorage.removeItem('last_order_reference');
   window.history.replaceState({}, '', '/orders');
 }
+if (reference) {
+  setLastRef(reference);
+  localStorage.removeItem('last_order_reference');
+  window.history.replaceState({}, '', '/orders');
+
+  // Auto-verify payment immediately
+  api.post('/orders/verify-payment', { reference })
+    .then(res => {
+      showToast(res.data?.message || '✅ Payment verified! Your order is confirmed.');
+    })
+    .catch(err => {
+      // Payment not found or already verified — show manual option
+      console.log('Auto-verify result:', err.response?.data?.message);
+    });
+}
     getMyOrders()
       .then(res => {
         const raw = res.data;
@@ -376,13 +391,13 @@ const s = {
   topBar: { background: '#1f4d1f', color: '#fff', padding: '8px 60px', display: 'flex', justifyContent: 'space-between', fontSize: 12 },
   topBarLeft: { display: 'flex', gap: 24 },
   topBarRight: { display: 'flex', gap: 24 },
-  nav: { background: '#fff', padding: '14px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', position: 'sticky', top: 0, zIndex: 100 },
+  nav: { background: '#1a3d1a', padding: '14px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', position: 'sticky', top: 0, zIndex: 100 },
   navBrand: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' },
   navLogoImg: { width: 45, height: 45, objectFit: 'contain' },
-  navLogoName: { fontSize: 15, fontWeight: 700, color: '#1f4d1f' },
-  navLogoTag: { fontSize: 10, color: '#888' },
+  navLogoName: { fontSize: 15, fontWeight: 700, color: '#fff' },
+  navLogoTag: { fontSize: 10, color: '#fff' },
   navLinks: { display: 'flex', gap: 28, alignItems: 'center' },
-  navLink: { color: '#333', fontSize: 14, cursor: 'pointer' },
+  navLink: { color: '#fff', fontSize: 14, cursor: 'pointer' },
   cartBadge: { background: '#f0c050', color: '#1a1a1a', fontSize: 10, fontWeight: 700, borderRadius: '50%', padding: '1px 5px', marginLeft: 4 },
   container: { maxWidth: '900px', margin: '0 auto', padding: '32px 16px', flex: 1 },
   pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },

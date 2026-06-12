@@ -22,6 +22,7 @@ export default function AgroStaffDashboard() {
   const [salesReport, setSalesReport] = useState([]);
   const [revenueReport, setRevenueReport] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(false);
+  
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -173,16 +174,17 @@ setRevenueReport(Array.isArray(revData) ? revData : []);
             {stats ? (
               <>
                 <div style={s.statsGrid}>
-                  {[
-                    { label: 'Total Orders', value: stats.total_orders || 0, icon: '📦', color: '#1f4d1f' },
-                    { label: 'Pending Orders', value: stats.pending_orders || 0, icon: '⏳', color: '#b36b00' },
-                    { label: 'Processing', value: stats.processing_orders || 0, icon: '⚙️', color: '#1a4fa0' },
-                    { label: 'Delivered', value: stats.delivered_orders || 0, icon: '✅', color: '#1a7a3a' },
-                    { label: 'Total Products', value: stats.total_products || 0, icon: '🌾', color: '#c8860a' },
-                    { label: 'Low Stock', value: stats.low_stock_count || 0, icon: '⚠️', color: '#cc0000' },
-                    { label: 'Out of Stock', value: stats.out_of_stock_count || 0, icon: '❌', color: '#cc0000' },
-                    { label: "Today's Revenue", value: toMoney(stats.todays_revenue), icon: '💵', color: '#1f4d1f' },
-                  ].map(stat => (
+                {[
+  { label: 'Total Orders', value: stats.orders?.total || 0, icon: '📦', color: '#1f4d1f' },
+  { label: 'Pending Orders', value: stats.orders?.pending || 0, icon: '⏳', color: '#b36b00' },
+  { label: 'Processing', value: stats.orders?.processing || 0, icon: '⚙️', color: '#1a4fa0' },
+  { label: 'Delivered', value: stats.orders?.delivered || 0, icon: '✅', color: '#1a7a3a' },
+  { label: 'Total Products', value: stats.inventory?.total_products || 0, icon: '🌾', color: '#c8860a' },
+  { label: 'Low Stock', value: stats.inventory?.low_stock || 0, icon: '⚠️', color: '#cc0000' },
+  { label: 'Out of Stock', value: stats.inventory?.out_of_stock || 0, icon: '❌', color: '#cc0000' },
+  { label: "Today's Revenue", value: `₦${Number(stats.revenue?.today || 0).toLocaleString()}`, icon: '💵', color: '#1f4d1f' },
+  { label: "Total Revenue", value: `₦${Number(stats.revenue?.total || 0).toLocaleString()}`, icon: '💰', color: '#1a7a3a' },
+].map(stat => (
                     <div key={stat.label} style={s.statCard}>
                       <div style={s.statTop}>
                         <div style={s.statLabel}>{stat.label}</div>
