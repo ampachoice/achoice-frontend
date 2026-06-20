@@ -1,33 +1,71 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { createOrder } from '../../services/orderService';
-import api from '../../services/api';
+import { NIGERIA_LGAS } from "../../data/nigeriaLgas";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { createOrder } from "../../services/orderService";
+import api from "../../services/api";
 
 const NIGERIAN_STATES_FALLBACK = [
-  'Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
-  'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo',
-  'Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa',
-  'Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba',
-  'Yobe','Zamfara',
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
 ];
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [cart, setCart]                     = useState([]);
-  const [loading, setLoading]               = useState(false);
-  const [error, setError]                   = useState(null);
-  const [formData, setFormData]             = useState({ delivery_address:'', delivery_state:'', delivery_lga:'', note:'' });
-  const [deliveryFee, setDeliveryFee]       = useState(0);
-  const [deliveryDays, setDeliveryDays]     = useState(null);
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({
+    delivery_address: "",
+    delivery_state: "",
+    delivery_lga: "",
+    note: "",
+  });
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [deliveryDays, setDeliveryDays] = useState(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
-  const [deliveryZones, setDeliveryZones]   = useState([]);
-  const [showSummary, setShowSummary]       = useState(false); // mobile toggle
+  const [deliveryZones, setDeliveryZones] = useState([]);
+  const [showSummary, setShowSummary] = useState(false); // mobile toggle
 
   useEffect(() => {
-    if (document.getElementById('ckp-style')) return;
-    const el = document.createElement('style');
-    el.id = 'ckp-style';
+    if (document.getElementById("ckp-style")) return;
+    const el = document.createElement("style");
+    el.id = "ckp-style";
     el.textContent = `
       body { margin:0; }
       .ckp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
@@ -154,82 +192,125 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('cart') || '[]');
+    const saved = JSON.parse(localStorage.getItem("cart") || "[]");
     const params = new URLSearchParams(location.search);
-    if (params.get('cancelled') || location.search.includes('trxref')) {
-      navigate('/cart?payment=cancelled'); return;
+    if (params.get("cancelled") || location.search.includes("trxref")) {
+      navigate("/cart?payment=cancelled");
+      return;
     }
-    if (saved.length === 0) { navigate('/products'); return; }
+    if (saved.length === 0) {
+      navigate("/products");
+      return;
+    }
     setCart(saved);
-    api.get('/delivery-zones')
-      .then(res => setDeliveryZones(res.data?.data || res.data || []))
+    api
+      .get("/delivery-zones")
+      .then((res) => setDeliveryZones(res.data?.data || res.data || []))
       .catch(() => setDeliveryZones([]));
   }, [navigate]);
 
   useEffect(() => {
-    if (!formData.delivery_state) { setDeliveryFee(0); setDeliveryDays(null); return; }
+    if (!formData.delivery_state) {
+      setDeliveryFee(0);
+      setDeliveryDays(null);
+      return;
+    }
     setDeliveryLoading(true);
-    api.get(`/delivery-zones/${encodeURIComponent(formData.delivery_state)}`)
-      .then(res => {
+    api
+      .get(`/delivery-zones/${encodeURIComponent(formData.delivery_state)}`)
+      .then((res) => {
         const zone = res.data?.data || res.data;
         setDeliveryFee(Number(zone?.delivery_fee || zone?.fee || 0));
         setDeliveryDays(zone?.estimated_days || zone?.days || null);
       })
       .catch(() => {
-        const match = deliveryZones.find(z => z.state?.toLowerCase() === formData.delivery_state.toLowerCase());
+        const match = deliveryZones.find(
+          (z) =>
+            z.state?.toLowerCase() === formData.delivery_state.toLowerCase(),
+        );
         setDeliveryFee(Number(match?.delivery_fee || match?.fee || 0));
         setDeliveryDays(match?.estimated_days || match?.days || null);
       })
       .finally(() => setDeliveryLoading(false));
   }, [formData.delivery_state]);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const subtotal   = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+  const subtotal = cart.reduce(
+    (sum, item) => sum + Number(item.price) * item.quantity,
+    0,
+  );
   const grandTotal = subtotal + deliveryFee;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const res = await createOrder({
-        items: cart.map(item => ({ product_id: item.id, quantity: item.quantity })),
+        items: cart.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantity,
+        })),
         delivery_address: formData.delivery_address,
-        delivery_state:   formData.delivery_state,
-        delivery_lga:     formData.delivery_lga,
-        notes:            formData.note,
-        delivery_fee:     deliveryFee,
+        delivery_state: formData.delivery_state,
+        delivery_lga: formData.delivery_lga,
+        notes: formData.note,
+        delivery_fee: deliveryFee,
       });
       if (res.data.payment_url) {
-        if (res.data.reference) localStorage.setItem('last_order_reference', res.data.reference);
-        localStorage.removeItem('cart');
+        if (res.data.reference)
+          localStorage.setItem("last_order_reference", res.data.reference);
+        localStorage.removeItem("cart");
         window.location.href = res.data.payment_url;
       } else {
-        localStorage.removeItem('cart');
-        navigate('/orders');
+        localStorage.removeItem("cart");
+        navigate("/orders");
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to place order. Please try again.');
-    } finally { setLoading(false); }
+      setError(
+        err.response?.data?.message ||
+          "Failed to place order. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const nigerianStates = deliveryZones.length > 0
-    ? deliveryZones.map(z => z.state)
-    : NIGERIAN_STATES_FALLBACK;
+  const nigerianStates =
+    deliveryZones.length > 0
+      ? deliveryZones.map((z) => z.state)
+      : NIGERIAN_STATES_FALLBACK;
 
   const DeliveryFeeInfo = () => {
-    if (deliveryLoading) return <div className="ckp-delivery-hint">⏳ Fetching delivery fee...</div>;
+    if (deliveryLoading)
+      return (
+        <div className="ckp-delivery-hint">⏳ Fetching delivery fee...</div>
+      );
     if (!formData.delivery_state) return null;
-    if (deliveryFee === 0) return (
-      <div className="ckp-delivery-box-free">
-        🎉 Free delivery to <strong>{formData.delivery_state}</strong>!
-        {deliveryDays && <span className="ckp-delivery-days"> · Est. {deliveryDays} day{deliveryDays > 1 ? 's' : ''}</span>}
-      </div>
-    );
+    if (deliveryFee === 0)
+      return (
+        <div className="ckp-delivery-box-free">
+          🎉 Free delivery to <strong>{formData.delivery_state}</strong>!
+          {deliveryDays && (
+            <span className="ckp-delivery-days">
+              {" "}
+              · Est. {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      );
     return (
       <div className="ckp-delivery-box">
-        🚚 Delivery to <strong>{formData.delivery_state}</strong>: <strong>₦{deliveryFee.toLocaleString()}</strong>
-        {deliveryDays && <span className="ckp-delivery-days"> · Est. {deliveryDays} day{deliveryDays > 1 ? 's' : ''}</span>}
+        🚚 Delivery to <strong>{formData.delivery_state}</strong>:{" "}
+        <strong>₦{deliveryFee.toLocaleString()}</strong>
+        {deliveryDays && (
+          <span className="ckp-delivery-days">
+            {" "}
+            · Est. {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
+          </span>
+        )}
       </div>
     );
   };
@@ -237,13 +318,15 @@ export default function CheckoutPage() {
   const SummaryContent = () => (
     <>
       <div className="ckp-item-list">
-        {cart.map(item => (
+        {cart.map((item) => (
           <div key={item.id} className="ckp-item-row">
             <div className="ckp-item-left">
               <span className="ckp-item-name">{item.name}</span>
               <span className="ckp-item-qty">×{item.quantity}</span>
             </div>
-            <span className="ckp-item-price">₦{(Number(item.price) * item.quantity).toLocaleString()}</span>
+            <span className="ckp-item-price">
+              ₦{(Number(item.price) * item.quantity).toLocaleString()}
+            </span>
           </div>
         ))}
       </div>
@@ -253,9 +336,18 @@ export default function CheckoutPage() {
         <span className="ckp-sub-val">₦{subtotal.toLocaleString()}</span>
       </div>
       <div className="ckp-sub-row">
-        <span className="ckp-sub-label">Delivery {formData.delivery_state ? `(${formData.delivery_state})` : ''}</span>
+        <span className="ckp-sub-label">
+          Delivery{" "}
+          {formData.delivery_state ? `(${formData.delivery_state})` : ""}
+        </span>
         <span className="ckp-sub-val">
-          {deliveryLoading ? '...' : formData.delivery_state ? deliveryFee === 0 ? 'Free 🎉' : `₦${deliveryFee.toLocaleString()}` : '— select state'}
+          {deliveryLoading
+            ? "..."
+            : formData.delivery_state
+              ? deliveryFee === 0
+                ? "Free 🎉"
+                : `₦${deliveryFee.toLocaleString()}`
+              : "— select state"}
         </span>
       </div>
       <div className="ckp-divider" />
@@ -265,11 +357,18 @@ export default function CheckoutPage() {
       </div>
       {deliveryDays && formData.delivery_state && (
         <div className="ckp-est-delivery">
-          📦 Est. delivery: <strong>{deliveryDays} day{deliveryDays > 1 ? 's' : ''}</strong> to {formData.delivery_state}
+          📦 Est. delivery:{" "}
+          <strong>
+            {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
+          </strong>{" "}
+          to {formData.delivery_state}
         </div>
       )}
       <div className="ckp-paystack">
-        <img src="https://checkout.paystack.com/static/media/paystack-badge.62899bc5.png" alt="Paystack" />
+        <img
+          src="https://checkout.paystack.com/static/media/paystack-badge.62899bc5.png"
+          alt="Paystack"
+        />
         <p>Your transaction is encrypted and secure.</p>
       </div>
     </>
@@ -277,31 +376,47 @@ export default function CheckoutPage() {
 
   return (
     <div className="ckp-wrap">
-
       {/* Nav */}
       <nav className="ckp-nav">
-        <div className="ckp-nav-left" onClick={() => navigate('/products')}>
-          <img src="/android-chrome-192x192.png" alt="Logo" className="ckp-nav-logo" />
+        <div className="ckp-nav-left" onClick={() => navigate("/products")}>
+          <img
+            src="/android-chrome-192x192.png"
+            alt="Logo"
+            className="ckp-nav-logo"
+          />
           <div>
-            <div className="ckp-nav-name">ACHOICE <span>MARKET</span></div>
+            <div className="ckp-nav-name">
+              ACHOICE <span>MARKET</span>
+            </div>
             <div className="ckp-nav-motto">Your needs our solutions</div>
           </div>
         </div>
-        <span className="ckp-nav-back" onClick={() => navigate('/cart')}>← Return to Cart</span>
+        <span className="ckp-nav-back" onClick={() => navigate("/cart")}>
+          ← Return to Cart
+        </span>
       </nav>
 
       <div className="ckp-container">
         <h1 className="ckp-title">🔒 Secure Checkout</h1>
-        <p className="ckp-subtitle">{cart.length} item{cart.length > 1 ? 's' : ''} · Grand Total: ₦{grandTotal.toLocaleString()}</p>
+        <p className="ckp-subtitle">
+          {cart.length} item{cart.length > 1 ? "s" : ""} · Grand Total: ₦
+          {grandTotal.toLocaleString()}
+        </p>
 
         {error && <div className="ckp-error">⚠️ {error}</div>}
 
         {/* ✅ Mobile: collapsible order summary */}
-        <div className="ckp-mobile-summary-toggle" onClick={() => setShowSummary(s => !s)}>
+        <div
+          className="ckp-mobile-summary-toggle"
+          onClick={() => setShowSummary((s) => !s)}
+        >
           <span className="ckp-mobile-summary-toggle-left">
-            🧾 Order Summary ({cart.length} item{cart.length > 1 ? 's' : ''}) {showSummary ? '▲' : '▼'}
+            🧾 Order Summary ({cart.length} item{cart.length > 1 ? "s" : ""}){" "}
+            {showSummary ? "▲" : "▼"}
           </span>
-          <span className="ckp-mobile-summary-toggle-right">₦{grandTotal.toLocaleString()}</span>
+          <span className="ckp-mobile-summary-toggle-right">
+            ₦{grandTotal.toLocaleString()}
+          </span>
         </div>
         {showSummary && (
           <div className="ckp-mobile-summary-panel">
@@ -310,7 +425,6 @@ export default function CheckoutPage() {
         )}
 
         <div className="ckp-layout">
-
           {/* Delivery Form */}
           <div>
             <div className="ckp-card">
@@ -318,41 +432,92 @@ export default function CheckoutPage() {
               <form onSubmit={handleSubmit}>
                 <div className="ckp-field">
                   <label className="ckp-label">Full Delivery Address</label>
-                  <input className="ckp-input" type="text" name="delivery_address"
+                  <input
+                    className="ckp-input"
+                    type="text"
+                    name="delivery_address"
                     placeholder="House number, street name, landmark..."
-                    value={formData.delivery_address} onChange={handleChange} required />
+                    value={formData.delivery_address}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
 
                 <div className="ckp-row">
                   <div className="ckp-field">
                     <label className="ckp-label">State</label>
-                    <select className="ckp-input" name="delivery_state"
-                      value={formData.delivery_state} onChange={handleChange} required>
+                    <select
+                      className="ckp-input"
+                      name="delivery_state"
+                      value={formData.delivery_state}
+                      onChange={handleChange}
+                      required
+                    >
                       <option value="">Select state</option>
-                      {nigerianStates.map(state => <option key={state} value={state}>{state}</option>)}
+                      {nigerianStates.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
                     </select>
                     <DeliveryFeeInfo />
                   </div>
                   <div className="ckp-field">
                     <label className="ckp-label">LGA</label>
-                    <input className="ckp-input" type="text" name="delivery_lga"
-                      placeholder="Local Government Area"
-                      value={formData.delivery_lga} onChange={handleChange} required />
+                    <select
+                      className="ckp-input"
+                      name="delivery_lga"
+                      value={formData.delivery_lga}
+                      onChange={handleChange}
+                      required
+                      disabled={!formData.delivery_state}
+                    >
+                      <option value="">
+                        {formData.delivery_state
+                          ? "Select LGA"
+                          : "Select state first"}
+                      </option>
+                      {(NIGERIA_LGAS[formData.delivery_state] || []).map(
+                        (lga) => (
+                          <option key={lga} value={lga}>
+                            {lga}
+                          </option>
+                        ),
+                      )}
+                    </select>
                   </div>
                 </div>
 
                 <div className="ckp-field">
-                  <label className="ckp-label">Order Note <span style={{ color:'#aaa', fontWeight:400 }}>(optional)</span></label>
-                  <textarea className="ckp-textarea" name="note" rows={3}
+                  <label className="ckp-label">
+                    Order Note{" "}
+                    <span style={{ color: "#aaa", fontWeight: 400 }}>
+                      (optional)
+                    </span>
+                  </label>
+                  <textarea
+                    className="ckp-textarea"
+                    name="note"
+                    rows={3}
                     placeholder="Special instructions for the rider..."
-                    value={formData.note} onChange={handleChange} />
+                    value={formData.note}
+                    onChange={handleChange}
+                  />
                 </div>
 
                 {/* Submit button — desktop/tablet only; mobile uses sticky bar */}
-                <button type="submit"
-                  className={loading || !formData.delivery_state ? 'ckp-btn-dis' : 'ckp-btn'}
-                  disabled={loading || !formData.delivery_state}>
-                  {loading ? '⏳ Finalizing Order...' : '🔒 Confirm and Pay Now'}
+                <button
+                  type="submit"
+                  className={
+                    loading || !formData.delivery_state
+                      ? "ckp-btn-dis"
+                      : "ckp-btn"
+                  }
+                  disabled={loading || !formData.delivery_state}
+                >
+                  {loading
+                    ? "⏳ Finalizing Order..."
+                    : "🔒 Confirm and Pay Now"}
                 </button>
                 <div className="ckp-secure-row">
                   <span>🔒</span> Secured & encrypted by Paystack
@@ -375,17 +540,22 @@ export default function CheckoutPage() {
       <div className="ckp-mobile-total-bar">
         <div className="ckp-mobile-total-bar-left">
           <div className="ckp-mobile-total-bar-label">Grand Total</div>
-          <div className="ckp-mobile-total-bar-val">₦{grandTotal.toLocaleString()}</div>
+          <div className="ckp-mobile-total-bar-val">
+            ₦{grandTotal.toLocaleString()}
+          </div>
         </div>
         <button
-          className={loading || !formData.delivery_state ? 'ckp-mobile-total-bar-btn-dis' : 'ckp-mobile-total-bar-btn'}
+          className={
+            loading || !formData.delivery_state
+              ? "ckp-mobile-total-bar-btn-dis"
+              : "ckp-mobile-total-bar-btn"
+          }
           disabled={loading || !formData.delivery_state}
-          onClick={handleSubmit}>
-          {loading ? '⏳ Processing...' : '🔒 Pay Now'}
+          onClick={handleSubmit}
+        >
+          {loading ? "⏳ Processing..." : "🔒 Pay Now"}
         </button>
       </div>
     </div>
   );
 }
-
-
