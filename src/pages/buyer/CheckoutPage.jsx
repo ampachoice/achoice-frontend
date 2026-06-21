@@ -194,7 +194,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("cart") || "[]");
     const params = new URLSearchParams(location.search);
-    if (params.get("cancelled") || location.search.includes("trxref")) {
+    if (params.get("cancelled") === "true") {
       navigate("/cart?payment=cancelled");
       return;
     }
@@ -366,8 +366,10 @@ export default function CheckoutPage() {
       )}
       <div className="ckp-paystack">
         <img
-          src="https://checkout.paystack.com/static/media/paystack-badge.62899bc5.png"
-          alt="Paystack"
+          src="https://website-v3-assets.s3.amazonaws.com/assets/img/hero/Paystack-Endorsed.png"
+          alt="Secured by Paystack"
+          onError={(e) => { e.target.style.display = 'none'; }}
+          style={{ height: '40px' }}
         />
         <p>Your transaction is encrypted and secure.</p>
       </div>
@@ -559,3 +561,5 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+

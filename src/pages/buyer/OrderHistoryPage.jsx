@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getMyOrders, confirmDelivery } from '../../services/orderService';
+import { getMyOrders, confirmDelivery, cancelOrder } from '../../services/orderService';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 
@@ -115,6 +115,21 @@ if (reference) {
     delivered:  { background: '#eafaf0', color: '#1a7a3a' },
     cancelled:  { background: '#fff0f0', color: '#cc0000' },
   }[status] || { background: '#f0f0f0', color: '#555' });
+
+  const handleCancel = async (order) => {
+    const isPaid = order.payment_status === 'paid';
+    const message = isPaid
+      ? 'Are you sure you want to cancel? Your refund will be processed within 14 working days.'
+      : 'Are you sure you want to cancel this order?';
+    if (!window.confirm(message)) return;
+    try {
+      await cancelOrder(order.id);
+      setOrders(orders.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
+      showToast('Order cancelled successfully');
+    } catch {
+      showToast('Failed to cancel order. Please try again.');
+    }
+  };
 
   const getProductImage = (item) =>
     item.product?.images?.[0]?.image_url ||
@@ -347,6 +362,13 @@ if (reference) {
 
                   {/* Actions */}
                   <div style={s.actionRow}>
+                    {(order.status === 'pending' || order.status === 'processing') && (
+                      <button
+                        style={{ padding: '12px 24px', background: '#fff0f0', color: '#cc0000', border: '1px solid #cc0000', borderRadius: 7, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
+                        onClick={() => handleCancel(order)}>
+                        Cancel Order
+                      </button>
+                    )}
                     {order.status === 'shipped' && (
                       <button style={s.confirmBtn} onClick={() => handleConfirmDelivery(order.id)}>
                         Confirm Delivery Received
@@ -462,3 +484,5 @@ const s = {
   footer: { background: '#1f4d1f', padding: '20px 60px', marginTop: 'auto' },
   footerBottom: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#a8d5a8' },
 };
+
+

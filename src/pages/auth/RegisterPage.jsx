@@ -249,8 +249,7 @@ export default function RegisterPage() {
 
               <div className="rp-field">
                 <label className="rp-label">Phone Number</label>
-                <input className="rp-input" type="tel" name="phone" placeholder="e.g. 08012345678"
-                  value={formData.phone} onChange={handleChange} required />
+                <input className="rp-input" type="tel" name="phone" placeholder="e.g. 08012345678" maxLength={11} value={formData.phone} onChange={(e) => { const val = e.target.value.replace(/\D/g, '''').slice(0, 11); setFormData(prev => ({ ...prev, phone: val })); }} required />
               </div>
 
               <div className="rp-row2">
@@ -347,3 +346,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+
