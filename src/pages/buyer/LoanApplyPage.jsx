@@ -510,7 +510,7 @@ export default function LoanApplyPage() {
                         <div style={s.docFieldDesc}>{doc.desc}</div>
                       </div>
                     </div>
-                    <input type="file" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                    <input type="file" accept="image/jpeg,image/png,image/jpg,application/pdf"
                       style={s.fileInput}
                       onChange={e => setDocuments(p => ({ ...p, [doc.key]: e.target.files[0] }))} />
                     {documents[doc.key] && (

@@ -6,6 +6,7 @@ import {
   getProductReviews,
   submitProductReview,
 } from "../../services/productService";
+import NotificationBell from '../../components/buyer/NotificationBell';
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 
 function StarRating({ rating = 0, size = 14 }) {
@@ -350,6 +351,7 @@ export default function ProductPage() {
               <span className="pp-cart-badge">{cartCount}</span>
             )}
           </div>
+          <NotificationBell />
           <BuyerDropdown cartCount={cartCount} />
         </div>
       </nav>
@@ -846,3 +848,5 @@ export default function ProductPage() {
     </div>
   );
 }
+
+
