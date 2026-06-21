@@ -225,9 +225,9 @@ export default function ManageProductsPage() {
         min_order_qty: Number(formData.min_order_qty) || 1,
         image: finalImageUrl,
       };
-      await api.post("/products", payload);
+      const res = await api.post("/products", payload);
       showToast("Product created successfully!");
-      fetchData();
+      setProducts(prev => [res.data.product || res.data, ...prev]);
       setShowForm(false);
       setFormData({
         seller_id: "",
@@ -1251,5 +1251,6 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
 };
+
 
 
