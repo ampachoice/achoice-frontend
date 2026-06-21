@@ -1,91 +1,120 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../../services/api';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 
-const LOGO_PATH = '/achoice logo.png';
+const LOGO_PATH = "/achoice logo.png";
 
 export default function ComplaintsPage() {
   const navigate = useNavigate();
 
-  const [orders, setOrders]                       = useState([]);
-  const [complaints, setComplaints]               = useState([]);
-  const [toast, setToast]                         = useState('');
-  const [submitting, setSubmitting]               = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [complaints, setComplaints] = useState([]);
+  const [toast, setToast] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [loadingComplaints, setLoadingComplaints] = useState(true);
-  const [formData, setFormData]                   = useState({
-    order_id: '', type: '', description: '', evidence: null,
+  const [formData, setFormData] = useState({
+    order_id: "",
+    type: "",
+    description: "",
+    evidence: null,
   });
 
   const showToast = (msg) => {
     setToast(msg);
-    setTimeout(() => setToast(''), 3500);
+    setTimeout(() => setToast(""), 3500);
   };
 
   // Load buyer orders for dropdown
   useEffect(() => {
-    api.get('/orders/my-orders')
-      .then(res => setOrders(res.data.orders || res.data || []))
+    api
+      .get("/orders/my-orders")
+      .then((res) =>
+        setOrders(
+          Array.isArray(res.data.orders)
+            ? res.data.orders
+            : Array.isArray(res.data)
+              ? res.data
+              : [],
+        ),
+      )
       .catch(() => {});
   }, []);
 
   // Load existing complaints
   useEffect(() => {
-    api.get('/complaints')
-      .then(res => setComplaints(res.data.complaints || res.data || []))
+    api
+      .get("/complaints")
+      .then((res) =>
+        setComplaints(
+          Array.isArray(res.data.complaints)
+            ? res.data.complaints
+            : Array.isArray(res.data)
+              ? res.data
+              : [],
+        ),
+      )
       .catch(() => {})
       .finally(() => setLoadingComplaints(false));
   }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    if (name === 'evidence') {
-      setFormData(prev => ({ ...prev, evidence: files[0] || null }));
+    if (name === "evidence") {
+      setFormData((prev) => ({ ...prev, evidence: files[0] || null }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.order_id || !formData.type || !formData.description.trim()) {
-      showToast('Please fill in all required fields.');
+      showToast("Please fill in all required fields.");
       return;
     }
     setSubmitting(true);
     try {
       const payload = new FormData();
-      payload.append('order_id',    formData.order_id);
-      payload.append('type',        formData.type);
-      payload.append('description', formData.description);
-      if (formData.evidence) payload.append('evidence', formData.evidence);
+      payload.append("order_id", formData.order_id);
+      payload.append("type", formData.type);
+      payload.append("description", formData.description);
+      if (formData.evidence) payload.append("evidence", formData.evidence);
 
-      const res = await api.post('/complaints', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const res = await api.post("/complaints", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       const newComplaint = res.data.complaint || res.data;
-      setComplaints(prev => [newComplaint, ...prev]);
-      setFormData({ order_id: '', type: '', description: '', evidence: null });
-      const fileInput = document.getElementById('evidence-input');
-      if (fileInput) fileInput.value = '';
-      showToast('Complaint submitted successfully!');
+      setComplaints((prev) => [newComplaint, ...prev]);
+      setFormData({ order_id: "", type: "", description: "", evidence: null });
+      const fileInput = document.getElementById("evidence-input");
+      if (fileInput) fileInput.value = "";
+      showToast("Complaint submitted successfully!");
     } catch (err) {
-      showToast(err?.response?.data?.message || 'Failed to submit complaint. Try again.');
+      showToast(
+        err?.response?.data?.message ||
+          "Failed to submit complaint. Try again.",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getStatusStyle = (status) => ({
-    pending:   { background: '#fff8e7', color: '#b36b00' },
-    reviewing: { background: '#e7f0ff', color: '#1a4fa0' },
-    resolved:  { background: '#eafaf0', color: '#1a7a3a' },
-    rejected:  { background: '#fff0f0', color: '#cc0000' },
-  }[status] || { background: '#f0f0f0', color: '#555' });
+  const getStatusStyle = (status) =>
+    ({
+      pending: { background: "#fff8e7", color: "#b36b00" },
+      reviewing: { background: "#e7f0ff", color: "#1a4fa0" },
+      resolved: { background: "#eafaf0", color: "#1a7a3a" },
+      rejected: { background: "#fff0f0", color: "#cc0000" },
+    })[status] || { background: "#f0f0f0", color: "#555" };
 
   const complaintTypes = [
-    'Refund Request', 'Damaged Item', 'Wrong Item', 'Late Delivery', 'Other',
+    "Refund Request",
+    "Damaged Item",
+    "Wrong Item",
+    "Late Delivery",
+    "Other",
   ];
 
   return (
@@ -142,13 +171,20 @@ export default function ComplaintsPage() {
       `}</style>
 
       <div className="cmp-wrap">
-
         {/* ── NAV ── */}
         <nav className="cmp-nav">
-          <div className="cmp-nav-left" onClick={() => navigate('/products')}>
-            <img src={LOGO_PATH} alt="Logo" className="cmp-nav-logo"
-              onError={(e) => { e.target.style.display = 'none'; }} />
-            <div className="cmp-nav-name">ACHOICE <span>MARKET</span></div>
+          <div className="cmp-nav-left" onClick={() => navigate("/products")}>
+            <img
+              src={LOGO_PATH}
+              alt="Logo"
+              className="cmp-nav-logo"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
+            <div className="cmp-nav-name">
+              ACHOICE <span>MARKET</span>
+            </div>
           </div>
           <div className="cmp-nav-right">
             <BuyerDropdown />
@@ -158,50 +194,90 @@ export default function ComplaintsPage() {
         {/* ── BODY ── */}
         <div className="cmp-body">
           <h1 className="cmp-title">📋 Complaints &amp; Refunds</h1>
-          <p className="cmp-sub">Submit a complaint about an order. Our team will review and respond within 2–5 working days.</p>
+          <p className="cmp-sub">
+            Submit a complaint about an order. Our team will review and respond
+            within 2–5 working days.
+          </p>
 
           {/* FORM */}
           <div className="cmp-card">
             <div className="cmp-card-title">Submit a New Complaint</div>
             <form onSubmit={handleSubmit}>
-
               <div className="cmp-field">
-                <label className="cmp-label">Select Order <span style={{color:'red'}}>*</span></label>
-                <select className="cmp-select" name="order_id" value={formData.order_id} onChange={handleChange} required>
+                <label className="cmp-label">
+                  Select Order <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  className="cmp-select"
+                  name="order_id"
+                  value={formData.order_id}
+                  onChange={handleChange}
+                  required
+                >
                   <option value="">-- Choose an order --</option>
-                  {orders.map(o => (
+                  {orders.map((o) => (
                     <option key={o.id} value={o.id}>
-                      {o.order_number || `Order #${o.id}`} — ₦{Number(o.total_amount || 0).toLocaleString()}
+                      {o.order_number || `Order #${o.id}`} — ₦
+                      {Number(o.total_amount || 0).toLocaleString()}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div className="cmp-field">
-                <label className="cmp-label">Complaint Type <span style={{color:'red'}}>*</span></label>
-                <select className="cmp-select" name="type" value={formData.type} onChange={handleChange} required>
+                <label className="cmp-label">
+                  Complaint Type <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  className="cmp-select"
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
+                  required
+                >
                   <option value="">-- Select type --</option>
-                  {complaintTypes.map(t => (
-                    <option key={t} value={t}>{t}</option>
+                  {complaintTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="cmp-field">
-                <label className="cmp-label">Description <span style={{color:'red'}}>*</span></label>
-                <textarea className="cmp-textarea" name="description" value={formData.description}
-                  onChange={handleChange} placeholder="Describe your complaint in detail..." required />
+                <label className="cmp-label">
+                  Description <span style={{ color: "red" }}>*</span>
+                </label>
+                <textarea
+                  className="cmp-textarea"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Describe your complaint in detail..."
+                  required
+                />
               </div>
 
               <div className="cmp-field">
-                <label className="cmp-label">Upload Evidence <span style={{color:'#aaa', fontWeight:400}}>(optional — image)</span></label>
-                <input id="evidence-input" className="cmp-input" type="file"
-                  name="evidence" accept="image/jpeg,image/png,image/jpg" onChange={handleChange} />
+                <label className="cmp-label">
+                  Upload Evidence{" "}
+                  <span style={{ color: "#aaa", fontWeight: 400 }}>
+                    (optional — image)
+                  </span>
+                </label>
+                <input
+                  id="evidence-input"
+                  className="cmp-input"
+                  type="file"
+                  name="evidence"
+                  accept="image/jpeg,image/png,image/jpg"
+                  onChange={handleChange}
+                />
                 <p className="cmp-file-hint">Accepted: JPG, PNG. Max 2MB.</p>
               </div>
 
               <button className="cmp-btn" type="submit" disabled={submitting}>
-                {submitting ? 'Submitting...' : '📤 Submit Complaint'}
+                {submitting ? "Submitting..." : "📤 Submit Complaint"}
               </button>
             </form>
           </div>
@@ -211,27 +287,50 @@ export default function ComplaintsPage() {
           {loadingComplaints ? (
             <div className="cmp-loading">Loading complaints...</div>
           ) : complaints.length === 0 ? (
-            <div className="cmp-empty">You have not submitted any complaints yet.</div>
+            <div className="cmp-empty">
+              You have not submitted any complaints yet.
+            </div>
           ) : (
-            complaints.map(c => (
+            complaints.map((c) => (
               <div key={c.id} className="cmp-item">
                 <div className="cmp-item-top">
                   <span className="cmp-item-type">{c.type}</span>
-                  <span className="cmp-item-badge" style={getStatusStyle(c.status)}>
-                    {c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : 'Pending'}
+                  <span
+                    className="cmp-item-badge"
+                    style={getStatusStyle(c.status)}
+                  >
+                    {c.status
+                      ? c.status.charAt(0).toUpperCase() + c.status.slice(1)
+                      : "Pending"}
                   </span>
                 </div>
-                <div className="cmp-item-order">Order: {c.order?.order_number || `#${c.order_id}`}</div>
+                <div className="cmp-item-order">
+                  Order: {c.order?.order_number || `#${c.order_id}`}
+                </div>
                 <div className="cmp-item-desc">{c.description}</div>
                 {c.admin_response && (
-                  <div style={{marginTop:10, padding:'10px 14px', background:'#f0f7f0', borderRadius:6, fontSize:13, color:'#1f4d1f'}}>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      padding: "10px 14px",
+                      background: "#f0f7f0",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      color: "#1f4d1f",
+                    }}
+                  >
                     <strong>Response:</strong> {c.admin_response}
                   </div>
                 )}
                 <div className="cmp-item-date">
-                  Submitted: {c.created_at
-                    ? new Date(c.created_at).toLocaleDateString('en-NG', {day:'numeric', month:'short', year:'numeric'})
-                    : '—'}
+                  Submitted:{" "}
+                  {c.created_at
+                    ? new Date(c.created_at).toLocaleDateString("en-NG", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })
+                    : "—"}
                 </div>
               </div>
             ))
@@ -239,8 +338,16 @@ export default function ComplaintsPage() {
         </div>
 
         {/* ── FOOTER ── */}
-        <footer style={{background:'#1f4d1f', padding:'16px 40px', textAlign:'center'}}>
-          <p style={{color:'#ccc', fontSize:12, margin:0}}>© {new Date().getFullYear()} Achoice Market. All rights reserved.</p>
+        <footer
+          style={{
+            background: "#1f4d1f",
+            padding: "16px 40px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ color: "#ccc", fontSize: 12, margin: 0 }}>
+            © {new Date().getFullYear()} Achoice Market. All rights reserved.
+          </p>
         </footer>
       </div>
 
