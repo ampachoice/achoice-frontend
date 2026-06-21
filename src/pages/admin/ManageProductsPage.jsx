@@ -227,6 +227,7 @@ export default function ManageProductsPage() {
       };
       await api.post("/products", payload);
       showToast("Product created successfully!");
+      fetchData();
       setShowForm(false);
       setFormData({
         seller_id: "",
@@ -242,7 +243,7 @@ export default function ManageProductsPage() {
       });
       setSelectedFile(null);
       setImagePreview(null);
-      fetchData();
+      
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to create product.");
     } finally {
@@ -1250,3 +1251,5 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
 };
+
+
