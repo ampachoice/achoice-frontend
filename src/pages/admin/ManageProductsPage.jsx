@@ -22,6 +22,9 @@ const BACKEND_CATEGORIES = [
 export default function ManageProductsPage() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [sellers, setSellers] = useState([]);
   const [categories, setCategories] = useState(BACKEND_CATEGORIES);
   const [loading, setLoading] = useState(true);
@@ -55,12 +58,15 @@ export default function ManageProductsPage() {
     setLoading(true);
     try {
       const [pRes, sRes, cRes] = await Promise.allSettled([
-        api.get("/products"),
+        api.get("/products?page=1&per_page=20"),
         getSellers(),
         api.get("/settings/categories"),
       ]);
-      if (pRes.status === "fulfilled")
-        setProducts(pRes.value.data.data || pRes.value.data || []);
+      if (pRes.status === "fulfilled") {
+        const pData = pRes.value.data;
+        setProducts(pData.data || pData || []);
+        if (pData.meta || pData.last_page) setMeta(pData.meta || pData);
+      }
       if (sRes.status === "fulfilled")
         setSellers(sRes.value.data.data || sRes.value.data || []);
       if (cRes.status === "fulfilled" && cRes.value.data) {
@@ -878,6 +884,43 @@ export default function ManageProductsPage() {
           </table>
           {filtered.length === 0 && (
             <div style={s.empty}>No products found.</div>
+          )}
+          {meta && page < (meta.last_page || meta.total_pages || 1) && (
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <button
+                style={{
+                  padding: "12px 32px",
+                  background: "#1f4d1f",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: loadingMore ? "not-allowed" : "pointer",
+                  fontFamily: "inherit",
+                  opacity: loadingMore ? 0.7 : 1,
+                }}
+                disabled={loadingMore}
+                onClick={async () => {
+                  setLoadingMore(true);
+                  try {
+                    const nextPage = page + 1;
+                    const res = await api.get(
+                      `/products?page=${nextPage}&per_page=20`,
+                    );
+                    const pData = res.data;
+                    setProducts((prev) => [...prev, ...(pData.data || [])]);
+                    setMeta(pData.meta || pData);
+                    setPage(nextPage);
+                  } catch {
+                  } finally {
+                    setLoadingMore(false);
+                  }
+                }}
+              >
+                {loadingMore ? "Loading..." : "Load More Products"}
+              </button>
+            </div>
           )}
         </div>
       </div>
