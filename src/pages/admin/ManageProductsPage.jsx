@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSellers } from '../../services/adminService';
-import { getAllProducts } from '../../services/productService';
 import api from '../../services/api';
 import axios from 'axios';
 
@@ -49,7 +48,7 @@ export default function ManageProductsPage() {
     setLoading(true);
     try {
       const [pRes, sRes, cRes] = await Promise.allSettled([
-        getAllProducts(),
+        api.get('/products'),
         getSellers(),
         api.get('/settings/categories'),
       ]);
@@ -195,25 +194,16 @@ export default function ManageProductsPage() {
   };
 
   const filtered = products.filter(p => {
-    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (p.name || '').toLowerCase().includes(search.toLowerCase());
     const matchCat = filterCategory === 'all' || p.category === filterCategory;
     const matchStatus = filterStatus === 'all' || p.status === filterStatus;
     return matchSearch && matchCat && matchStatus;
   });
 
-  // Summary stats
   const totalProducts = products.length;
   const totalAvailable = products.filter(p => p.status === 'available').length;
   const totalOutOfStock = products.filter(p => p.status === 'out_of_stock').length;
- const totalSold = products.reduce((acc, p) => {
-  return acc + Number(
-    p.sold_quantity ||
-    p.total_sold ||
-    p.orders_count ||
-    p.order_count ||
-    0
-  );
-}, 0);
+  const totalSold = products.reduce((acc, p) => acc + Number(p.items_sold || 0), 0);
 
   if (loading) return <div style={s.loader}>Loading Products...</div>;
 
@@ -320,12 +310,13 @@ export default function ManageProductsPage() {
             { icon: '💰', label: 'Loans', path: '/admin/loans' },
             { icon: '⚙️', label: 'Loan Settings', path: '/admin/loan-settings' },
             { icon: '🚚', label: 'Delivery Zones', path: '/admin/delivery-zones' },
-             { icon: '👥', label: 'Staff', path: '/admin/staff'},
+            { icon: '👥', label: 'Staff', path: '/admin/staff' },
+            { icon: '📈', label: 'Reports', path: '/admin/reports' },
+            { icon: '🖼️', label: 'Site Settings', path: '/admin/settings'},
           ].map(item => (
             <div key={item.label}
               style={{ ...s.sidebarItem, ...(item.active ? s.sidebarItemActive : {}) }}
-              onClick={() => navigate(item.path)}
-            >
+              onClick={() => navigate(item.path)}>
               <span>{item.icon}</span> {item.label}
             </div>
           ))}
@@ -346,22 +337,17 @@ export default function ManageProductsPage() {
 
         {/* Summary Stats */}
         <div style={s.statsGrid}>
-          <div style={s.statCard}>
-            <div style={s.statLabel}>Total Products</div>
-            <div style={s.statValue}>{totalProducts}</div>
-          </div>
-          <div style={s.statCard}>
-            <div style={s.statLabel}>Available</div>
-            <div style={{ ...s.statValue, color: '#1a7a3a' }}>{totalAvailable}</div>
-          </div>
-          <div style={s.statCard}>
-            <div style={s.statLabel}>Out of Stock</div>
-            <div style={{ ...s.statValue, color: '#cc0000' }}>{totalOutOfStock}</div>
-          </div>
-          <div style={s.statCard}>
-            <div style={s.statLabel}>Total Views</div>
-            <div style={{ ...s.statValue, color: '#c8860a' }}>{totalSold.toLocaleString()}</div>
-          </div>
+          {[
+            { label: 'Total Products', value: totalProducts, color: '#111' },
+            { label: 'Available', value: totalAvailable, color: '#1a7a3a' },
+            { label: 'Out of Stock', value: totalOutOfStock, color: '#cc0000' },
+            { label: 'Total Units Sold', value: totalSold.toLocaleString(), color: '#c8860a' },
+          ].map(stat => (
+            <div key={stat.label} style={s.statCard}>
+              <div style={s.statLabel}>{stat.label}</div>
+              <div style={{ ...s.statValue, color: stat.color }}>{stat.value}</div>
+            </div>
+          ))}
         </div>
 
         {/* Add Product Form */}
@@ -437,13 +423,8 @@ export default function ManageProductsPage() {
 
         {/* Filters */}
         <div style={s.filtersRow}>
-          <input
-            style={s.searchInput}
-            type="text"
-            placeholder="Search products..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <input style={s.searchInput} type="text" placeholder="Search products..."
+            value={search} onChange={e => setSearch(e.target.value)} />
           <select style={s.filterSelect} value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
             <option value="all">All Categories</option>
             {categories.map(cat => <option key={cat.slug} value={cat.slug}>{cat.name}</option>)}
@@ -474,34 +455,17 @@ export default function ManageProductsPage() {
             </thead>
             <tbody>
               {filtered.map(p => {
-               const totalStock = Number(p.quantity || 0);
-
-// Get sold quantity from backend
-const sold = Number(
-  p.sold_quantity ||
-  p.total_sold ||
-  p.orders_count ||
-  p.order_count ||
-  0
-);
-
-// Remaining stock
-const remaining = Math.max(totalStock - sold, 0);
-
-// Stock percentage
-const stockPct =
-  totalStock > 0
-    ? Math.min((remaining / totalStock) * 100, 100)
-    : 0;
-
+                const totalStock = Number(p.quantity || 0);
+                const sold = Number(p.items_sold || 0);
+                const remaining = Math.max(totalStock - sold, 0);
+                const stockPct = totalStock > 0 ? Math.min((remaining / totalStock) * 100, 100) : 0;
                 return (
                   <tr key={p.id} style={s.tableRow}>
                     <td style={s.td}>
                       <div style={s.productCell}>
                         <img
                           src={p.images?.[0]?.image_url || p.images?.[0]?.url || p.image || 'https://via.placeholder.com/40'}
-                          style={s.productThumb}
-                          alt={p.name}
+                          style={s.productThumb} alt={p.name}
                         />
                         <div>
                           <div style={s.productName}>{p.name}</div>
@@ -509,9 +473,7 @@ const stockPct =
                         </div>
                       </div>
                     </td>
-                    <td style={s.td}>
-                      <span style={s.categoryBadge}>{p.category}</span>
-                    </td>
+                    <td style={s.td}><span style={s.categoryBadge}>{p.category}</span></td>
                     <td style={s.td}>
                       {p.discount_price ? (
                         <div>
@@ -522,28 +484,16 @@ const stockPct =
                         <div style={s.priceVal}>₦{Number(p.price).toLocaleString()}</div>
                       )}
                     </td>
-                    <td style={s.td}>
-                      <div style={s.stockVal}>{totalStock} {p.unit}</div>
-                    </td>
-                    <td style={s.td}>
-                    <div style={s.soldVal}>{sold} sold</div>
-                    </td>
+                    <td style={s.td}><div style={s.stockVal}>{totalStock} {p.unit}</div></td>
+                    <td style={s.td}><div style={s.soldVal}>{sold} sold</div></td>
                     <td style={s.td}>
                       <div style={s.remainingVal}>{remaining} {p.unit}</div>
                       <div style={s.stockBar}>
-                        <div style={{
-                          ...s.stockBarFill,
-                          width: `${stockPct}%`,
-                          background: stockPct > 50 ? '#1f4d1f' : stockPct > 20 ? '#f0c050' : '#cc0000',
-                        }} />
+                        <div style={{ ...s.stockBarFill, width: `${stockPct}%`, background: stockPct > 50 ? '#1f4d1f' : stockPct > 20 ? '#f0c050' : '#cc0000' }} />
                       </div>
                     </td>
                     <td style={s.td}>
-                      <span style={{
-                        ...s.statusBadge,
-                        background: p.status === 'available' ? '#eafaf0' : p.status === 'out_of_stock' ? '#fff0f0' : '#f0f0f0',
-                        color: p.status === 'available' ? '#1a7a3a' : p.status === 'out_of_stock' ? '#cc0000' : '#888',
-                      }}>
+                      <span style={{ ...s.statusBadge, background: p.status === 'available' ? '#eafaf0' : p.status === 'out_of_stock' ? '#fff0f0' : '#f0f0f0', color: p.status === 'available' ? '#1a7a3a' : p.status === 'out_of_stock' ? '#cc0000' : '#888' }}>
                         {p.status?.replace('_', ' ')}
                       </span>
                     </td>
@@ -556,9 +506,7 @@ const stockPct =
               })}
             </tbody>
           </table>
-          {filtered.length === 0 && (
-            <div style={s.empty}>No products found.</div>
-          )}
+          {filtered.length === 0 && <div style={s.empty}>No products found.</div>}
         </div>
       </div>
     </div>
@@ -631,3 +579,4 @@ const s = {
   deleteBtn: { background: '#fff0f0', color: '#cc0000', border: '1px solid #ffa39e', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit' },
   empty: { padding: 40, textAlign: 'center', color: '#999' },
 };
+

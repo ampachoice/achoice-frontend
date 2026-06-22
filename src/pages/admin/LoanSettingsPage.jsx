@@ -146,6 +146,9 @@ export default function LoanSettingsPage() {
           <div style={s.sidebarItem} onClick={() => navigate('/admin/staff')}>
             <span style={s.sidebarIcon}>👥</span> Staff
           </div>
+          <div style={s.sidebarItem} onClick={() => navigate('/admin/settings')}>
+            <span style={s.sidebarIcon}>👥</span> Site Settings
+          </div>
         </nav>
         <div style={s.sidebarFooter}>
           <button style={s.logoutBtn} onClick={() => {

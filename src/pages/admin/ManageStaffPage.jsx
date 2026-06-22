@@ -12,7 +12,7 @@ export default function ManageStaffPage() {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', password: '',
+    name: '', email: '', phone: '',
     can_manage_agro: false, can_manage_loans: false,
   });
   const [editingStaff, setEditingStaff] = useState(null);
@@ -24,10 +24,7 @@ export default function ManageStaffPage() {
   const fetchStaff = () => {
     setLoading(true);
     api.get('/admin/staff')
-      .then(res => {
-        const data = res.data.data || res.data || [];
-        setStaff(data);
-      })
+      .then(res => setStaff(res.data.data || res.data || []))
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   };
@@ -47,8 +44,24 @@ export default function ManageStaffPage() {
     }
     setSubmitting(true);
     try {
-      await api.post('/admin/staff', formData);
-      showToast('Staff account created! Login credentials sent to their email.');
+      const res = await api.post('/admin/staff', formData);
+      const tempPassword = res.data?.temp_password;
+      const emailSent = res.data?.email_sent;
+      const employeeId = res.data?.employee_id;
+      if (tempPassword) {
+        window.alert(
+          `✅ Staff account created!\n\n` +
+          `Employee ID: ${employeeId}\n` +
+          `Temporary Password: ${tempPassword}\n\n` +
+          `${emailSent
+            ? '📧 Credentials also sent to their email.'
+            : '⚠️ Email failed — please share this password manually via WhatsApp.'
+          }\n\n` +
+          `Staff must change this password on first login.`
+        );
+      } else {
+        showToast('Staff account created! Login credentials sent to their email.');
+      }
       setShowForm(false);
       setFormData({ name: '', email: '', phone: '', can_manage_agro: false, can_manage_loans: false });
       fetchStaff();
@@ -80,19 +93,17 @@ export default function ManageStaffPage() {
     }
   };
 
- const handleDeleteStaff = async (staffId, staffName) => {
-  const choice = window.confirm(
-    `Delete ${staffName}?\n\nOK = Permanent removal (staff leaves organisation)\nCancel = Keep account`
-  );
-  if (!choice) return;
-  try {
-    await api.delete(`/admin/staff/${staffId}`);
-    setStaff(prev => prev.filter(s => s.id !== staffId));
-    showToast('Staff account permanently removed.');
-  } catch (err) {
-    showToast(err.response?.data?.message || 'Failed to delete staff.');
-  }
-};
+  const handleDeleteStaff = async (staffId, staffName) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${staffName}?`)) return;
+    try {
+      await api.delete(`/admin/staff/${staffId}`);
+      setStaff(prev => prev.filter(s => s.id !== staffId));
+      showToast('Staff account permanently removed.');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to delete staff.');
+    }
+  };
+
   const handleToggleStatus = async (staffId, currentIsActive) => {
     const action = currentIsActive ? 'deactivate' : 'activate';
     if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} this staff member?`)) return;
@@ -181,7 +192,9 @@ export default function ManageStaffPage() {
               </div>
               <div style={s.modalFooter}>
                 <button type="button" style={s.cancelBtn} onClick={() => setEditingStaff(null)}>Cancel</button>
-                <button type="submit" style={editSubmitting ? s.submitBtnDisabled : s.submitBtn} disabled={editSubmitting}>
+                <button type="submit"
+                  style={editSubmitting ? s.submitBtnDisabled : s.submitBtn}
+                  disabled={editSubmitting}>
                   {editSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
@@ -209,6 +222,8 @@ export default function ManageStaffPage() {
             { icon: '👥', label: 'Staff', path: '/admin/staff', active: true },
             { icon: '⚙️', label: 'Loan Settings', path: '/admin/loan-settings' },
             { icon: '🚚', label: 'Delivery Zones', path: '/admin/delivery-zones' },
+            { icon: '📈', label: 'Reports', path: '/admin/reports' },
+             { icon: '🖼️', label: 'Site Settings', path: '/admin/settings'},
           ].map(item => (
             <div key={item.label}
               style={{ ...s.sidebarItem, ...(item.active ? s.sidebarItemActive : {}) }}
@@ -243,36 +258,45 @@ export default function ManageStaffPage() {
         {showForm && (
           <div style={s.formCard}>
             <h3 style={s.formTitle}>Create Staff Account</h3>
-            <p style={s.formSub}>Login credentials will be sent to their email automatically.</p>
-             <p style={s.formSub}>A temporary password will be sent to their email automatically.</p>
+            <p style={s.formSub}>
+              A temporary password will be generated and shown to you after creation.
+              It will also be sent to the staff email automatically.
+            </p>
             <form onSubmit={handleAddStaff}>
               <div style={s.formGrid}>
                 <div style={s.field}>
                   <label style={s.label}>Full Name</label>
-                  <input style={s.input} name="name" value={formData.name} onChange={handleFormChange} placeholder="Staff full name" required />
+                  <input style={s.input} name="name" value={formData.name}
+                    onChange={handleFormChange} placeholder="Staff full name" required />
                 </div>
                 <div style={s.field}>
                   <label style={s.label}>Email Address</label>
-                  <input style={s.input} type="email" name="email" value={formData.email} onChange={handleFormChange} placeholder="Email address" required />
+                  <input style={s.input} type="email" name="email" value={formData.email}
+                    onChange={handleFormChange} placeholder="Email address" required />
                 </div>
                 <div style={s.field}>
                   <label style={s.label}>Phone Number</label>
-                  <input style={s.input} name="phone" value={formData.phone} onChange={handleFormChange} placeholder="08012345678" required />
+                  <input style={s.input} name="phone" value={formData.phone}
+                    onChange={handleFormChange} placeholder="08012345678" required />
                 </div>
-                
               </div>
+
               <div style={s.permissionsBox}>
                 <div style={s.permissionsTitle}>Dashboard Access Permissions</div>
                 <div style={s.permissionsGrid}>
                   <label style={s.checkboxLabel}>
-                    <input type="checkbox" name="can_manage_agro" checked={formData.can_manage_agro} onChange={handleFormChange} style={s.checkbox} />
+                    <input type="checkbox" name="can_manage_agro"
+                      checked={formData.can_manage_agro}
+                      onChange={handleFormChange} style={s.checkbox} />
                     <div>
                       <div style={s.checkboxTitle}>Agro/Sales Dashboard</div>
                       <div style={s.checkboxSub}>Manage orders, inventory, stock levels, sales reports</div>
                     </div>
                   </label>
                   <label style={s.checkboxLabel}>
-                    <input type="checkbox" name="can_manage_loans" checked={formData.can_manage_loans} onChange={handleFormChange} style={s.checkbox} />
+                    <input type="checkbox" name="can_manage_loans"
+                      checked={formData.can_manage_loans}
+                      onChange={handleFormChange} style={s.checkbox} />
                     <div>
                       <div style={s.checkboxTitle}>Loan Dashboard</div>
                       <div style={s.checkboxSub}>Review applications, verify documents, manage repayments</div>
@@ -280,7 +304,10 @@ export default function ManageStaffPage() {
                   </label>
                 </div>
               </div>
-              <button type="submit" style={submitting ? s.submitBtnDisabled : s.submitBtn} disabled={submitting}>
+
+              <button type="submit"
+                style={submitting ? s.submitBtnDisabled : s.submitBtn}
+                disabled={submitting}>
                 {submitting ? 'Creating Account...' : 'Create Staff Account'}
               </button>
             </form>
@@ -300,7 +327,8 @@ export default function ManageStaffPage() {
               const isActive = member.is_active === true;
               return (
                 <div key={member.id} style={s.staffCard}>
-                  {/* Header */}
+
+                  {/* Card Header */}
                   <div style={s.staffCardHeader}>
                     <div style={s.staffAvatar}>
                       {member.name?.charAt(0).toUpperCase() || 'S'}
@@ -368,7 +396,7 @@ export default function ManageStaffPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {/* Action Buttons */}
                   <div style={s.cardActions}>
                     <button style={s.viewBtn}
                       onClick={() => navigate(`/staff/${member.can_manage_loans ? 'loans' : 'agro'}`)}>
@@ -392,11 +420,12 @@ export default function ManageStaffPage() {
                     </button>
                   </div>
 
-                  {/* Last Login */}
+                  {/* Last Login / Member Since */}
                   <div style={s.memberSince}>
                     {member.last_login
                       ? `Last login: ${new Date(member.last_login).toLocaleDateString('en-NG', { year: 'numeric', month: 'short', day: 'numeric' })}`
-                      : `Member since ${new Date(member.created_at).toLocaleDateString('en-NG', { year: 'numeric', month: 'long' })}`}
+                      : `Member since ${new Date(member.created_at).toLocaleDateString('en-NG', { year: 'numeric', month: 'long' })}`
+                    }
                   </div>
                 </div>
               );
@@ -437,8 +466,8 @@ const s = {
   addBtn: { background: '#1f4d1f', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14, fontFamily: 'inherit' },
   formCard: { background: '#fff', borderRadius: 12, border: '1px solid #e8e4dc', padding: 28, marginBottom: 28 },
   formTitle: { fontSize: 18, fontWeight: 700, color: '#1f4d1f', margin: '0 0 6px' },
-  formSub: { fontSize: 13, color: '#888', marginBottom: 24 },
-  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 16, marginBottom: 20 },
+  formSub: { fontSize: 13, color: '#888', marginBottom: 24, lineHeight: 1.6 },
+  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 20 },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 600, color: '#444' },
   input: { padding: '10px 12px', border: '1px solid #ddd', borderRadius: 7, fontSize: 13, fontFamily: 'inherit', outline: 'none' },

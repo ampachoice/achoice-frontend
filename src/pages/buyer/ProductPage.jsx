@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProduct, getAllProducts, getProductReviews, submitProductReview } from '../../services/productService';
+import { getMyOrders } from '../../services/orderService';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 
-// ⭐ Star rating display
 function StarRating({ rating = 0, size = 14 }) {
   const full = Math.floor(rating);
   const half = rating - full >= 0.5;
@@ -19,67 +19,214 @@ function StarRating({ rating = 0, size = 14 }) {
 }
 
 export default function ProductPage() {
-  const { id } = useParams(); // undefined on /products, a string on /product/:id
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const userRaw = localStorage.getItem('user');
   const user = userRaw ? JSON.parse(userRaw) : null;
 
-  // ── Listing state ─────────────────────────────────────────────────────────
-  const [allProducts, setAllProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [allProducts, setAllProducts]           = useState([]);
+  const [searchTerm, setSearchTerm]             = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [listLoading, setListLoading] = useState(false);
-  const [listError, setListError] = useState(null);
+  const [listLoading, setListLoading]         = useState(false);
+  const [listError, setListError]             = useState(null);
 
-  // ── Detail state ──────────────────────────────────────────────────────────
-  const [product, setProduct] = useState(null);
-  const [reviews, setReviews] = useState([]);
+  const [product, setProduct]           = useState(null);
+  const [reviews, setReviews]           = useState([]);
   const [reviewSummary, setReviewSummary] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [activeImg, setActiveImg] = useState(0);
+  const [activeImg, setActiveImg]       = useState(0);
 
-  // ── Review form ───────────────────────────────────────────────────────────
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '', order_id: '' });
+  const [reviewForm, setReviewForm]           = useState({ rating: 5, comment: '' });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [reviewError, setReviewError] = useState(null);
-
-  // ── Cart ──────────────────────────────────────────────────────────────────
-  const [cartCount, setCartCount] = useState(0);
+  const [reviewSuccess, setReviewSuccess]     = useState(false);
+  const [reviewError, setReviewError]         = useState(null);
+  const [eligibleOrderId, setEligibleOrderId] = useState(null);
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+  const [cartCount, setCartCount]             = useState(0);
 
   const categories = ['All', ...new Set(allProducts.map(p => p.category).filter(Boolean))];
 
-  // ── Effect: Listing (/products) ───────────────────────────────────────────
   useEffect(() => {
-    if (id) return; // skip — detail page handles this
-    setListLoading(true);
-    setListError(null);
+    if (document.getElementById('pp-style')) return;
+    const el = document.createElement('style');
+    el.id = 'pp-style';
+    el.textContent = `
+      body { margin:0; }
+      .pp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
+
+      /* ── NAV ── */
+      .pp-nav { background:#1f4d1f; padding:10px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:200; gap:12px; }
+      .pp-nav-left { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
+      .pp-nav-logo { width:36px; height:36px; border-radius:6px; }
+      .pp-nav-name { font-weight:700; font-size:17px; color:#fff; line-height:1.2; }
+      .pp-nav-name span { color:#f0c050; }
+      .pp-nav-motto { font-size:9px; color:#a8d5a8; letter-spacing:.3px; }
+      .pp-search-group { flex:1; max-width:500px; margin:0 20px; display:flex; background:#fff; border-radius:25px; overflow:hidden; border:2px solid #f0c050; }
+      .pp-search-group select { padding:8px 12px; border:none; border-right:1px solid #eee; background:#f9f9f9; font-size:13px; outline:none; cursor:pointer; }
+      .pp-search-group input  { flex:1; padding:9px 14px; border:none; outline:none; font-size:14px; min-width:0; }
+      .pp-nav-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
+      .pp-cart-btn  { font-size:22px; cursor:pointer; position:relative; color:#fff; }
+      .pp-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; }
+      .pp-hamburger { display:none; }
+
+      /* ── MOBILE SEARCH BAR — always visible below nav on mobile ── */
+      .pp-mobile-searchbar { display:none; }
+      .pp-mobile-searchbar-inner { padding:10px 12px; display:flex; gap:8px; background:#1a3d1a; border-bottom:3px solid #f0c050; }
+      .pp-mobile-searchbar-inner select { padding:10px 8px; border:none; border-radius:8px; font-size:13px; outline:none; font-family:inherit; background:#fff; color:#333; flex-shrink:0; max-width:110px; cursor:pointer; }
+      .pp-mobile-searchbar-inner input  { flex:1; padding:10px 14px; border:none; border-radius:8px; font-size:15px; outline:none; font-family:inherit; min-width:0; }
+      .pp-mobile-searchbar-count { padding:5px 14px 8px; background:#1a3d1a; font-size:12px; color:#a8d5a8; }
+
+      /* ── CONTAINER ── */
+      .pp-container { padding:28px 40px; max-width:1200px; margin:0 auto; }
+
+      /* ── PRODUCT GRID ── */
+      .pp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:22px; }
+      .pp-card { background:#fff; border-radius:12px; border:1px solid #e8e4dc; overflow:hidden; transition:box-shadow .2s; }
+      .pp-card:hover { box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+      .pp-card-img-box { height:168px; background:#f5f5f5; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; overflow:hidden; }
+      .pp-card-img-box img { width:100%; height:100%; object-fit:cover; }
+      .pp-sale-badge { position:absolute; top:8px; right:8px; background:#cc0000; color:#fff; font-size:9px; font-weight:700; padding:3px 8px; border-radius:4px; }
+      .pp-cat-badge  { position:absolute; top:8px; left:8px; background:#1f4d1f; color:#fff; font-size:9px; font-weight:700; padding:3px 8px; border-radius:4px; text-transform:capitalize; }
+      .pp-card-body  { padding:14px; }
+      .pp-card-name  { font-weight:700; font-size:14px; color:#111; margin-bottom:4px; }
+      .pp-card-seller { font-size:11px; color:#888; margin-bottom:5px; }
+      .pp-card-price  { color:#1f4d1f; font-weight:900; font-size:19px; }
+      .pp-card-orig   { color:#bbb; font-size:11px; text-decoration:line-through; margin-bottom:8px; }
+      .pp-card-btn    { width:100%; padding:10px; background:#1f4d1f; color:#fff; border:none; border-radius:7px; cursor:pointer; font-weight:700; font-size:13px; font-family:inherit; }
+
+      /* ── DETAIL ── */
+      .pp-back-btn { background:none; border:none; color:#1f4d1f; font-weight:700; cursor:pointer; font-size:14px; margin-bottom:18px; display:flex; align-items:center; gap:6px; padding:0; }
+      .pp-detail-card { display:grid; grid-template-columns:1fr 1.1fr; gap:36px; background:#fff; padding:32px; border-radius:14px; margin-bottom:28px; border:1px solid #e8e4dc; }
+      .pp-main-img-box { position:relative; height:360px; background:#f5f5f5; border-radius:10px; overflow:hidden; margin-bottom:12px; }
+      .pp-main-img-box img { width:100%; height:100%; object-fit:cover; }
+      .pp-img-placeholder { display:flex; align-items:center; justify-content:center; height:100%; font-size:72px; }
+      .pp-detail-sale { position:absolute; top:12px; right:12px; background:#cc0000; color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; }
+      .pp-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
+      .pp-thumb  { width:62px; height:62px; object-fit:cover; border-radius:7px; cursor:pointer; transition:border .2s; }
+      .pp-detail-cat   { font-size:11px; font-weight:700; color:#c8860a; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+      .pp-detail-name  { font-size:26px; font-weight:700; color:#111; margin:0 0 12px; line-height:1.2; }
+      .pp-rating-row   { display:flex; align-items:center; gap:8px; margin-bottom:16px; font-size:13px; color:#666; }
+      .pp-price-row    { display:flex; align-items:baseline; gap:12px; margin-bottom:16px; }
+      .pp-price        { font-size:34px; font-weight:900; color:#1f4d1f; }
+      .pp-orig-price   { font-size:16px; color:#bbb; text-decoration:line-through; }
+      .pp-desc         { color:#555; line-height:1.75; font-size:14px; margin-bottom:18px; }
+      .pp-info-tag     { display:inline-block; background:#f0fff4; color:#1f4d1f; font-size:12px; padding:5px 12px; border-radius:6px; margin-bottom:16px; border:1px solid #a8d5a8; }
+      .pp-whatsapp-btn { display:block; text-align:center; background:#25D366; color:#fff; text-decoration:none; padding:12px 20px; border-radius:8px; font-weight:700; font-size:14px; margin-bottom:12px; }
+      .pp-add-btn      { width:100%; padding:14px; background:#1f4d1f; color:#fff; border:none; border-radius:9px; font-weight:700; font-size:15px; cursor:pointer; margin-bottom:20px; font-family:inherit; }
+      .pp-seller-card  { background:#f7f5f0; border-radius:10px; padding:16px; border:1px solid #e8e4dc; }
+      .pp-seller-label { font-size:10px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; }
+      .pp-seller-name  { font-size:15px; font-weight:700; color:#111; margin-bottom:6px; }
+      .pp-seller-meta  { font-size:13px; color:#555; display:flex; flex-direction:column; gap:4px; margin:8px 0 10px; }
+      .pp-seller-wa    { display:inline-block; background:#25D366; color:#fff; text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; }
+
+      /* ── REVIEWS ── */
+      .pp-reviews { background:#fff; border-radius:14px; padding:28px; border:1px solid #e8e4dc; }
+      .pp-reviews-title { font-size:20px; font-weight:700; color:#111; margin-bottom:24px; }
+      .pp-rating-breakdown { display:flex; gap:36px; margin-bottom:28px; padding:20px; background:#f7f5f0; border-radius:10px; align-items:center; flex-wrap:wrap; }
+      .pp-rating-big     { text-align:center; min-width:90px; }
+      .pp-rating-big-num { font-size:52px; font-weight:700; color:#1f4d1f; line-height:1; }
+      .pp-rating-big-count { font-size:12px; color:#888; margin-top:6px; }
+      .pp-rating-bars    { flex:1; min-width:160px; display:flex; flex-direction:column; gap:8px; }
+      .pp-bar-row        { display:flex; align-items:center; gap:8px; }
+      .pp-bar-label      { font-size:12px; color:#666; width:22px; text-align:right; }
+      .pp-bar-bg         { flex:1; height:8px; background:#e8e4dc; border-radius:99px; overflow:hidden; }
+      .pp-bar-fill       { height:100%; background:#f0c050; border-radius:99px; }
+      .pp-bar-count      { font-size:12px; color:#888; width:20px; }
+      .pp-review-list    { display:flex; flex-direction:column; gap:20px; margin-bottom:28px; }
+      .pp-review-item    { border-bottom:1px solid #f0ece4; padding-bottom:18px; }
+      .pp-review-header  { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+      .pp-review-avatar  { width:36px; height:36px; background:#1f4d1f; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#f0c050; font-weight:700; font-size:14px; flex-shrink:0; }
+      .pp-review-user    { font-size:14px; font-weight:600; color:#111; margin-bottom:3px; }
+      .pp-review-date    { margin-left:auto; font-size:12px; color:#bbb; }
+      .pp-review-comment { font-size:14px; color:#555; line-height:1.7; margin:0; }
+      .pp-no-reviews     { color:#888; font-size:14px; text-align:center; padding:24px 0; }
+      .pp-review-form    { background:#f7f5f0; border-radius:10px; padding:22px; margin-top:16px; }
+      .pp-review-form h3 { font-size:16px; font-weight:700; color:#111; margin:0 0 16px; }
+      .pp-review-field   { margin-bottom:16px; }
+      .pp-review-label   { display:block; font-size:13px; color:#333; font-weight:600; margin-bottom:6px; }
+      .pp-review-select, .pp-review-input, .pp-review-textarea {
+        width:100%; padding:11px 14px; border:1.5px solid #ddd; border-radius:8px;
+        font-size:14px; outline:none; font-family:inherit; box-sizing:border-box; transition:border .2s;
+      }
+      .pp-review-select:focus, .pp-review-input:focus, .pp-review-textarea:focus { border-color:#1f4d1f; }
+      .pp-review-textarea { resize:vertical; }
+      .pp-review-submit     { padding:12px 28px; background:#1f4d1f; color:#fff; border:none; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+      .pp-review-submit-dis { padding:12px 28px; background:#ccc; color:#fff; border:none; border-radius:7px; font-size:14px; cursor:not-allowed; }
+      .pp-review-ok  { background:#f0fff4; color:#1f4d1f; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:14px; border:1px solid #a8d5a8; }
+      .pp-review-err { background:#fff0f0; color:#cc0000; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:14px; border:1px solid #ffb3b3; }
+      .pp-review-checking { font-size:13px; color:#888; padding:10px 0; }
+      .pp-review-locked { background:#fff8e7; border:1px solid #f0c050; border-radius:8px; padding:14px 16px; font-size:13px; color:#7a5c00; display:flex; flex-direction:column; gap:10px; }
+      .pp-review-locked-btn { align-self:flex-start; padding:8px 16px; background:#1f4d1f; color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+      .pp-empty { text-align:center; color:#888; padding:60px 0; font-size:16px; }
+
+      /* ── TABLET ── */
+      @media (max-width:900px) {
+        .pp-nav { padding:10px 20px; }
+        .pp-search-group { display:none; }
+        .pp-mobile-searchbar { display:block; position:sticky; top:56px; z-index:190; }
+        .pp-container { padding:20px; }
+        .pp-detail-card { grid-template-columns:1fr; gap:24px; padding:20px; }
+        .pp-main-img-box { height:280px; }
+        .pp-detail-name { font-size:22px; }
+        .pp-price { font-size:28px; }
+      }
+
+      /* ── MOBILE ── */
+      @media (max-width:600px) {
+        .pp-nav { padding:8px 14px; }
+        .pp-nav-name { font-size:15px; }
+        .pp-nav-logo { width:32px; height:32px; }
+        .pp-mobile-searchbar { display:block; position:sticky; top:50px; z-index:190; }
+        .pp-mobile-searchbar-inner { padding:8px 12px; gap:7px; }
+        .pp-mobile-searchbar-inner select { font-size:13px; padding:10px 7px; max-width:100px; }
+        .pp-mobile-searchbar-inner input  { font-size:15px; padding:10px 12px; }
+        .pp-container { padding:12px; }
+        .pp-grid { grid-template-columns:1fr 1fr; gap:12px; }
+        .pp-card-img-box { height:140px; }
+        .pp-card-name { font-size:13px; }
+        .pp-card-price { font-size:16px; }
+        .pp-card-btn { font-size:12px; padding:9px; }
+        .pp-detail-card { padding:16px; gap:16px; border-radius:10px; }
+        .pp-main-img-box { height:240px; }
+        .pp-detail-name { font-size:19px; }
+        .pp-price { font-size:26px; }
+        .pp-desc { font-size:13px; }
+        .pp-reviews { padding:16px; border-radius:10px; }
+        .pp-reviews-title { font-size:17px; }
+        .pp-rating-breakdown { flex-direction:column; gap:16px; padding:14px; }
+        .pp-rating-big-num { font-size:44px; }
+        .pp-review-form { padding:16px; }
+        .pp-thumb { width:50px; height:50px; }
+      }
+
+      @media (max-width:380px) {
+        .pp-grid { grid-template-columns:1fr; }
+        .pp-mobile-searchbar-inner select { display:none; }
+      }
+    `;
+    document.head.appendChild(el);
+  }, []);
+
+  useEffect(() => {
+    if (id) return;
+    setListLoading(true); setListError(null);
     getAllProducts()
       .then(res => {
         const data = res.data?.data || res.data || [];
         setAllProducts(data);
-        setFilteredProducts(data);
       })
       .catch(() => setListError('Failed to load products. Please try again.'))
       .finally(() => setListLoading(false));
-  }, []); // only runs once on mount for listing
+  }, []);
 
-  // ── Effect: Detail (/product/:id) ────────────────────────────────────────
   useEffect(() => {
-    if (!id) return; // skip — listing page handles this
-    setDetailLoading(true);
-    setProduct(null);
-    setReviews([]);
-    setActiveImg(0);
-    Promise.all([
-      getProduct(id),
-      getProductReviews(id),
-    ])
-      .then(([productRes, reviewsRes]) => {
-        setProduct(productRes.data);
-        const rd = reviewsRes.data;
+    if (!id) return;
+    setDetailLoading(true); setProduct(null); setReviews([]); setActiveImg(0);
+    Promise.all([getProduct(id), getProductReviews(id)])
+      .then(([pRes, rRes]) => {
+        setProduct(pRes.data);
+        const rd = rRes.data;
         setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
         setReviewSummary(rd?.summary || null);
       })
@@ -87,35 +234,55 @@ export default function ProductPage() {
       .finally(() => setDetailLoading(false));
   }, [id]);
 
-  // ── Effect: Cart count ────────────────────────────────────────────────────
+  // ✅ FIX 3: Auto-find a delivered order containing this product, so the
+  // user never has to type/know an Order ID. Runs silently in background.
+  // ✅ FIX: depend on user?.id (stable primitive) not the user object itself,
+  // since `user` is re-parsed from localStorage on every render and would be
+  // a new object reference each time — causing this effect to re-fire on
+  // every keystroke and remount the review form (the "blinking" textarea).
+  useEffect(() => {
+    if (!id || !user?.id) return;
+    setCheckingEligibility(true);
+    getMyOrders()
+      .then(res => {
+        const raw = res.data;
+        const list = raw?.data || (Array.isArray(raw) ? raw : []);
+        const match = list.find(o =>
+          o.items?.some(it => String(it.product_id) === String(id) || String(it.product?.id) === String(id))
+        );
+        setEligibleOrderId(match ? match.id : null);
+      })
+      .catch(() => setEligibleOrderId(null))
+      .finally(() => setCheckingEligibility(false));
+  }, [id, user?.id]);
+
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCartCount(cart.reduce((acc, item) => acc + item.quantity, 0));
   }, []);
 
-  // ── Effect: Filter listing ────────────────────────────────────────────────
-  useEffect(() => {
+  // ✅ FIX 1: Filter inline — no useEffect needed, works for any length search
+  const filtered = (() => {
     let results = allProducts;
     if (selectedCategory !== 'All') results = results.filter(p => p.category === selectedCategory);
-    if (searchTerm) results = results.filter(p => p.name?.toLowerCase().includes(searchTerm.toLowerCase()));
-    setFilteredProducts(results);
-  }, [searchTerm, selectedCategory, allProducts]);
-
-  const handleAddToCart = (targetProduct) => {
-    if (!targetProduct) return;
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const idx = cart.findIndex(item => item.id === targetProduct.id);
-    if (idx > -1) {
-      cart[idx].quantity += 1;
-    } else {
-      cart.push({
-        id: targetProduct.id,
-        name: targetProduct.name,
-        price: targetProduct.discount_price || targetProduct.price,
-        image: targetProduct.images?.[0]?.url || targetProduct.image,
-        quantity: 1,
-      });
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      results = results.filter(p =>
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.seller?.business_name?.toLowerCase().includes(q)
+      );
     }
+    return results;
+  })();
+
+  const handleAddToCart = (p) => {
+    if (!p) return;
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const idx = cart.findIndex(item => item.id === p.id);
+    if (idx > -1) cart[idx].quantity += 1;
+    else cart.push({ id:p.id, name:p.name, price:p.discount_price||p.price, image:p.images?.[0]?.url||p.image, quantity:1 });
     localStorage.setItem('cart', JSON.stringify(cart));
     setCartCount(cart.reduce((acc, item) => acc + item.quantity, 0));
     navigate('/cart');
@@ -123,202 +290,211 @@ export default function ProductPage() {
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    setReviewSubmitting(true);
-    setReviewError(null);
+    setReviewSubmitting(true); setReviewError(null);
     try {
-      await submitProductReview(id, reviewForm);
+      const payload = eligibleOrderId
+        ? { ...reviewForm, order_id: eligibleOrderId }
+        : reviewForm;
+      await submitProductReview(id, payload);
       setReviewSuccess(true);
-      setReviewForm({ rating: 5, comment: '', order_id: '' });
+      setReviewForm({ rating:5, comment:'' });
       const res = await getProductReviews(id);
       const rd = res.data;
       setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
       setReviewSummary(rd?.summary || null);
     } catch (err) {
-      setReviewError(err.response?.data?.message || 'Failed to submit review.');
-    } finally {
-      setReviewSubmitting(false);
-    }
+      const msg = err.response?.data?.message || '';
+      if (msg.toLowerCase().includes('order')) {
+        setReviewError('You can only review products you have purchased and received.');
+      } else {
+        setReviewError(msg || 'Failed to submit review.');
+      }
+    } finally { setReviewSubmitting(false); }
   };
 
-  // ── Navbar (shared) ───────────────────────────────────────────────────────
-  const Navbar = () => (
-    <nav style={s.nav}>
-      <div style={s.navLeft} onClick={() => navigate('/products')}>
-        <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
-        <div style={s.logoText}>ACHOICE <span style={{ color: '#f0c050' }}>MARKET</span></div>
-        
-      </div>
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', { day:'numeric', month:'short', year:'numeric' }) : '';
 
+  // ── NAV ──────────────────────────────────────────────────────────────────
+  const navbarJsx = (
+    <>
+      <nav className="pp-nav">
+        <div className="pp-nav-left" onClick={() => navigate('/products')}>
+          <img src="/android-chrome-192x192.png" alt="Logo" className="pp-nav-logo" />
+          <div>
+            <div className="pp-nav-name">ACHOICE <span>MARKET</span></div>
+            <div className="pp-nav-motto">Your needs our solutions</div>
+          </div>
+        </div>
+
+        {/* Desktop search — only on listing page */}
+        {!id && (
+          <div className="pp-search-group">
+            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+            <input placeholder="Search products..." value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+        )}
+
+        <div className="pp-nav-right">
+          <div className="pp-cart-btn" onClick={() => navigate('/cart')}>
+            🛒
+            {cartCount > 0 && <span className="pp-cart-badge">{cartCount}</span>}
+          </div>
+          <BuyerDropdown cartCount={cartCount} />
+        </div>
+      </nav>
+
+      {/* ✅ Mobile search bar — always visible below nav on listing page */}
       {!id && (
-        <div style={s.searchControlGroup}>
-          <select style={s.catDropdown} value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
-            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
-          <input
-            style={s.searchInput}
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
+        <div className="pp-mobile-searchbar">
+          <div className="pp-mobile-searchbar-inner">
+            <select value={selectedCategory} onChange={e => { setSelectedCategory(e.target.value); }}>
+              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+            <input
+              type="search"
+              placeholder="🔍 Search products..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              autoComplete="off"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                style={{ background:'none', border:'none', color:'#888', fontSize:18, cursor:'pointer', padding:'0 4px', flexShrink:0 }}>
+                ✕
+              </button>
+            )}
+          </div>
+          {searchTerm && (
+            <div className="pp-mobile-searchbar-count">
+              {filtered.length} result{filtered.length !== 1 ? 's' : ''} for "{searchTerm}"
+            </div>
+          )}
         </div>
       )}
-
-      <div style={s.navRight}>
-        <div style={s.cartIcon} onClick={() => navigate('/cart')}>
-          🛒
-          {cartCount > 0 && <span style={s.badge}>{cartCount}</span>}
-        </div>
-        <BuyerDropdown cartCount={cartCount} />
-      </div>
-    </nav>
+    </>
   );
 
-  // ── Loading / error states ─────────────────────────────────────────────────
-  if (!id && listLoading) return (
-    <div style={s.page}><Navbar /><div style={s.center}>Loading products...</div></div>
-  );
-  if (!id && listError) return (
-    <div style={s.page}><Navbar /><div style={s.center}>{listError}</div></div>
-  );
-  if (id && detailLoading) return (
-    <div style={s.page}><Navbar /><div style={s.center}>Loading product...</div></div>
-  );
-  if (id && !product && !detailLoading) return (
-    <div style={s.page}><Navbar /><div style={s.center}>Product not found.</div></div>
-  );
+  // ── LOADING / ERROR ───────────────────────────────────────────────────────
+  if (!id && listLoading) return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#888', padding:80, fontSize:16 }}>Loading products...</div></div>;
+  if (!id && listError)   return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#cc0000', padding:80, fontSize:14 }}>{listError}</div></div>;
+  if (id && detailLoading) return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#888', padding:80, fontSize:16 }}>Loading product...</div></div>;
+  if (id && !product && !detailLoading) return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#888', padding:80, fontSize:16 }}>Product not found.</div></div>;
 
-  // ── Derived detail values ─────────────────────────────────────────────────
-  const images = product?.images?.length > 0
-    ? product.images.map(img => img.url || img)
-    : product?.image ? [product.image] : [];
+  // ── DETAIL DATA ───────────────────────────────────────────────────────────
+  const images     = product?.images?.length > 0 ? product.images.map(img => img.url || img) : product?.image ? [product.image] : [];
   const hasDiscount = product?.discount_price && Number(product.discount_price) > 0;
   const displayPrice = hasDiscount ? product.discount_price : product?.price;
-  const avgRating = parseFloat(product?.reviews_avg_rating || 0);
+  const avgRating  = parseFloat(product?.reviews_avg_rating || 0);
   const reviewCount = product?.reviews_count || 0;
-  const seller = product?.seller;
+  const seller     = product?.seller;
 
   return (
-    <div style={s.page}>
-      <Navbar />
-      <div style={s.container}>
+    <div className="pp-wrap">
+      {navbarJsx}
+      <div className="pp-container">
 
-        {/* ══ LISTING PAGE (/products) ══════════════════════════════════════ */}
+        {/* ══ LISTING ══════════════════════════════════════════════════════ */}
         {!id && (
-          <>
-            {filteredProducts.length === 0 ? (
-              <p style={s.emptyMsg}>No products found.</p>
-            ) : (
-              <div style={s.grid}>
-                {filteredProducts.map(p => {
+          filtered.length === 0
+            ? <p className="pp-empty">
+                {searchTerm ? `No products found for "${searchTerm}"` : 'No products found.'}
+              </p>
+            : <div className="pp-grid">
+                {filtered.map(p => {
                   const pDiscount = p.discount_price && Number(p.discount_price) > 0;
-                  const pImg = p.images?.[0]?.url || p.image;
+                  const pImg = p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
                   return (
-                    <div key={p.id} style={s.card}>
-                      <div style={s.imgBox} onClick={() => navigate(`/product/${p.id}`)}>
-                        {pImg
-                          ? <img src={pImg} style={s.img} alt={p.name} />
-                          : <span style={{ fontSize: 40 }}>📦</span>
-                        }
-                        {pDiscount && <div style={s.saleBadge}>SALE</div>}
+                    <div key={p.id} className="pp-card">
+                      <div className="pp-card-img-box" onClick={() => navigate(`/product/${p.id}`)}>
+                        {pImg ? <img src={pImg} alt={p.name} /> : <span style={{ fontSize:40 }}>📦</span>}
+                        {pDiscount && <div className="pp-sale-badge">SALE</div>}
+                        {p.category && <div className="pp-cat-badge">{p.category}</div>}
                       </div>
-                      <div style={s.cardBody}>
-                        <div style={s.cardName}>{p.name}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                          <StarRating rating={parseFloat(p.reviews_avg_rating || 0)} />
-                          <span style={{ fontSize: 11, color: '#888' }}>({p.reviews_count || 0})</span>
+                      <div className="pp-card-body">
+                        <div className="pp-card-name">{p.name}</div>
+                        <div className="pp-card-seller">{p.seller?.business_name || 'ACHOICE Seller'}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:6 }}>
+                          <StarRating rating={parseFloat(p.reviews_avg_rating||0)} />
+                          <span style={{ fontSize:11, color:'#888' }}>({p.reviews_count||0})</span>
                         </div>
-                        <div style={s.cardPrice}>
-                          ₦{Number(pDiscount ? p.discount_price : p.price).toLocaleString()}
-                        </div>
-                        {pDiscount && (
-                          <div style={s.cardOriginalPrice}>₦{Number(p.price).toLocaleString()}</div>
-                        )}
-                        <button style={s.viewBtn} onClick={() => handleAddToCart(p)}>
-                          Add & Checkout
-                        </button>
+                        <div className="pp-card-price">₦{Number(pDiscount ? p.discount_price : p.price).toLocaleString()}</div>
+                        {pDiscount && <div className="pp-card-orig">₦{Number(p.price).toLocaleString()}</div>}
+                        <button className="pp-card-btn" onClick={() => handleAddToCart(p)}>Add & Checkout</button>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </>
         )}
 
-        {/* ══ DETAIL PAGE (/product/:id) ════════════════════════════════════ */}
+        {/* ══ DETAIL ═══════════════════════════════════════════════════════ */}
         {id && product && (
-          <div style={s.detailWrapper}>
-            <button onClick={() => navigate('/products')} style={s.backBtn}>← Back to Products</button>
+          <>
+            <button className="pp-back-btn" onClick={() => navigate('/products')}>← Back to Products</button>
 
-            <div style={s.detailCard}>
-              {/* Image Carousel */}
-              <div style={s.detailImgSide}>
-                <div style={s.mainImgBox}>
+            <div className="pp-detail-card">
+              {/* Images */}
+              <div>
+                <div className="pp-main-img-box">
                   {images.length > 0
-                    ? <img src={images[activeImg]} alt={product.name} style={s.mainImg} />
-                    : <div style={s.imgPlaceholder}>🌿</div>
-                  }
-                  {hasDiscount && <div style={s.detailSaleBadge}>SALE</div>}
+                    ? <img src={images[activeImg]} alt={product.name} />
+                    : <div className="pp-img-placeholder">🌿</div>}
+                  {hasDiscount && <div className="pp-detail-sale">SALE</div>}
                 </div>
                 {images.length > 1 && (
-                  <div style={s.thumbRow}>
+                  <div className="pp-thumbs">
                     {images.map((img, i) => (
-                      <img
-                        key={i} src={img} alt=""
-                        style={{ ...s.thumb, border: i === activeImg ? '2px solid #1f4d1f' : '2px solid #eee' }}
-                        onClick={() => setActiveImg(i)}
-                      />
+                      <img key={i} src={img} alt="" className="pp-thumb"
+                        style={{ border: i === activeImg ? '2.5px solid #1f4d1f' : '2px solid #eee' }}
+                        onClick={() => setActiveImg(i)} />
                     ))}
                   </div>
                 )}
               </div>
 
               {/* Info */}
-              <div style={s.detailInfoSide}>
-                <div style={s.detailCategory}>{product.category}</div>
-                <h1 style={s.detailName}>{product.name}</h1>
-                <div style={s.ratingRow}>
+              <div>
+                <div className="pp-detail-cat">{product.category}</div>
+                <h1 className="pp-detail-name">{product.name}</h1>
+                <div className="pp-rating-row">
                   <StarRating rating={avgRating} size={18} />
-                  <span style={s.ratingText}>{avgRating.toFixed(1)} ({reviewCount} review{reviewCount !== 1 ? 's' : ''})</span>
+                  <span>{avgRating.toFixed(1)} ({reviewCount} review{reviewCount !== 1 ? 's' : ''})</span>
                 </div>
-                <div style={s.priceRow}>
-                  <div style={s.detailPrice}>₦{Number(displayPrice).toLocaleString()}</div>
-                  {hasDiscount && <div style={s.detailOriginalPrice}>₦{Number(product.price).toLocaleString()}</div>}
+                <div className="pp-price-row">
+                  <div className="pp-price">₦{Number(displayPrice).toLocaleString()}</div>
+                  {hasDiscount && <div className="pp-orig-price">₦{Number(product.price).toLocaleString()}</div>}
                 </div>
-                <p style={s.detailDesc}>{product.description}</p>
-                {product.min_order_qty && (
-                  <div style={s.infoTag}>Min. order: {product.min_order_qty} units</div>
-                )}
+                <p className="pp-desc">{product.description}</p>
+                {product.min_order_qty && <div className="pp-info-tag">📦 Min. order: {product.min_order_qty} units</div>}
                 {product.whatsapp_number && (
-                  <a
-                    href={`https://wa.me/${product.whatsapp_number.replace(/\D/g, '')}?text=Hi, I'm interested in ${encodeURIComponent(product.name)}`}
-                    target="_blank" rel="noreferrer" style={s.whatsappBtn}
-                  >
+                  <a href={`https://wa.me/${product.whatsapp_number.replace(/\D/g,'')}?text=Hi, I'm interested in ${encodeURIComponent(product.name)}`}
+                    target="_blank" rel="noreferrer" className="pp-whatsapp-btn">
                     💬 Chat on WhatsApp
                   </a>
                 )}
-                <button style={s.addBtn} onClick={() => handleAddToCart(product)}>
-                  🛒 Add to Cart
-                </button>
+                <button className="pp-add-btn" onClick={() => handleAddToCart(product)}>🛒 Add to Cart</button>
 
-                {/* Seller */}
                 {seller && (
-                  <div style={s.sellerCard}>
-                    <div style={s.sellerTitle}>Sold by</div>
-                    <div style={s.sellerName}>{seller.business_name}</div>
+                  <div className="pp-seller-card">
+                    <div className="pp-seller-label">Sold by</div>
+                    <div className="pp-seller-name">{seller.business_name}</div>
                     {seller.rating > 0 && (
-                      <div style={s.sellerRatingRow}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6, margin:'4px 0 6px' }}>
                         <StarRating rating={parseFloat(seller.rating)} size={13} />
-                        <span style={s.sellerRatingText}>{parseFloat(seller.rating).toFixed(1)}</span>
+                        <span style={{ fontSize:13, color:'#666' }}>{parseFloat(seller.rating).toFixed(1)}</span>
                       </div>
                     )}
-                    <div style={s.sellerMeta}>
+                    <div className="pp-seller-meta">
                       {seller.total_sales > 0 && <span>🛍 {seller.total_sales} sales</span>}
                       {seller.state && <span>📍 {seller.business_address || seller.state}</span>}
                     </div>
                     {seller.whatsapp_number && (
-                      <a href={`https://wa.me/${seller.whatsapp_number.replace(/\D/g, '')}`}
-                        target="_blank" rel="noreferrer" style={s.sellerWhatsapp}>
+                      <a href={`https://wa.me/${seller.whatsapp_number.replace(/\D/g,'')}`}
+                        target="_blank" rel="noreferrer" className="pp-seller-wa">
                         💬 Contact Seller
                       </a>
                     )}
@@ -328,178 +504,122 @@ export default function ProductPage() {
             </div>
 
             {/* Reviews */}
-            <div style={s.reviewsSection}>
-              <h2 style={s.reviewsTitle}>Customer Reviews</h2>
+            <div className="pp-reviews">
+              <div className="pp-reviews-title">Customer Reviews</div>
+
               {reviewSummary && (
-                <div style={s.ratingBreakdown}>
-                  <div style={s.ratingBig}>
-                    <div style={s.ratingBigNum}>{avgRating.toFixed(1)}</div>
+                <div className="pp-rating-breakdown">
+                  <div className="pp-rating-big">
+                    <div className="pp-rating-big-num">{avgRating.toFixed(1)}</div>
                     <StarRating rating={avgRating} size={22} />
-                    <div style={s.ratingBigCount}>{reviewCount} reviews</div>
+                    <div className="pp-rating-big-count">{reviewCount} reviews</div>
                   </div>
-                  <div style={s.ratingBars}>
-                    {[5, 4, 3, 2, 1].map(star => {
+                  <div className="pp-rating-bars">
+                    {[5,4,3,2,1].map(star => {
                       const count = reviewSummary[star] || 0;
                       const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
                       return (
-                        <div key={star} style={s.ratingBarRow}>
-                          <span style={s.ratingBarLabel}>{star}★</span>
-                          <div style={s.ratingBarBg}>
-                            <div style={{ ...s.ratingBarFill, width: `${pct}%` }} />
-                          </div>
-                          <span style={s.ratingBarCount}>{count}</span>
+                        <div key={star} className="pp-bar-row">
+                          <span className="pp-bar-label">{star}★</span>
+                          <div className="pp-bar-bg"><div className="pp-bar-fill" style={{ width:`${pct}%` }} /></div>
+                          <span className="pp-bar-count">{count}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               )}
+
               {reviews.length > 0 ? (
-                <div style={s.reviewList}>
+                <div className="pp-review-list">
                   {reviews.map((r, i) => (
-                    <div key={r.id || i} style={s.reviewItem}>
-                      <div style={s.reviewHeader}>
-                        <div style={s.reviewAvatar}>{r.user?.name?.charAt(0) || '?'}</div>
+                    <div key={r.id||i} className="pp-review-item">
+                      <div className="pp-review-header">
+                        <div className="pp-review-avatar">{r.user?.name?.charAt(0)||'?'}</div>
                         <div>
-                          <div style={s.reviewUser}>{r.user?.name || 'Anonymous'}</div>
+                          <div className="pp-review-user">{r.user?.name||'Anonymous'}</div>
                           <StarRating rating={r.rating} size={13} />
                         </div>
-                        <div style={s.reviewDate}>
-                          {r.created_at ? new Date(r.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
-                        </div>
+                        <div className="pp-review-date">{fmtDate(r.created_at)}</div>
                       </div>
-                      <p style={s.reviewComment}>{r.comment}</p>
+                      <p className="pp-review-comment">{r.comment}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p style={s.noReviews}>No reviews yet. Be the first to review this product!</p>
+                <p className="pp-no-reviews">No reviews yet. Be the first to review this product!</p>
               )}
+
               {user && (
-                <div style={s.reviewFormBox}>
-                  <h3 style={s.reviewFormTitle}>Leave a Review</h3>
-                  {reviewSuccess && <div style={s.reviewSuccessMsg}>✅ Review submitted! Thank you.</div>}
-                  {reviewError && <div style={s.reviewErrorMsg}>{reviewError}</div>}
-                  <form onSubmit={handleReviewSubmit}>
-                    <div style={s.reviewField}>
-                      <label style={s.reviewLabel}>Rating</label>
-                      <select style={s.reviewSelect} value={reviewForm.rating}
-                        onChange={e => setReviewForm({ ...reviewForm, rating: Number(e.target.value) })}>
-                        {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} Star{n>1?'s':''} {'★'.repeat(n)}</option>)}
-                      </select>
+                <div className="pp-review-form">
+                  <h3>Leave a Review</h3>
+
+                  {checkingEligibility && (
+                    <div className="pp-review-checking">⏳ Checking your purchase history...</div>
+                  )}
+
+                  {!checkingEligibility && !eligibleOrderId && (
+                    <div className="pp-review-locked">
+                      🔒 You can review this product once you've purchased and received it.
+                      <button className="pp-review-locked-btn" onClick={() => navigate('/orders')}>
+                        View My Orders →
+                      </button>
                     </div>
-                    <div style={s.reviewField}>
-                      <label style={s.reviewLabel}>Order ID (optional)</label>
-                      <input style={s.reviewInput} type="text" placeholder="Your order ID"
-                        value={reviewForm.order_id}
-                        onChange={e => setReviewForm({ ...reviewForm, order_id: e.target.value })} />
-                    </div>
-                    <div style={s.reviewField}>
-                      <label style={s.reviewLabel}>Comment</label>
-                      <textarea style={s.reviewTextarea} rows={4} required
-                        placeholder="Share your experience..."
-                        value={reviewForm.comment}
-                        onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })} />
-                    </div>
-                    <button type="submit"
-                      style={reviewSubmitting ? s.reviewSubmitDisabled : s.reviewSubmit}
-                      disabled={reviewSubmitting}>
-                      {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
-                    </button>
-                  </form>
+                  )}
+
+                  {!checkingEligibility && eligibleOrderId && (
+                    <>
+                      {reviewSuccess && <div className="pp-review-ok">✅ Review submitted! Thank you.</div>}
+                      {reviewError   && <div className="pp-review-err">⚠️ {reviewError}</div>}
+                      <form onSubmit={handleReviewSubmit}>
+
+                        {/* ✅ Clickable star rating — simple, no dropdown, no order ID needed from user */}
+                        <div className="pp-review-field">
+                          <label className="pp-review-label">Your Rating</label>
+                          <div style={{ display:'flex', gap:6, alignItems:'center', margin:'6px 0' }}>
+                            {[1,2,3,4,5].map(star => (
+                              <span key={star}
+                                onClick={() => setReviewForm(f => ({ ...f, rating: star }))}
+                                style={{
+                                  fontSize: 32,
+                                  cursor: 'pointer',
+                                  color: star <= reviewForm.rating ? '#f0c050' : '#ddd',
+                                  transition: 'color .15s',
+                                  lineHeight: 1,
+                                  userSelect: 'none',
+                                }}
+                                title={`${star} star${star > 1 ? 's' : ''}`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                            <span style={{ fontSize:13, color:'#888', marginLeft:8 }}>
+                              {['','Poor','Fair','Good','Very Good','Excellent'][reviewForm.rating]}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pp-review-field">
+                          <label className="pp-review-label">Your Review</label>
+                          <textarea className="pp-review-textarea" rows={4} required
+                            placeholder="Share your experience with this product..."
+                            value={reviewForm.comment}
+                            onChange={e => setReviewForm(f => ({ ...f, comment:e.target.value }))} />
+                        </div>
+                        <button type="submit"
+                          className={reviewSubmitting ? 'pp-review-submit-dis' : 'pp-review-submit'}
+                          disabled={reviewSubmitting}>
+                          {reviewSubmitting ? 'Submitting...' : `Submit ${reviewForm.rating}★ Review →`}
+                        </button>
+                      </form>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
   );
 }
-
-const s = {
-  page: { minHeight: '100vh', backgroundColor: '#fcfbf7', fontFamily: 'Arial, sans-serif' },
-  center: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh', color: '#888', fontSize: 16 },
-  emptyMsg: { textAlign: 'center', color: '#888', padding: 60, fontSize: 16 },
-  nav: { background: '#1f4d1f', padding: '10px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', position: 'sticky', top: 0, zIndex: 100 },
-  navLeft: { display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
-  logoImg: { width: 35, height: 35, borderRadius: 4 },
-  logoText: { fontWeight: 'bold', fontSize: 18 },
-  searchControlGroup: { flex: 1, maxWidth: 500, margin: '0 30px', display: 'flex', background: '#fff', borderRadius: 25, overflow: 'hidden', border: '2px solid #f0c050' },
-  catDropdown: { padding: '8px 12px', border: 'none', borderRight: '1px solid #eee', background: '#f9f9f9', fontSize: 13, outline: 'none' },
-  searchInput: { flex: 1, padding: '10px 15px', border: 'none', outline: 'none', fontSize: 14 },
-  navRight: { display: 'flex', alignItems: 'center', gap: 16 },
-  cartIcon: { fontSize: 22, cursor: 'pointer', position: 'relative' },
-  badge: { position: 'absolute', top: -8, right: -10, background: '#f0c050', color: '#1f4d1f', fontSize: 10, fontWeight: 'bold', width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #1f4d1f' },
-  container: { padding: '30px 40px', maxWidth: 1200, margin: '0 auto' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 24 },
-  card: { background: '#fff', borderRadius: 12, border: '1px solid #eee', overflow: 'hidden' },
-  imgBox: { height: 160, background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative', overflow: 'hidden' },
-  img: { width: '100%', height: '100%', objectFit: 'cover' },
-  saleBadge: { position: 'absolute', top: 8, right: 8, background: '#e53935', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4 },
-  cardBody: { padding: 14 },
-  cardName: { fontWeight: 700, fontSize: 14, color: '#111', marginBottom: 4 },
-  cardPrice: { color: '#1f4d1f', fontWeight: 900, fontSize: 18 },
-  cardOriginalPrice: { color: '#aaa', fontSize: 12, textDecoration: 'line-through', marginBottom: 6 },
-  viewBtn: { width: '100%', padding: 10, background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 700, marginTop: 8, fontSize: 13 },
-  detailWrapper: { maxWidth: 960, margin: '0 auto' },
-  backBtn: { background: 'none', border: 'none', color: '#1f4d1f', fontWeight: 700, cursor: 'pointer', marginBottom: 16, fontSize: 14 },
-  detailCard: { display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 40, background: '#fff', padding: 30, borderRadius: 15, marginBottom: 32 },
-  detailImgSide: {},
-  mainImgBox: { position: 'relative', height: 340, background: '#f5f5f5', borderRadius: 10, overflow: 'hidden', marginBottom: 12 },
-  mainImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  imgPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 72 },
-  detailSaleBadge: { position: 'absolute', top: 12, right: 12, background: '#e53935', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 4 },
-  thumbRow: { display: 'flex', gap: 8, flexWrap: 'wrap' },
-  thumb: { width: 64, height: 64, objectFit: 'cover', borderRadius: 6, cursor: 'pointer' },
-  detailInfoSide: {},
-  detailCategory: { fontSize: 11, fontWeight: 700, color: '#c8860a', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
-  detailName: { fontSize: 26, fontWeight: 700, color: '#111', margin: '0 0 12px' },
-  ratingRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 },
-  ratingText: { fontSize: 13, color: '#666' },
-  priceRow: { display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 },
-  detailPrice: { fontSize: 32, fontWeight: 900, color: '#1f4d1f' },
-  detailOriginalPrice: { fontSize: 16, color: '#aaa', textDecoration: 'line-through' },
-  detailDesc: { color: '#555', lineHeight: 1.7, fontSize: 14, marginBottom: 16 },
-  infoTag: { display: 'inline-block', background: '#f0fff4', color: '#1f4d1f', fontSize: 12, padding: '4px 10px', borderRadius: 4, marginBottom: 16 },
-  whatsappBtn: { display: 'block', textAlign: 'center', background: '#25D366', color: '#fff', textDecoration: 'none', padding: '11px 20px', borderRadius: 7, fontWeight: 600, fontSize: 14, marginBottom: 12 },
-  addBtn: { width: '100%', padding: 14, background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 15, cursor: 'pointer', marginBottom: 20 },
-  sellerCard: { background: '#f7f5f0', borderRadius: 10, padding: 16, border: '1px solid #e8e4dc' },
-  sellerTitle: { fontSize: 11, color: '#888', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 },
-  sellerName: { fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 6 },
-  sellerRatingRow: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 },
-  sellerRatingText: { fontSize: 13, color: '#666' },
-  sellerMeta: { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: '#555', marginBottom: 10 },
-  sellerWhatsapp: { display: 'inline-block', background: '#25D366', color: '#fff', textDecoration: 'none', padding: '7px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600 },
-  reviewsSection: { background: '#fff', borderRadius: 15, padding: 30 },
-  reviewsTitle: { fontSize: 20, fontWeight: 700, color: '#111', marginBottom: 24 },
-  ratingBreakdown: { display: 'flex', gap: 40, marginBottom: 32, padding: 20, background: '#f7f5f0', borderRadius: 10 },
-  ratingBig: { textAlign: 'center', minWidth: 100 },
-  ratingBigNum: { fontSize: 48, fontWeight: 700, color: '#1f4d1f', lineHeight: 1 },
-  ratingBigCount: { fontSize: 12, color: '#888', marginTop: 6 },
-  ratingBars: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 },
-  ratingBarRow: { display: 'flex', alignItems: 'center', gap: 10 },
-  ratingBarLabel: { fontSize: 12, color: '#666', width: 24, textAlign: 'right' },
-  ratingBarBg: { flex: 1, height: 8, background: '#e8e4dc', borderRadius: 99, overflow: 'hidden' },
-  ratingBarFill: { height: '100%', background: '#f0c050', borderRadius: 99 },
-  ratingBarCount: { fontSize: 12, color: '#888', width: 20 },
-  reviewList: { display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 32 },
-  reviewItem: { borderBottom: '1px solid #f0ece4', paddingBottom: 20 },
-  reviewHeader: { display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 10 },
-  reviewAvatar: { width: 36, height: 36, background: '#1f4d1f', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f0c050', fontWeight: 700, fontSize: 14, flexShrink: 0 },
-  reviewUser: { fontSize: 14, fontWeight: 600, color: '#111', marginBottom: 4 },
-  reviewDate: { marginLeft: 'auto', fontSize: 12, color: '#aaa' },
-  reviewComment: { fontSize: 14, color: '#555', lineHeight: 1.7, margin: 0 },
-  noReviews: { color: '#888', fontSize: 14, textAlign: 'center', padding: '20px 0' },
-  reviewFormBox: { background: '#f7f5f0', borderRadius: 10, padding: 24, marginTop: 16 },
-  reviewFormTitle: { fontSize: 16, fontWeight: 700, color: '#111', marginBottom: 16 },
-  reviewSuccessMsg: { background: '#f0fff4', color: '#1f4d1f', padding: '10px 14px', borderRadius: 6, fontSize: 13, marginBottom: 16 },
-  reviewErrorMsg: { background: '#fff0f0', color: '#cc0000', padding: '10px 14px', borderRadius: 6, fontSize: 13, marginBottom: 16 },
-  reviewField: { marginBottom: 16 },
-  reviewLabel: { display: 'block', fontSize: 13, color: '#333', fontWeight: 500, marginBottom: 6 },
-  reviewSelect: { width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, outline: 'none' },
-  reviewInput: { width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, outline: 'none', boxSizing: 'border-box' },
-  reviewTextarea: { width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: 6, fontSize: 14, outline: 'none', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box' },
-  reviewSubmit: { padding: '11px 28px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
-  reviewSubmitDisabled: { padding: '11px 28px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 6, fontSize: 14, cursor: 'not-allowed' },
-};
