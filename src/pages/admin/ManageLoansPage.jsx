@@ -352,7 +352,7 @@ export default function ManageLoansPage() {
                     </span>
                   </label>
                   <div style={s.modalRateDisplay}>
-                    {approveForm.duration_months} months
+                    {approveForm.duration_months} month{Number(approveForm.duration_months) === 1 ? "" : "s"}
                   </div>
                 </div>
                 {approveForm.duration_months && (
@@ -1939,3 +1939,4 @@ const s = {
     fontSize: 14,
   },
 };
+
