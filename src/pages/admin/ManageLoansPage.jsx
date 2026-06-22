@@ -380,7 +380,7 @@ export default function ManageLoansPage() {
                             "Monthly Instalment",
                             `₦${monthly.toLocaleString()}`,
                           ],
-                          ["Duration", `${months} months`],
+                          ["Duration", `${months} month${months === 1 ? "" : "s"}`],
                         ].map(([label, val]) => (
                           <div key={label} style={s.previewItem}>
                             <div style={s.previewLabel}>{label}</div>
@@ -1939,4 +1939,5 @@ const s = {
     fontSize: 14,
   },
 };
+
 
