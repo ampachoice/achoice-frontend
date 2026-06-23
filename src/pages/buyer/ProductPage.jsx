@@ -502,6 +502,7 @@ export default function ProductPage() {
           (products.length === 0 ? (
             <p className="pp-empty">No products found.</p>
           ) : (
+            <>
             <div className="pp-grid">
               {products.map((p) => {
                 const pDiscount =
@@ -624,6 +625,7 @@ export default function ProductPage() {
                 </button>
               </div>
             )}
+            </>
           ))}
 
         {/* ══ DETAIL ═══════════════════════════════════════════════════════ */}
