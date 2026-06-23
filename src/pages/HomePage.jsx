@@ -200,7 +200,7 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [cartCount, setCartCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [videoSetting, setVideoSetting] = useState(null);
+  const [meta, setMeta] = useState(null);
   const [bannerSetting, setBannerSetting] = useState(null);
   const [siteSetting, setSiteSetting] = useState(null);
   const [newsletter, setNewsletter] = useState({ name: '', email: '' });
@@ -245,13 +245,6 @@ export default function HomePage() {
 
   useEffect(() => {
     injectCSS();
-    getAllProducts()
-      .then(res => {
-        const data = res.data?.data || res.data || [];
-        setProducts(Array.isArray(data) ? data : []);
-      })
-      .catch(() => setError('Unable to load products.'))
-      .finally(() => setLoading(false));
 
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCartCount(cart.length);
@@ -265,6 +258,24 @@ export default function HomePage() {
     startAutoPlay();
     return () => clearInterval(autoPlayRef.current);
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    getAllProducts({
+      page: currentPage,
+      per_page: PRODUCTS_PER_PAGE,
+      search: search || undefined,
+    })
+      .then(res => {
+        const pData = res.data;
+        const data = pData?.data || pData || [];
+        setProducts(Array.isArray(data) ? data : []);
+        if (pData?.meta || pData?.last_page) setMeta(pData.meta || pData);
+      })
+      .catch(() => setError('Unable to load products.'))
+      .finally(() => setLoading(false));
+  }, [currentPage, search]);
 
   // Restart autoplay when slide changes manually
   const handleManualNav = (idx) => {
@@ -288,9 +299,8 @@ export default function HomePage() {
     return '★'.repeat(r) + '☆'.repeat(5 - r);
   };
 
-  const filtered = products.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()));
-  const totalPages = Math.ceil(filtered.length / PRODUCTS_PER_PAGE);
-  const paginated = filtered.slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE);
+  const totalPages = meta?.last_page || meta?.total_pages || 1;
+  const paginated = products;
   const handleSearch = (val) => { setSearch(val); setCurrentPage(1); };
 
   const renderVideo = () => {
