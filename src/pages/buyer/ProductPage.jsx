@@ -220,7 +220,8 @@ export default function ProductPage() {
         const cd = res.data;
         const catData = cd?.categories || cd || [];
         const list = Array.isArray(catData) ? catData : [];
-        setCategories(["All", ...list]);
+        const names = list.map((c) => (typeof c === "string" ? c : c.slug || c.name || c.category)).filter(Boolean);
+        setCategories(["All", ...names]);
       })
       .catch(() => {});
   }, []);
