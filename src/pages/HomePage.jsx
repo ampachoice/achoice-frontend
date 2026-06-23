@@ -202,6 +202,7 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [meta, setMeta] = useState(null);
   const [bannerSetting, setBannerSetting] = useState(null);
+  const [videoSetting, setVideoSetting] = useState(null);
   const [siteSetting, setSiteSetting] = useState(null);
   const [newsletter, setNewsletter] = useState({ name: '', email: '' });
   const [newsletterMsg, setNewsletterMsg] = useState('');
