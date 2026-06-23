@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getProduct,
+  getCategories,
   getAllProducts,
   getProductReviews,
   submitProductReview,
@@ -30,8 +31,9 @@ export default function ProductPage() {
   const userRaw = localStorage.getItem("user");
   const user = userRaw ? JSON.parse(userRaw) : null;
 
-  const [allProducts, setAllProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [listLoading, setListLoading] = useState(false);
@@ -53,10 +55,7 @@ export default function ProductPage() {
   const [reviewError, setReviewError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
 
-  const categories = [
-    "All",
-    ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
-  ];
+  const [categories, setCategories] = useState(["All"]);
 
   useEffect(() => {
     if (document.getElementById("pp-style")) return;
@@ -216,18 +215,35 @@ export default function ProductPage() {
   }, []);
 
   useEffect(() => {
+    getCategories()
+      .then((res) => {
+        const cd = res.data;
+        const catData = cd?.categories || cd || [];
+        const list = Array.isArray(catData) ? catData : [];
+        setCategories(["All", ...list]);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (id) return;
     setListLoading(true);
     setListError(null);
-    getAllProducts()
+    getAllProducts({
+      page,
+      per_page: 20,
+      category: selectedCategory !== "All" ? selectedCategory : undefined,
+      search: searchTerm || undefined,
+    })
       .then((res) => {
-        const data = res.data?.data || res.data || [];
-        setAllProducts(data);
-        setFilteredProducts(data);
+        const pData = res.data;
+        const data = pData?.data || pData || [];
+        setProducts(Array.isArray(data) ? data : []);
+        if (pData?.meta || pData?.last_page) setMeta(pData.meta || pData);
       })
       .catch(() => setListError("Failed to load products. Please try again."))
       .finally(() => setListLoading(false));
-  }, []);
+  }, [id, page, selectedCategory, searchTerm]);
 
   useEffect(() => {
     if (!id) return;
@@ -251,16 +267,6 @@ export default function ProductPage() {
     setCartCount(cart.reduce((acc, item) => acc + item.quantity, 0));
   }, []);
 
-  useEffect(() => {
-    let results = allProducts;
-    if (selectedCategory !== "All")
-      results = results.filter((p) => p.category === selectedCategory);
-    if (searchTerm)
-      results = results.filter((p) =>
-        p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    setFilteredProducts(results);
-  }, [searchTerm, selectedCategory, allProducts]);
 
   const handleAddToCart = (p) => {
     if (!p) return;
@@ -398,8 +404,8 @@ export default function ProductPage() {
           </div>
           {searchTerm && (
             <div className="pp-mobile-searchbar-count">
-              {filteredProducts.length} result
-              {filteredProducts.length !== 1 ? "s" : ""} for "{searchTerm}"
+              {products.length} result
+              {products.length !== 1 ? "s" : ""} for "{searchTerm}"
             </div>
           )}
         </div>
@@ -493,11 +499,11 @@ export default function ProductPage() {
       <div className="pp-container">
         {/* ══ LISTING ══════════════════════════════════════════════════════ */}
         {!id &&
-          (filteredProducts.length === 0 ? (
+          (products.length === 0 ? (
             <p className="pp-empty">No products found.</p>
           ) : (
             <div className="pp-grid">
-              {filteredProducts.map((p) => {
+              {products.map((p) => {
                 const pDiscount =
                   p.discount_price && Number(p.discount_price) > 0;
                 const pImg =
@@ -560,6 +566,64 @@ export default function ProductPage() {
                 );
               })}
             </div>
+            {meta && (meta.last_page || meta.total_pages || 1) > 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 16,
+                  padding: "28px 0",
+                }}
+              >
+                <button
+                  style={{
+                    padding: "10px 20px",
+                    background: page <= 1 ? "#e8e4dc" : "#1f4d1f",
+                    color: page <= 1 ? "#aaa" : "#fff",
+                    border: "none",
+                    borderRadius: 7,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: page <= 1 ? "not-allowed" : "pointer",
+                    fontFamily: "inherit",
+                  }}
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  Prev
+                </button>
+                <span style={{ fontSize: 13, color: "#555", fontWeight: 500 }}>
+                  Page {page} of {meta.last_page || meta.total_pages || 1}
+                </span>
+                <button
+                  style={{
+                    padding: "10px 20px",
+                    background:
+                      page >= (meta.last_page || meta.total_pages || 1)
+                        ? "#e8e4dc"
+                        : "#1f4d1f",
+                    color:
+                      page >= (meta.last_page || meta.total_pages || 1)
+                        ? "#aaa"
+                        : "#fff",
+                    border: "none",
+                    borderRadius: 7,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor:
+                      page >= (meta.last_page || meta.total_pages || 1)
+                        ? "not-allowed"
+                        : "pointer",
+                    fontFamily: "inherit",
+                  }}
+                  disabled={page >= (meta.last_page || meta.total_pages || 1)}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           ))}
 
         {/* ══ DETAIL ═══════════════════════════════════════════════════════ */}
@@ -848,5 +912,14 @@ export default function ProductPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
 
 

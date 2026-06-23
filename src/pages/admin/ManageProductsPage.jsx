@@ -24,7 +24,6 @@ export default function ManageProductsPage() {
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState(null);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [sellers, setSellers] = useState([]);
   const [categories, setCategories] = useState(BACKEND_CATEGORIES);
   const [loading, setLoading] = useState(true);
@@ -54,11 +53,11 @@ export default function ManageProductsPage() {
     min_order_qty: 1,
   });
 
-  const fetchData = async () => {
+  const fetchData = async (pageNum = 1) => {
     setLoading(true);
     try {
       const [pRes, sRes, cRes] = await Promise.allSettled([
-        api.get("/products?page=1&per_page=20"),
+        api.get(`/products?page=${pageNum}&per_page=20`),
         getSellers(),
         api.get("/settings/categories"),
       ]);
@@ -66,6 +65,7 @@ export default function ManageProductsPage() {
         const pData = pRes.value.data;
         setProducts(pData.data || pData || []);
         if (pData.meta || pData.last_page) setMeta(pData.meta || pData);
+        setPage(pData.current_page || pageNum);
       }
       if (sRes.status === "fulfilled")
         setSellers(sRes.value.data.data || sRes.value.data || []);
@@ -80,8 +80,12 @@ export default function ManageProductsPage() {
     }
   };
 
+  const goToPage = (pageNum) => {
+    fetchData(pageNum);
+  };
+
   useEffect(() => {
-    fetchData();
+    fetchData(1);
   }, []);
 
   const showToast = (msg) => {
@@ -188,7 +192,7 @@ export default function ManageProductsPage() {
       return;
     try {
       await api.delete(`/products/${id}`);
-      setProducts(products.filter((p) => p.id !== id));
+      await fetchData(page);
       showToast("Product deleted successfully.");
     } catch {
       showToast("Failed to delete product.");
@@ -227,7 +231,7 @@ export default function ManageProductsPage() {
       };
       const res = await api.post("/products", payload);
       showToast("Product created successfully!");
-      setProducts(prev => [res.data.product || res.data, ...prev]);
+      await fetchData(1);
       setShowForm(false);
       setFormData({
         seller_id: "",
@@ -260,7 +264,7 @@ export default function ManageProductsPage() {
     return matchSearch && matchCat && matchStatus;
   });
 
-  const totalProducts = products.length;
+  const totalProducts = meta?.total ?? products.length;
   const totalAvailable = products.filter(
     (p) => p.status === "available",
   ).length;
@@ -515,7 +519,7 @@ export default function ManageProductsPage() {
         <div style={s.header}>
           <div>
             <h1 style={s.headerTitle}>Manage Products</h1>
-            <p style={s.headerSub}>{products.length} products in inventory</p>
+            <p style={s.headerSub}>{totalProducts} products in inventory</p>
           </div>
           <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
             {showForm ? "Cancel" : "+ Add Product"}
@@ -886,40 +890,61 @@ export default function ManageProductsPage() {
           {filtered.length === 0 && (
             <div style={s.empty}>No products found.</div>
           )}
-          {meta && page < (meta.last_page || meta.total_pages || 1) && (
-            <div style={{ textAlign: "center", padding: "24px 0" }}>
+          {meta && (meta.last_page || meta.total_pages || 1) > 1 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 16,
+                padding: "24px 0",
+              }}
+            >
               <button
                 style={{
-                  padding: "12px 32px",
-                  background: "#1f4d1f",
-                  color: "#fff",
+                  padding: "10px 20px",
+                  background: page <= 1 ? "#f0f0f0" : "#1f4d1f",
+                  color: page <= 1 ? "#aaa" : "#fff",
                   border: "none",
-                  borderRadius: 8,
-                  fontSize: 14,
+                  borderRadius: 7,
+                  fontSize: 13,
                   fontWeight: 600,
-                  cursor: loadingMore ? "not-allowed" : "pointer",
+                  cursor: page <= 1 ? "not-allowed" : "pointer",
                   fontFamily: "inherit",
-                  opacity: loadingMore ? 0.7 : 1,
                 }}
-                disabled={loadingMore}
-                onClick={async () => {
-                  setLoadingMore(true);
-                  try {
-                    const nextPage = page + 1;
-                    const res = await api.get(
-                      `/products?page=${nextPage}&per_page=20`,
-                    );
-                    const pData = res.data;
-                    setProducts((prev) => [...prev, ...(pData.data || [])]);
-                    setMeta(pData.meta || pData);
-                    setPage(nextPage);
-                  } catch {
-                  } finally {
-                    setLoadingMore(false);
-                  }
-                }}
+                disabled={page <= 1}
+                onClick={() => goToPage(page - 1)}
               >
-                {loadingMore ? "Loading..." : "Load More Products"}
+                ? Prev
+              </button>
+              <span style={{ fontSize: 13, color: "#555", fontWeight: 500 }}>
+                Page {page} of {meta.last_page || meta.total_pages || 1}
+              </span>
+              <button
+                style={{
+                  padding: "10px 20px",
+                  background:
+                    page >= (meta.last_page || meta.total_pages || 1)
+                      ? "#f0f0f0"
+                      : "#1f4d1f",
+                  color:
+                    page >= (meta.last_page || meta.total_pages || 1)
+                      ? "#aaa"
+                      : "#fff",
+                  border: "none",
+                  borderRadius: 7,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor:
+                    page >= (meta.last_page || meta.total_pages || 1)
+                      ? "not-allowed"
+                      : "pointer",
+                  fontFamily: "inherit",
+                }}
+                disabled={page >= (meta.last_page || meta.total_pages || 1)}
+                onClick={() => goToPage(page + 1)}
+              >
+                Next ?
               </button>
             </div>
           )}
@@ -1251,6 +1276,12 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
 };
+
+
+
+
+
+
 
 
 
