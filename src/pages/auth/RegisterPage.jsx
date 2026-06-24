@@ -1,33 +1,70 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { register } from '../../services/authService';
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { register } from "../../services/authService";
 
-const LOGO_PATH = '/achoice logo.png';
+const LOGO_PATH = "/achoice logo.png";
 
 const NIGERIAN_STATES = [
-  'Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
-  'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo',
-  'Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa',
-  'Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba',
-  'Yobe','Zamfara',
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
 ];
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '', email: '', phone: '', password: '',
-    password_confirmation: '', address: '', state: '',
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    password_confirmation: "",
+    address: "",
+    state: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm]   = useState(false);
-  const [error,   setError]   = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (document.getElementById('rp-style')) return;
-    const el = document.createElement('style');
-    el.id = 'rp-style';
+    if (document.getElementById("rp-style")) return;
+    const el = document.createElement("style");
+    el.id = "rp-style";
     el.textContent = `
       body { margin:0; }
       .rp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; display:flex; flex-direction:column; }
@@ -137,33 +174,46 @@ export default function RegisterPage() {
     document.head.appendChild(el);
   }, []);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.password_confirmation) { setError('Passwords do not match.'); return; }
-    setLoading(true); setError(null); setSuccess(null);
+    if (formData.password !== formData.password_confirmation) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
     try {
       await register(formData);
-      setSuccess('🎉 Account created successfully! Redirecting to login...');
-      setTimeout(() => navigate('/login'), 2000);
+      setSuccess("🎉 Account created successfully! Redirecting to login...");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       if (err.response?.data?.errors) {
         setError(Object.values(err.response.data.errors)[0][0]);
       } else {
-        setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        setError(
+          err.response?.data?.message ||
+            "Registration failed. Please try again.",
+        );
       }
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const pwMatch = formData.password && formData.password_confirmation;
 
   return (
     <div className="rp-wrap">
-
       {/* Top Bar */}
       <div className="rp-topbar">
-        <div className="rp-topbar-left" style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
+        <div
+          className="rp-topbar-left"
+          style={{ display: "flex", gap: 14, flexWrap: "wrap" }}
+        >
           <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
           <span>✉ support@achoice.ng</span>
         </div>
@@ -175,7 +225,7 @@ export default function RegisterPage() {
 
       {/* Nav */}
       <nav className="rp-nav">
-        <div className="rp-brand" onClick={() => navigate('/')}>
+        <div className="rp-brand" onClick={() => navigate("/")}>
           <img src={LOGO_PATH} alt="ACHOICE" />
           <div>
             <div className="rp-brand-name">ACHOICE LIMITED</div>
@@ -183,29 +233,59 @@ export default function RegisterPage() {
           </div>
         </div>
         <div className="rp-nav-links">
-          <Link to="/" className="rp-nav-link">Home</Link>
-          <Link to="/products" className="rp-nav-link">Shop</Link>
-          <Link to="/loans/apply" className="rp-nav-link">Loans</Link>
-          <button className="rp-nav-btn" onClick={() => navigate('/login')}>Sign In</button>
+          <Link to="/" className="rp-nav-link">
+            Home
+          </Link>
+          <Link to="/products" className="rp-nav-link">
+            Shop
+          </Link>
+          <Link to="/loans/apply" className="rp-nav-link">
+            Loans
+          </Link>
+          <button className="rp-nav-btn" onClick={() => navigate("/login")}>
+            Sign In
+          </button>
         </div>
       </nav>
 
       {/* Body */}
       <div className="rp-body">
         <div className="rp-inner">
-
           {/* Left Info Panel */}
           <div className="rp-left">
-            <div className="rp-left-badge">Nigeria's #1 Agricultural Marketplace</div>
-            <h2 className="rp-left-title">Join Thousands of Nigerians Shopping Fresh Farm Produce</h2>
-            <p className="rp-left-sub">Create your free account and start buying directly from verified farmers across all 36 states.</p>
+            <div className="rp-left-badge">
+              Nigeria's #1 Agricultural Marketplace
+            </div>
+            <h2 className="rp-left-title">
+              Join Thousands of Nigerians Shopping Fresh Farm Produce
+            </h2>
+            <p className="rp-left-sub">
+              Create your free account and start buying directly from verified
+              farmers across all 36 states.
+            </p>
             <div className="rp-left-feat">
               {[
-                { icon:'🌾', label:'Farm Fresh Quality', text:'Direct from verified farms — no middlemen, no markup.' },
-                { icon:'💳', label:'Pay Securely', text:'Paystack-powered payments — card, transfer, USSD.' },
-                { icon:'💰', label:'Access Farm Loans', text:'Apply for affordable loans with 24-hour decisions.' },
-                { icon:'🚚', label:'Nationwide Delivery', text:'Fast delivery to your doorstep across Nigeria.' },
-              ].map(f => (
+                {
+                  icon: "🌾",
+                  label: "Farm Fresh Quality",
+                  text: "Direct from verified farms — no middlemen, no markup.",
+                },
+                {
+                  icon: "💳",
+                  label: "Pay Securely",
+                  text: "Paystack-powered payments — card, transfer, USSD.",
+                },
+                {
+                  icon: "💰",
+                  label: "Access Farm Loans",
+                  text: "Apply for affordable loans with 24-hour decisions.",
+                },
+                {
+                  icon: "🚚",
+                  label: "Nationwide Delivery",
+                  text: "Fast delivery to your doorstep across Nigeria.",
+                },
+              ].map((f) => (
                 <div key={f.label} className="rp-left-feat-item">
                   <div className="rp-left-feat-icon">{f.icon}</div>
                   <div>
@@ -216,7 +296,11 @@ export default function RegisterPage() {
               ))}
             </div>
             <div className="rp-stats">
-              {[['500+','Farmers'],['10K+','Buyers'],['36','States']].map(([v,l]) => (
+              {[
+                ["500+", "Farmers"],
+                ["10K+", "Buyers"],
+                ["36", "States"],
+              ].map(([v, l]) => (
                 <div key={l}>
                   <div className="rp-stat-val">{v}</div>
                   <div className="rp-stat-label">{l}</div>
@@ -227,55 +311,114 @@ export default function RegisterPage() {
 
           {/* Form Card */}
           <div className="rp-card">
-            <div className="rp-card-logo"><img src={LOGO_PATH} alt="Logo" /></div>
+            <div className="rp-card-logo">
+              <img src={LOGO_PATH} alt="Logo" />
+            </div>
             <h2 className="rp-card-title">Create Account</h2>
             <p className="rp-card-sub">Free forever, no hidden charges</p>
 
             {success && <div className="rp-success">{success}</div>}
-            {error   && <div className="rp-error">⚠️ {error}</div>}
+            {error && <div className="rp-error">⚠️ {error}</div>}
 
             <form onSubmit={handleSubmit}>
               <div className="rp-field">
                 <label className="rp-label">Full Name</label>
-                <input className="rp-input" type="text" name="name" placeholder="e.g. Chukwuemeka Okafor"
-                  value={formData.name} onChange={handleChange} required />
+                <input
+                  className="rp-input"
+                  type="text"
+                  name="name"
+                  placeholder="e.g. Chukwuemeka Okafor"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
               <div className="rp-field">
                 <label className="rp-label">Email Address</label>
-                <input className="rp-input" type="email" name="email" placeholder="you@example.com"
-                  value={formData.email} onChange={handleChange} required autoComplete="email" />
+                <input
+                  className="rp-input"
+                  type="email"
+                  name="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  autoComplete="email"
+                />
               </div>
 
               <div className="rp-field">
                 <label className="rp-label">Phone Number</label>
-                <input className="rp-input" type="tel" name="phone" placeholder="e.g. 08012345678"
-                  value={formData.phone} onChange={handleChange} required />
+                <input
+                  className="rp-input"
+                  type="tel"
+                  name="phone"
+                  placeholder="e.g. 08012345678"
+                  maxLength={11}
+                  value={formData.phone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 11);
+                    setFormData((prev) => ({ ...prev, phone: val }));
+                  }}
+                  required
+                />
               </div>
 
               <div className="rp-row2">
                 <div className="rp-field">
                   <label className="rp-label">State</label>
-                  <select className="rp-input" name="state" value={formData.state} onChange={handleChange}>
+                  <select
+                    className="rp-input"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                  >
                     <option value="">Select state</option>
-                    {NIGERIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {NIGERIAN_STATES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="rp-field">
-                  <label className="rp-label">Home Address <span style={{ color:'#aaa', fontWeight:400 }}>(optional)</span></label>
-                  <input className="rp-input" type="text" name="address" placeholder="Street address"
-                    value={formData.address} onChange={handleChange} />
+                  <label className="rp-label">
+                    Home Address{" "}
+                    <span style={{ color: "#aaa", fontWeight: 400 }}>
+                      (optional)
+                    </span>
+                  </label>
+                  <input
+                    className="rp-input"
+                    type="text"
+                    name="address"
+                    placeholder="Street address"
+                    value={formData.address}
+                    onChange={handleChange}
+                  />
                 </div>
               </div>
 
               <div className="rp-field">
                 <label className="rp-label">Password</label>
                 <div className="rp-pw-wrap">
-                  <input className="rp-pw-input" type={showPassword ? 'text' : 'password'}
-                    name="password" placeholder="Min 8 characters"
-                    value={formData.password} onChange={handleChange} required autoComplete="new-password" />
-                  <button type="button" className="rp-eye" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? '🙈' : '👁'}
+                  <input
+                    className="rp-pw-input"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Min 8 characters"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="rp-eye"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? "🙈" : "👁"}
                   </button>
                 </div>
               </div>
@@ -283,22 +426,51 @@ export default function RegisterPage() {
               <div className="rp-field">
                 <label className="rp-label">Confirm Password</label>
                 <div className="rp-pw-wrap">
-                  <input className="rp-pw-input" type={showConfirm ? 'text' : 'password'}
-                    name="password_confirmation" placeholder="Repeat your password"
-                    value={formData.password_confirmation} onChange={handleChange} required autoComplete="new-password" />
-                  <button type="button" className="rp-eye" onClick={() => setShowConfirm(!showConfirm)}>
-                    {showConfirm ? '🙈' : '👁'}
+                  <input
+                    className="rp-pw-input"
+                    type={showConfirm ? "text" : "password"}
+                    name="password_confirmation"
+                    placeholder="Repeat your password"
+                    value={formData.password_confirmation}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="rp-eye"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                  >
+                    {showConfirm ? "🙈" : "👁"}
                   </button>
                 </div>
                 {pwMatch && (
-                  <div className="rp-pw-match" style={{ color: formData.password === formData.password_confirmation ? '#1a7a3a' : '#cc0000' }}>
-                    {formData.password === formData.password_confirmation ? '✓ Passwords match' : '✕ Passwords do not match'}
+                  <div
+                    className="rp-pw-match"
+                    style={{
+                      color:
+                        formData.password === formData.password_confirmation
+                          ? "#1a7a3a"
+                          : "#cc0000",
+                    }}
+                  >
+                    {formData.password === formData.password_confirmation
+                      ? "✓ Passwords match"
+                      : "✕ Passwords do not match"}
                   </div>
                 )}
               </div>
 
-              <button type="submit" className={loading || !!success ? 'rp-btn-dis' : 'rp-btn'} disabled={loading || !!success}>
-                {loading ? 'Creating Account...' : success ? 'Redirecting...' : 'Create Free Account →'}
+              <button
+                type="submit"
+                className={loading || !!success ? "rp-btn-dis" : "rp-btn"}
+                disabled={loading || !!success}
+              >
+                {loading
+                  ? "Creating Account..."
+                  : success
+                    ? "Redirecting..."
+                    : "Create Free Account →"}
               </button>
             </form>
 
@@ -320,29 +492,52 @@ export default function RegisterPage() {
                 <div className="rp-footer-tag">Your needs our solutions</div>
               </div>
             </div>
-            <p className="rp-footer-desc">ACHOICE LIMITED bridges the gap between farmers and customers looking to buy fresh farm products cheap.</p>
+            <p className="rp-footer-desc">
+              ACHOICE LIMITED bridges the gap between farmers and customers
+              looking to buy fresh farm products cheap.
+            </p>
           </div>
           <div>
             <div className="rp-footer-heading">Products</div>
-            {['Grains & Cereals','Vegetables','Tubers & Roots','Palm Oil','Livestock'].map(i => (
-              <div key={i} className="rp-footer-link">{i}</div>
+            {[
+              "Grains & Cereals",
+              "Vegetables",
+              "Tubers & Roots",
+              "Palm Oil",
+              "Livestock",
+            ].map((i) => (
+              <div key={i} className="rp-footer-link">
+                {i}
+              </div>
             ))}
           </div>
           <div>
             <div className="rp-footer-heading">Explore</div>
-            {['About Us','How It Works','Farm Loans','Privacy Policy','Contact Us'].map(i => (
-              <div key={i} className="rp-footer-link">{i}</div>
+            {[
+              "About Us",
+              "How It Works",
+              "Farm Loans",
+              "Privacy Policy",
+              "Contact Us",
+            ].map((i) => (
+              <div key={i} className="rp-footer-link">
+                {i}
+              </div>
             ))}
           </div>
           <div>
             <div className="rp-footer-heading">Contact</div>
-            <div className="rp-footer-link">📍 No 6 faith avenue off ekenwan Rd Benin City</div>
+            <div className="rp-footer-link">
+              📍 No 6 faith avenue off ekenwan Rd Benin City
+            </div>
             <div className="rp-footer-link">✉ support@achoice.ng</div>
             <div className="rp-footer-link">📞 09067794991</div>
             <div className="rp-footer-link">🕐 Mon-Sat: 07:00am-06:00pm</div>
           </div>
         </div>
-        <div className="rp-footer-bottom">© 2026 ACHOICE LIMITED. All rights reserved.</div>
+        <div className="rp-footer-bottom">
+          © 2026 ACHOICE LIMITED. All rights reserved.
+        </div>
       </footer>
     </div>
   );

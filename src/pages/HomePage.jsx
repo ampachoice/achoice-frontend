@@ -5,7 +5,7 @@ import api from '../services/api';
 import farmerImg from '../assets/farmer.jpg';
 
 const LOGO_PATH = '/achoice logo.png';
-const PRODUCTS_PER_PAGE = 12;
+const PRODUCTS_PER_PAGE = 8;
 
 // Default carousel slides — replaced by admin banner settings
 const DEFAULT_SLIDES = [

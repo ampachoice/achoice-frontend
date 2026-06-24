@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getMyActiveLoan, getMyLoanHistory, repayLoan } from '../../services/loanService';
@@ -5,231 +6,22 @@ import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 
 export default function LoanRepayPage() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const [activeLoan, setActiveLoan]     = useState(null);
-  const [loanHistory, setLoanHistory]   = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [repaying, setRepaying]         = useState(false);
-  const [error, setError]               = useState(null);
-  const [toast, setToast]               = useState('');
-  const [repayAmount, setRepayAmount]   = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeLoan, setActiveLoan] = useState(null);
+  const [loanHistory, setLoanHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [repaying, setRepaying] = useState(false);
+  const [error, setError] = useState(null);
+  const [toast, setToast] = useState('');
+  const [repayAmount, setRepayAmount] = useState('');
   const [selectedQuick, setSelectedQuick] = useState(null);
-  const [cartCount, setCartCount]       = useState(0);
+  const [cartCount, setCartCount] = useState(0);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleView, setScheduleView] = useState('monthly');
-  const [verifying, setVerifying]       = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [lastReference, setLastReference] = useState(null);
   const [autoVerified, setAutoVerified] = useState(false);
-
-  useEffect(() => {
-    if (document.getElementById('lrp-style')) return;
-    const el = document.createElement('style');
-    el.id = 'lrp-style';
-    el.textContent = `
-      * { box-sizing:border-box; }
-      body { margin:0; }
-      .lrp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
-
-      /* ── TOAST ── */
-      .lrp-toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#1f4d1f; color:#fff; padding:13px 28px; border-radius:10px; font-size:14px; font-weight:600; z-index:9999; box-shadow:0 4px 20px rgba(0,0,0,0.15); white-space:nowrap; max-width:90vw; text-align:center; border:1px solid #f0c050; }
-
-      /* ── VERIFY OVERLAY ── */
-      .lrp-verify-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:2000; display:flex; align-items:center; justify-content:center; padding:16px; }
-      .lrp-verify-box { background:#fff; border-radius:14px; padding:40px 32px; text-align:center; max-width:320px; width:100%; }
-      .lrp-verify-icon { font-size:52px; margin-bottom:16px; }
-      .lrp-verify-text { font-size:18px; font-weight:700; color:#1f4d1f; margin-bottom:8px; }
-      .lrp-verify-sub  { font-size:13px; color:#888; }
-
-      /* ── NAV ── */
-      .lrp-nav { background:#1f4d1f; padding:10px 48px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; gap:12px; }
-      .lrp-nav-left { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
-      .lrp-nav-logo { width:36px; height:36px; border-radius:6px; }
-      .lrp-nav-name { font-weight:700; font-size:16px; color:#fff; line-height:1.2; }
-      .lrp-nav-name span { color:#f0c050; }
-      .lrp-nav-motto { font-size:9px; color:#a8d5a8; }
-      .lrp-nav-links { display:flex; gap:22px; align-items:center; }
-      .lrp-nav-link  { color:#f0c050; font-size:14px; cursor:pointer; font-weight:500; }
-      .lrp-nav-right { display:flex; align-items:center; gap:14px; }
-      .lrp-cart-icon { font-size:22px; cursor:pointer; position:relative; color:#fff; }
-      .lrp-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; }
-
-      /* ── CONTAINER ── */
-      .lrp-container { max-width:880px; margin:0 auto; padding:32px 48px; }
-      .lrp-title-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:12px; }
-      .lrp-page-title { font-size:26px; font-weight:700; color:#111; margin:0; }
-      .lrp-refresh-btn { padding:9px 18px; background:#fff; color:#1f4d1f; border:1.5px solid #1f4d1f; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; }
-
-      /* ── BANNERS ── */
-      .lrp-success-banner { background:#eafaf0; border:2px solid #1a7a3a; border-radius:10px; padding:14px 20px; margin-bottom:20px; font-size:14px; font-weight:600; color:#1a7a3a; text-align:center; }
-      .lrp-verify-banner { background:#f0fff4; border:2px solid #1f4d1f; border-radius:10px; padding:16px 20px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
-      .lrp-verify-banner-title { font-size:15px; font-weight:700; color:#1f4d1f; margin-bottom:4px; }
-      .lrp-verify-banner-sub   { font-size:13px; color:#555; }
-      .lrp-verify-btn     { padding:11px 22px; background:#1f4d1f; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
-      .lrp-verify-btn-dis { padding:11px 22px; background:#ccc; color:#fff; border:none; border-radius:8px; font-size:14px; cursor:not-allowed; font-family:inherit; }
-      .lrp-error { background:#fff0f0; color:#cc0000; padding:12px 16px; border-radius:8px; margin-bottom:20px; font-size:14px; border:1px solid #ffb3b3; }
-
-      /* ── HERO CARD ── */
-      .lrp-hero { background:#1a3d1a; border-radius:14px; padding:26px 28px; margin-bottom:18px; display:grid; grid-template-columns:1fr 1fr; gap:28px; }
-      .lrp-hero-badge { display:inline-block; font-size:10px; font-weight:700; padding:3px 10px; border-radius:99px; margin-bottom:10px; letter-spacing:1px; }
-      .lrp-hero-amount { font-size:38px; font-weight:900; color:#fff; margin-bottom:4px; }
-      .lrp-hero-sub    { font-size:12px; color:#a8d5a8; margin-bottom:14px; text-transform:capitalize; }
-      .lrp-hero-stats  { display:flex; align-items:center; gap:14px; margin-bottom:12px; flex-wrap:wrap; }
-      .lrp-hero-stat-val   { font-size:14px; font-weight:700; color:#f0c050; }
-      .lrp-hero-stat-label { font-size:10px; color:#a8d5a8; margin-top:2px; }
-      .lrp-hero-stat-div   { width:1px; height:26px; background:rgba(255,255,255,0.2); }
-      .lrp-disbursed-info  { background:rgba(255,255,255,0.07); border-radius:7px; padding:8px 12px; font-size:12px; color:#a8d5a8; display:flex; flex-direction:column; gap:3px; }
-      .lrp-pending-note    { background:rgba(240,192,80,0.15); border:1px solid rgba(240,192,80,0.3); border-radius:6px; padding:10px 14px; font-size:12px; color:#f0c050; margin-top:10px; }
-
-      /* Progress side */
-      .lrp-hero-right { display:flex; flex-direction:column; justify-content:center; }
-      .lrp-progress-title { font-size:10px; color:#a8d5a8; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px; }
-      .lrp-progress-pct   { font-size:26px; font-weight:700; color:#f0c050; margin-bottom:7px; }
-      .lrp-progress-bg    { background:rgba(255,255,255,0.15); border-radius:99px; height:10px; margin-bottom:6px; overflow:hidden; }
-      .lrp-progress-fill  { background:#f0c050; height:10px; border-radius:99px; transition:width .5s; }
-      .lrp-progress-note  { font-size:11px; color:#a8d5a8; margin-bottom:14px; }
-      .lrp-instalment-cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-      .lrp-instalment-card  { background:rgba(255,255,255,0.08); border-radius:8px; padding:11px; text-align:center; }
-      .lrp-instalment-icon  { font-size:17px; margin-bottom:3px; }
-      .lrp-instalment-val   { font-size:13px; font-weight:700; color:#f0c050; }
-      .lrp-instalment-label { font-size:9px; color:#a8d5a8; margin-top:2px; }
-
-      /* ── STATS GRID ── */
-      .lrp-stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
-      .lrp-stat-card  { background:#fff; border-radius:10px; border:1px solid #e8e4dc; padding:15px; text-align:center; }
-      .lrp-stat-icon  { font-size:22px; margin-bottom:6px; }
-      .lrp-stat-val   { font-size:15px; font-weight:700; color:#111; margin-bottom:2px; }
-      .lrp-stat-label { font-size:11px; color:#888; }
-
-      /* ── FULL BALANCE BTN ── */
-      .lrp-full-btn     { width:100%; padding:16px; background:#f0c050; color:#1a3d1a; border:none; border-radius:10px; font-size:16px; font-weight:900; cursor:pointer; margin-bottom:14px; font-family:inherit; letter-spacing:.3px; }
-      .lrp-full-btn-dis { width:100%; padding:16px; background:#ccc; color:#fff; border:none; border-radius:10px; font-size:16px; cursor:not-allowed; margin-bottom:14px; font-family:inherit; }
-
-      /* ── REPAY SECTION ── */
-      .lrp-repay-section { background:#fff; border-radius:12px; border:1px solid #e8e4dc; padding:26px 28px; margin-bottom:16px; }
-      .lrp-repay-title { font-size:17px; font-weight:700; color:#111; margin:0 0 5px; }
-      .lrp-repay-sub   { font-size:13px; color:#888; margin:0 0 18px; }
-      .lrp-quick-amts  { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
-      .lrp-quick-amt   { padding:10px 16px; border:1.5px solid #ddd; border-radius:7px; cursor:pointer; background:#fff; font-size:13px; font-family:inherit; font-weight:600; }
-      .lrp-quick-amt-sel { padding:10px 16px; border:1.5px solid #1f4d1f; border-radius:7px; background:#1f4d1f; color:#fff; cursor:pointer; font-size:13px; font-family:inherit; font-weight:600; }
-      .lrp-repay-form  { display:flex; gap:12px; flex-wrap:wrap; }
-      .lrp-repay-input { flex:1; min-width:180px; padding:13px 16px; border:2px solid #1f4d1f; border-radius:9px; font-size:15px; outline:none; font-family:inherit; }
-      .lrp-repay-btn     { padding:13px 22px; background:#f0c050; color:#1a3d1a; border:none; border-radius:9px; font-weight:700; cursor:pointer; font-size:14px; font-family:inherit; white-space:nowrap; }
-      .lrp-repay-btn-dis { padding:13px 22px; background:#ccc; color:#fff; border:none; border-radius:9px; cursor:not-allowed; font-size:14px; font-family:inherit; }
-      .lrp-repay-note  { font-size:12px; color:#888; margin-top:12px; text-align:center; }
-
-      /* ── SCHEDULE BTN ── */
-      .lrp-schedule-btn { display:block; margin:4px auto 0; padding:11px 24px; background:#fff; color:#1f4d1f; border:2px solid #1f4d1f; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
-
-      /* ── MANUAL VERIFY ── */
-      .lrp-manual-verify { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:14px; padding:12px; background:#f7f5f0; border-radius:8px; flex-wrap:wrap; }
-      .lrp-manual-text { font-size:13px; color:#888; }
-      .lrp-manual-btn  { padding:7px 16px; background:none; color:#1f4d1f; border:1.5px solid #1f4d1f; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
-
-      /* ── NO LOAN ── */
-      .lrp-no-loan { background:#fff; border-radius:12px; border:2px dashed #c5ddb8; padding:60px 16px; text-align:center; }
-      .lrp-no-loan-icon  { font-size:60px; margin-bottom:14px; }
-      .lrp-no-loan-title { font-size:22px; font-weight:700; color:#111; margin-bottom:8px; }
-      .lrp-no-loan-text  { color:#666; margin-bottom:22px; font-size:14px; }
-      .lrp-apply-btn     { background:#1f4d1f; color:#fff; border:none; padding:14px 32px; border-radius:9px; cursor:pointer; font-size:15px; font-family:inherit; font-weight:700; }
-
-      /* ── HISTORY ── */
-      .lrp-history { background:#fff; border-radius:12px; border:1px solid #e8e4dc; padding:22px 28px; margin-top:22px; }
-      .lrp-history-title { font-size:17px; font-weight:700; color:#111; margin:0 0 14px; }
-      .lrp-history-item  { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0; flex-wrap:wrap; gap:8px; }
-      .lrp-history-left  { display:flex; align-items:center; gap:12px; }
-      .lrp-history-dot   { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
-      .lrp-history-amount { font-size:15px; font-weight:700; color:#111; }
-      .lrp-history-meta   { font-size:12px; color:#888; margin-top:2px; }
-      .lrp-history-badge  { font-size:11px; font-weight:600; padding:5px 14px; border-radius:99px; text-transform:capitalize; }
-
-      /* ── SCHEDULE MODAL ── */
-      .lrp-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:1000; padding:16px; }
-      .lrp-modal-box     { background:#fff; border-radius:14px; width:100%; max-width:660px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; }
-      .lrp-modal-header  { padding:18px 22px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
-      .lrp-modal-title   { font-size:17px; font-weight:700; color:#111; margin:0; }
-      .lrp-modal-close   { background:none; border:none; font-size:20px; cursor:pointer; color:#888; }
-      .lrp-modal-tabs    { display:flex; align-items:center; gap:8px; padding:12px 22px; border-bottom:1px solid #eee; flex-shrink:0; flex-wrap:wrap; }
-      .lrp-modal-tab     { padding:7px 18px; border:1px solid #ddd; border-radius:6px; font-size:13px; color:#555; cursor:pointer; background:#fff; font-family:inherit; }
-      .lrp-modal-tab-active { padding:7px 18px; border:1px solid #1f4d1f; border-radius:6px; font-size:13px; color:#fff; cursor:pointer; background:#1f4d1f; font-family:inherit; }
-      .lrp-modal-tab-info { margin-left:auto; font-size:13px; color:#1f4d1f; font-weight:700; }
-      .lrp-schedule-head { display:grid; grid-template-columns:40px 1fr 110px 100px; padding:9px 22px; background:#f7f5f0; font-size:11px; font-weight:700; color:#666; text-transform:uppercase; flex-shrink:0; }
-      .lrp-schedule-body { overflow-y:auto; flex:1; }
-      .lrp-schedule-row  { display:grid; grid-template-columns:40px 1fr 110px 100px; padding:11px 22px; border-bottom:1px solid #f5f5f5; align-items:center; font-size:13px; }
-      .lrp-sched-num   { color:#888; }
-      .lrp-sched-date  { color:#333; }
-      .lrp-sched-amt   { font-weight:600; color:#111; }
-      .lrp-paid-badge     { background:#eafaf0; color:#1a7a3a; font-size:11px; font-weight:600; padding:3px 8px; border-radius:99px; }
-      .lrp-overdue-badge  { background:#fff0f0; color:#cc0000; font-size:11px; font-weight:600; padding:3px 8px; border-radius:99px; }
-      .lrp-upcoming-badge { background:#f0f0f0; color:#888; font-size:11px; font-weight:600; padding:3px 8px; border-radius:99px; }
-      .lrp-modal-summary { display:flex; justify-content:space-around; padding:12px 22px; border-top:1px solid #eee; font-size:13px; font-weight:600; flex-shrink:0; flex-wrap:wrap; gap:8px; }
-      .lrp-modal-footer  { padding:12px 22px; border-top:1px solid #eee; text-align:right; flex-shrink:0; }
-      .lrp-close-modal-btn { padding:10px 24px; background:#1f4d1f; color:#fff; border:none; border-radius:7px; cursor:pointer; font-family:inherit; font-weight:600; }
-
-      /* ════════════ TABLET ════════════ */
-      @media (max-width:768px) {
-        .lrp-nav { padding:10px 16px; }
-        .lrp-nav-links { display:none; }
-        .lrp-container { padding:22px 20px; }
-        .lrp-hero { grid-template-columns:1fr; gap:20px; padding:20px; }
-        .lrp-stats-grid { grid-template-columns:repeat(2,1fr); }
-        .lrp-repay-section { padding:20px; }
-        .lrp-history { padding:18px 20px; }
-      }
-
-      /* ════════════ MOBILE ════════════ */
-      @media (max-width:540px) {
-        .lrp-nav { padding:8px 12px; }
-        .lrp-nav-name { font-size:14px; }
-        .lrp-container { padding:14px 12px; }
-        .lrp-page-title { font-size:22px; }
-
-        /* Hero */
-        .lrp-hero { padding:16px 14px; gap:16px; border-radius:12px; }
-        .lrp-hero-amount { font-size:30px; }
-        .lrp-hero-stats { gap:10px; }
-        .lrp-hero-stat-val { font-size:13px; }
-        .lrp-instalment-cards { gap:8px; }
-        .lrp-instalment-card { padding:9px; }
-        .lrp-instalment-val { font-size:12px; }
-
-        /* Stats */
-        .lrp-stats-grid { grid-template-columns:1fr 1fr; gap:10px; }
-        .lrp-stat-val { font-size:14px; }
-        .lrp-stat-icon { font-size:20px; }
-
-        /* Full balance btn */
-        .lrp-full-btn, .lrp-full-btn-dis { font-size:15px; padding:15px; }
-
-        /* Repay section */
-        .lrp-repay-section { padding:16px 14px; border-radius:12px; }
-        .lrp-repay-title { font-size:16px; }
-        .lrp-quick-amts { gap:8px; }
-        .lrp-quick-amt, .lrp-quick-amt-sel { padding:9px 12px; font-size:13px; }
-        .lrp-repay-form { flex-direction:column; }
-        .lrp-repay-input { min-width:100%; font-size:16px; }
-        .lrp-repay-btn, .lrp-repay-btn-dis { width:100%; text-align:center; font-size:15px; padding:14px; }
-
-        /* Verify banner */
-        .lrp-verify-banner { flex-direction:column; gap:12px; }
-        .lrp-verify-btn, .lrp-verify-btn-dis { width:100%; text-align:center; }
-
-        /* History */
-        .lrp-history { padding:14px 12px; border-radius:12px; }
-        .lrp-history-item { flex-direction:column; align-items:flex-start; gap:10px; }
-        .lrp-history-badge { align-self:flex-start; }
-
-        /* Schedule modal */
-        .lrp-modal-box { border-radius:12px 12px 0 0; margin-top:auto; max-height:85vh; }
-        .lrp-schedule-head, .lrp-schedule-row { grid-template-columns:30px 1fr 90px 80px; padding:8px 14px; }
-        .lrp-modal-header { padding:14px 16px; }
-        .lrp-modal-tabs   { padding:10px 14px; }
-        .lrp-modal-summary { padding:10px 14px; font-size:12px; }
-        .lrp-modal-footer  { padding:10px 14px; }
-      }
-    `;
-    document.head.appendChild(el);
-  }, []);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 4000); };
 
@@ -237,7 +29,8 @@ export default function LoanRepayPage() {
     setLoading(true);
     Promise.all([getMyActiveLoan(), getMyLoanHistory()])
       .then(([activeRes, historyRes]) => {
-        setActiveLoan(activeRes.data?.data || activeRes.data);
+        const loanData = activeRes.data?.data || activeRes.data;
+        setActiveLoan(loanData);
         setLoanHistory(historyRes.data?.data || historyRes.data || []);
       })
       .catch(() => setError('Failed to load loan information.'))
@@ -248,8 +41,9 @@ export default function LoanRepayPage() {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 1), 0));
 
-    const params   = new URLSearchParams(location.search);
-    const urlRef   = params.get('reference') || params.get('trxref');
+    // Detect return from Paystack
+    const params = new URLSearchParams(location.search);
+    const urlRef = params.get('reference') || params.get('trxref');
     const savedRef = localStorage.getItem('last_loan_reference');
     const reference = urlRef || savedRef;
 
@@ -257,6 +51,8 @@ export default function LoanRepayPage() {
       setLastReference(reference);
       localStorage.removeItem('last_loan_reference');
       window.history.replaceState({}, '', '/loans/repay');
+
+      // AUTO-VERIFY immediately
       setVerifying(true);
       api.post('/loans/verify-payment', { reference })
         .then(res => {
@@ -265,16 +61,21 @@ export default function LoanRepayPage() {
           showToast(res.data?.message || '✅ Payment verified! Your loan balance has been updated.');
           fetchLoanData();
         })
-        .catch(() => showToast('Payment received. Click "Verify Payment" to update your balance.'))
+        .catch(err => {
+          // Auto-verify failed — keep manual button visible
+          console.log('Auto-verify result:', err.response?.data?.message);
+          showToast('Payment received. Please click "Verify Payment" to update your balance.');
+        })
         .finally(() => setVerifying(false));
     }
+
     fetchLoanData();
   }, []);
 
   const handleVerifyPayment = async (customRef) => {
     const reference = customRef || lastReference;
     if (!reference) {
-      const manualRef = window.prompt('Enter your Paystack payment reference:');
+      const manualRef = window.prompt('Enter your Paystack payment reference:\n(found in your payment confirmation email or SMS)');
       if (!manualRef) return;
       return handleVerifyPayment(manualRef);
     }
@@ -285,8 +86,10 @@ export default function LoanRepayPage() {
       setLastReference(null);
       fetchLoanData();
     } catch (err) {
-      showToast(err.response?.data?.message || '❌ Verification failed. Please contact support.');
-    } finally { setVerifying(false); }
+      showToast(err.response?.data?.message || '❌ Verification failed. Please try again or contact support.');
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const handleRepayDirect = async (amount) => {
@@ -295,7 +98,10 @@ export default function LoanRepayPage() {
     try {
       const res = await repayLoan({ amount: Number(amount) });
       if (res.data?.payment_url) {
-        if (res.data?.reference) localStorage.setItem('last_loan_reference', res.data.reference);
+        // Save reference before redirect
+        if (res.data?.reference) {
+          localStorage.setItem('last_loan_reference', res.data.reference);
+        }
         showToast('Redirecting to Paystack secure checkout...');
         setTimeout(() => { window.location.href = res.data.payment_url; }, 800);
       } else {
@@ -304,38 +110,51 @@ export default function LoanRepayPage() {
       }
     } catch (err) {
       showToast(err.response?.data?.message || 'Repayment failed. Please try again.');
-    } finally { setRepaying(false); }
+    } finally {
+      setRepaying(false);
+    }
   };
 
-  const handleRepay = (e) => { e.preventDefault(); handleRepayDirect(repayAmount); };
-  const handlePayFullBalance = () => { if (!loan || balance <= 0) return; handleRepayDirect(balance); };
-  const handleQuickSelect = (amount) => { setSelectedQuick(amount); setRepayAmount(amount.toString()); };
+  const handleRepay = (e) => {
+    e.preventDefault();
+    handleRepayDirect(repayAmount);
+  };
+
+  const handlePayFullBalance = () => {
+    if (!loan || balance <= 0) return;
+    handleRepayDirect(balance);
+  };
+
+  const handleQuickSelect = (amount) => {
+    setSelectedQuick(amount);
+    setRepayAmount(amount.toString());
+  };
 
   const getStatusStyle = (status) => ({
-    pending:   { background:'#fff8e7', color:'#b36b00' },
-    approved:  { background:'#eafaf0', color:'#1a7a3a' },
-    disbursed: { background:'#e7f0ff', color:'#1a4fa0' },
-    active:    { background:'#e7f0ff', color:'#1a4fa0' },
-    rejected:  { background:'#fff0f0', color:'#cc0000' },
-    completed: { background:'#f0f0f0', color:'#555' },
-    paid:      { background:'#eafaf0', color:'#1a7a3a' },
-  }[status] || { background:'#f0f0f0', color:'#555' });
+    pending:   { background: '#fff8e7', color: '#b36b00' },
+    approved:  { background: '#eafaf0', color: '#1a7a3a' },
+    disbursed: { background: '#e7f0ff', color: '#1a4fa0' },
+    active:    { background: '#e7f0ff', color: '#1a4fa0' },
+    rejected:  { background: '#fff0f0', color: '#cc0000' },
+    completed: { background: '#f0f0f0', color: '#555' },
+    paid:      { background: '#eafaf0', color: '#1a7a3a' },
+  }[status] || { background: '#f0f0f0', color: '#555' });
 
-  if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', fontSize:16, color:'#666' }}>Loading your loans...</div>;
+  if (loading) return <div style={s.center}>Loading your loans...</div>;
 
-  const loan              = activeLoan;
-  const isActive          = loan && (loan.status === 'active' || loan.status === 'disbursed');
-  const totalRepayment    = loan ? Number(loan.total_repayable || 0) : 0;
-  const amountPaid        = loan ? Number(loan.amount_paid || 0) : 0;
-  const balance           = loan ? Number(loan.balance || 0) : 0;
-  const progress          = totalRepayment > 0 ? Math.round((amountPaid / totalRepayment) * 100) : 0;
-  const durationMonths    = loan ? Number(loan.duration_months || 6) : 6;
+  const loan = activeLoan;
+  const isActive = loan && (loan.status === 'active' || loan.status === 'disbursed');
+  const totalRepayment = loan ? Number(loan.total_repayable || 0) : 0;
+  const amountPaid = loan ? Number(loan.amount_paid || 0) : 0;
+  const balance = loan ? Number(loan.balance || 0) : 0;
+  const progress = totalRepayment > 0 ? Math.round((amountPaid / totalRepayment) * 100) : 0;
+  const durationMonths = loan ? Number(loan.duration_months || 6) : 6;
   const monthlyInstalment = loan ? Number(loan.monthly_instalment || 0) : 0;
-  const weeklyInstalment  = Math.ceil(monthlyInstalment / 4);
-  const disbursedAt       = loan?.disbursed_at ? new Date(loan.disbursed_at) : null;
-  const dueDate           = loan?.due_date ? new Date(loan.due_date) : null;
-  const daysRemaining     = dueDate ? Math.max(0, Math.ceil((dueDate - new Date()) / (1000*60*60*24))) : null;
-  const fmtDate           = (d) => d ? new Date(d).toLocaleDateString('en-NG', { day:'numeric', month:'short', year:'numeric' }) : '—';
+  const weeklyInstalment = Math.ceil(monthlyInstalment / 4);
+  const disbursedAt = loan?.disbursed_at ? new Date(loan.disbursed_at) : null;
+  const dueDate = loan?.due_date ? new Date(loan.due_date) : null;
+  const daysRemaining = dueDate ? Math.max(0, Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24))) : null;
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
   const generateSchedule = (view) => {
     if (!loan) return [];
@@ -346,79 +165,82 @@ export default function LoanRepayPage() {
     return Array.from({ length: instalments }, (_, i) => {
       const date = new Date(startDate);
       if (view === 'monthly') date.setMonth(date.getMonth() + i + 1);
-      else date.setDate(date.getDate() + (i+1)*7);
+      else date.setDate(date.getDate() + (i + 1) * 7);
       const paid = cumPaid >= amount;
       if (paid) cumPaid -= amount;
-      return { num:i+1, date, amount, paid, overdue: !paid && date < new Date() };
+      return { num: i + 1, date, amount, paid, overdue: !paid && date < new Date() };
     });
   };
 
-  const schedule     = generateSchedule(scheduleView);
-  const quickAmounts = loan ? [Math.ceil(monthlyInstalment/2), monthlyInstalment, Math.ceil(monthlyInstalment*1.5)] : [];
+  const schedule = generateSchedule(scheduleView);
+  const quickAmounts = loan ? [
+    Math.ceil(monthlyInstalment / 2),
+    monthlyInstalment,
+    Math.ceil(monthlyInstalment * 1.5),
+  ] : [];
 
   return (
-    <div className="lrp-wrap">
-      {toast && <div className="lrp-toast">{toast}</div>}
+    <div style={s.page}>
+      {toast && <div style={s.toast}>{toast}</div>}
 
-      {/* Verify overlay */}
+      {/* Auto-verifying overlay */}
       {verifying && (
-        <div className="lrp-verify-overlay">
-          <div className="lrp-verify-box">
-            <div className="lrp-verify-icon">⏳</div>
-            <div className="lrp-verify-text">Verifying your payment...</div>
-            <div className="lrp-verify-sub">Please wait while we confirm with Paystack</div>
+        <div style={s.verifyingOverlay}>
+          <div style={s.verifyingBox}>
+            <div style={s.verifyingIcon}>⏳</div>
+            <div style={s.verifyingText}>Verifying your payment...</div>
+            <div style={s.verifyingSub}>Please wait while we confirm with Paystack</div>
           </div>
         </div>
       )}
 
-      {/* Nav */}
-      <nav className="lrp-nav">
-        <div className="lrp-nav-left" onClick={() => navigate('/products')}>
-          <img src="/android-chrome-192x192.png" alt="Logo" className="lrp-nav-logo" />
-          <div>
-            <div className="lrp-nav-name">ACHOICE <span>LOANS</span></div>
-            <div className="lrp-nav-motto">Your needs our solutions</div>
-          </div>
+      {/* Navbar */}
+      <nav style={s.nav}>
+        <div style={s.navLeft} onClick={() => navigate('/products')}>
+          <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
+          <div style={s.logoText}>ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span></div>
         </div>
-        <div className="lrp-nav-links">
-          <span className="lrp-nav-link" onClick={() => navigate('/')}>Home</span>
-          <span className="lrp-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          <span className="lrp-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
+        <div style={s.navLinks}>
+          <span style={s.navLink} onClick={() => navigate('/')}>Home</span>
+          <span style={s.navLink} onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
+          <span style={s.navLink} onClick={() => navigate('/orders')}>My Orders</span>
         </div>
-        <div className="lrp-nav-right">
-          <div className="lrp-cart-icon" onClick={() => navigate('/cart')}>
-            🛒 {cartCount > 0 && <span className="lrp-cart-badge">{cartCount}</span>}
+        <div style={s.navRight}>
+          <div style={s.cartIcon} onClick={() => navigate('/cart')}>
+            🛒 {cartCount > 0 && <span style={s.badge}>{cartCount}</span>}
           </div>
           <BuyerDropdown cartCount={cartCount} />
         </div>
       </nav>
 
-      <div className="lrp-container">
-        <div className="lrp-title-row">
-          <h1 className="lrp-page-title">My Loans</h1>
-          <button className="lrp-refresh-btn" onClick={fetchLoanData} disabled={loading}>
+      <div style={s.container}>
+        <div style={s.pageTitleRow}>
+          <h1 style={s.pageTitle}>My Loans</h1>
+          <button style={s.refreshBtn} onClick={fetchLoanData} disabled={loading}>
             {loading ? '⏳' : '🔄'} Refresh
           </button>
         </div>
 
-        {error && <div className="lrp-error">{error}</div>}
+        {error && <div style={s.error}>{error}</div>}
 
-        {/* ✅ Auto-verified success banner */}
+        {/* Auto-verified success banner */}
         {autoVerified && (
-          <div className="lrp-success-banner">
+          <div style={s.successBanner}>
             ✅ Payment verified automatically! Your loan balance has been updated.
           </div>
         )}
 
-        {/* ✅ Manual verify banner */}
+        {/* Manual verify banner — shows if auto-verify failed */}
         {lastReference && !autoVerified && (
-          <div className="lrp-verify-banner">
-            <div>
-              <div className="lrp-verify-banner-title">💳 Payment Received — Verification Pending</div>
-              <div className="lrp-verify-banner-sub">Reference: <strong>{lastReference}</strong></div>
+          <div style={s.verifyBanner}>
+            <div style={s.verifyBannerText}>
+              <div style={s.verifyBannerTitle}>💳 Payment Received — Verification Pending</div>
+              <div style={s.verifyBannerSub}>Reference: <strong>{lastReference}</strong></div>
             </div>
-            <button className={verifying ? 'lrp-verify-btn-dis' : 'lrp-verify-btn'}
-              onClick={() => handleVerifyPayment(lastReference)} disabled={verifying}>
+            <button
+              style={verifying ? s.verifyBtnDisabled : s.verifyBtn}
+              onClick={() => handleVerifyPayment(lastReference)}
+              disabled={verifying}>
               {verifying ? '⏳ Verifying...' : '✅ Verify Payment'}
             </button>
           </div>
@@ -427,164 +249,176 @@ export default function LoanRepayPage() {
         {loan && loan.id ? (
           <>
             {/* Hero Card */}
-            <div className="lrp-hero">
-              <div>
-                <div className="lrp-hero-badge" style={getStatusStyle(loan.status)}>
+            <div style={s.heroCard}>
+              <div style={s.heroLeft}>
+                <div style={{ ...s.heroBadge, ...getStatusStyle(loan.status) }}>
                   {loan.status?.toUpperCase()}
                 </div>
-                <div className="lrp-hero-amount">₦{Number(loan.amount).toLocaleString()}</div>
-                <div className="lrp-hero-sub">{loan.purpose} — {durationMonths} months</div>
-                <div className="lrp-hero-stats">
-                  <div>
-                    <div className="lrp-hero-stat-val">₦{totalRepayment.toLocaleString()}</div>
-                    <div className="lrp-hero-stat-label">Total Repayable</div>
+                <div style={s.heroAmount}>₦{Number(loan.amount).toLocaleString()}</div>
+                <div style={s.heroSub}>{loan.purpose} — {durationMonths} months</div>
+                <div style={s.heroStats}>
+                  <div style={s.heroStat}>
+                    <div style={s.heroStatVal}>₦{totalRepayment.toLocaleString()}</div>
+                    <div style={s.heroStatLabel}>Total Repayable</div>
                   </div>
-                  <div className="lrp-hero-stat-div" />
-                  <div>
-                    <div className="lrp-hero-stat-val">{loan.interest_rate || '—'}%</div>
-                    <div className="lrp-hero-stat-label">Interest</div>
+                  <div style={s.heroStatDivider} />
+                  <div style={s.heroStat}>
+                    <div style={s.heroStatVal}>{loan.interest_rate || '—'}%</div>
+                    <div style={s.heroStatLabel}>Interest</div>
                   </div>
                   {daysRemaining !== null && (
                     <>
-                      <div className="lrp-hero-stat-div" />
-                      <div>
-                        <div className="lrp-hero-stat-val" style={{ color: daysRemaining < 30 ? '#ff6b6b' : '#f0c050' }}>
+                      <div style={s.heroStatDivider} />
+                      <div style={s.heroStat}>
+                        <div style={{ ...s.heroStatVal, color: daysRemaining < 30 ? '#ff6b6b' : '#f0c050' }}>
                           {daysRemaining}d
                         </div>
-                        <div className="lrp-hero-stat-label">Days Left</div>
+                        <div style={s.heroStatLabel}>Days Left</div>
                       </div>
                     </>
                   )}
                 </div>
                 {disbursedAt && (
-                  <div className="lrp-disbursed-info">
+                  <div style={s.disbursedInfo}>
                     <span>📅 Disbursed: <strong>{fmtDate(disbursedAt)}</strong></span>
                     {dueDate && <span>⏰ Due: <strong>{fmtDate(dueDate)}</strong></span>}
                   </div>
                 )}
                 {loan.status === 'approved' && (
-                  <div className="lrp-pending-note">
+                  <div style={s.pendingDisbursement}>
                     ⏳ Loan approved! Admin will transfer funds to your bank account shortly.
                   </div>
                 )}
               </div>
-              <div className="lrp-hero-right">
-                <div className="lrp-progress-title">Repayment Progress</div>
-                <div className="lrp-progress-pct">{progress}%</div>
-                <div className="lrp-progress-bg">
-                  <div className="lrp-progress-fill" style={{ width:`${progress}%` }} />
+
+              <div style={s.heroRight}>
+                <div style={s.progressTitle}>Repayment Progress</div>
+                <div style={s.progressPct}>{progress}%</div>
+                <div style={s.progressBg}>
+                  <div style={{ ...s.progressFill, width: `${progress}%` }} />
                 </div>
-                <div className="lrp-progress-note">₦{amountPaid.toLocaleString()} paid of ₦{totalRepayment.toLocaleString()}</div>
-                <div className="lrp-instalment-cards">
-                  <div className="lrp-instalment-card">
-                    <div className="lrp-instalment-icon">📅</div>
-                    <div className="lrp-instalment-val">₦{monthlyInstalment.toLocaleString()}</div>
-                    <div className="lrp-instalment-label">Monthly</div>
+                <div style={s.progressNote}>
+                  ₦{amountPaid.toLocaleString()} paid of ₦{totalRepayment.toLocaleString()}
+                </div>
+                <div style={s.instalmentCards}>
+                  <div style={s.instalmentCard}>
+                    <div style={s.instalmentIcon}>📅</div>
+                    <div style={s.instalmentVal}>₦{monthlyInstalment.toLocaleString()}</div>
+                    <div style={s.instalmentLabel}>Monthly</div>
                   </div>
-                  <div className="lrp-instalment-card">
-                    <div className="lrp-instalment-icon">📆</div>
-                    <div className="lrp-instalment-val">₦{weeklyInstalment.toLocaleString()}</div>
-                    <div className="lrp-instalment-label">Weekly</div>
+                  <div style={s.instalmentCard}>
+                    <div style={s.instalmentIcon}>📆</div>
+                    <div style={s.instalmentVal}>₦{weeklyInstalment.toLocaleString()}</div>
+                    <div style={s.instalmentLabel}>Weekly</div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Stats */}
-            <div className="lrp-stats-grid">
+            <div style={s.statsGrid}>
               {[
-                { icon:'💰', val:`₦${amountPaid.toLocaleString()}`,  label:'Amount Paid' },
-                { icon:'⏳', val:`₦${balance.toLocaleString()}`,       label:'Balance Left' },
-                { icon:'📅', val:`${durationMonths} mo`,               label:'Duration' },
-                { icon:'✅', val:`${progress}%`,                        label:'Completed' },
+                { icon: '💰', val: `₦${amountPaid.toLocaleString()}`, label: 'Amount Paid' },
+                { icon: '⏳', val: `₦${balance.toLocaleString()}`, label: 'Balance Left' },
+                { icon: '📅', val: `${durationMonths} mo`, label: 'Duration' },
+                { icon: '✅', val: `${progress}%`, label: 'Completed' },
               ].map(item => (
-                <div key={item.label} className="lrp-stat-card">
-                  <div className="lrp-stat-icon">{item.icon}</div>
-                  <div className="lrp-stat-val">{item.val}</div>
-                  <div className="lrp-stat-label">{item.label}</div>
+                <div key={item.label} style={s.statCard}>
+                  <div style={s.statIcon}>{item.icon}</div>
+                  <div style={s.statVal}>{item.val}</div>
+                  <div style={s.statLabel}>{item.label}</div>
                 </div>
               ))}
             </div>
 
             {/* Pay Full Balance */}
             {isActive && balance > 0 && (
-              <button className={repaying ? 'lrp-full-btn-dis' : 'lrp-full-btn'}
-                onClick={handlePayFullBalance} disabled={repaying}>
-                {repaying ? '⏳ Redirecting to Paystack...' : `💳 PAY FULL BALANCE — ₦${balance.toLocaleString()}`}
-              </button>
+              <div style={s.fullBalanceContainer}>
+                <button
+                  style={repaying ? s.fullBalanceBtnDisabled : s.fullBalanceBtn}
+                  onClick={handlePayFullBalance}
+                  disabled={repaying}>
+                  {repaying ? '⏳ Redirecting to Paystack...' : `💳 PAY FULL BALANCE — ₦${balance.toLocaleString()}`}
+                </button>
+              </div>
             )}
 
             {/* Partial Repayment */}
             {isActive && (
-              <div className="lrp-repay-section">
-                <h2 className="lrp-repay-title">Make a Partial Repayment</h2>
-                <p className="lrp-repay-sub">Choose a quick amount or enter a custom amount. Payment is verified automatically.</p>
-                <div className="lrp-quick-amts">
+              <div style={s.repaySection}>
+                <h2 style={s.repaySectionTitle}>Make a Partial Repayment</h2>
+                <p style={s.repaySectionSub}>Choose a quick amount or enter a custom amount. Payment verified automatically.</p>
+                <div style={s.quickAmounts}>
                   {quickAmounts.map(amt => (
                     <button key={amt}
-                      className={selectedQuick === amt ? 'lrp-quick-amt-sel' : 'lrp-quick-amt'}
+                      style={selectedQuick === amt ? s.quickAmtSelected : s.quickAmt}
                       onClick={() => handleQuickSelect(amt)}>
                       ₦{amt.toLocaleString()}
                     </button>
                   ))}
                 </div>
-                <form onSubmit={handleRepay} className="lrp-repay-form">
-                  <input className="lrp-repay-input" type="number"
-                    placeholder="Enter custom amount (₦)"
+                <form onSubmit={handleRepay} style={s.repayForm}>
+                  <input
+                    style={s.repayInput}
+                    type="number"
+                    placeholder="Enter custom amount"
                     value={repayAmount}
                     onChange={e => { setRepayAmount(e.target.value); setSelectedQuick(null); }}
-                    required />
-                  <button type="submit" className={repaying ? 'lrp-repay-btn-dis' : 'lrp-repay-btn'} disabled={repaying}>
+                    required
+                  />
+                  <button type="submit" style={repaying ? s.repayBtnDisabled : s.repayBtn} disabled={repaying}>
                     {repaying ? 'Redirecting...' : '💳 Pay with Paystack'}
                   </button>
                 </form>
-                <p className="lrp-repay-note">🔒 Secured by Paystack · Payment verified automatically on return</p>
+                <p style={s.repayNote}>🔒 Secured by Paystack · Payment verified automatically on return</p>
               </div>
             )}
 
             {/* Schedule button */}
-            <button className="lrp-schedule-btn" onClick={() => setShowScheduleModal(true)}>
-              📋 View Full Repayment Schedule
-            </button>
+            <div style={{ textAlign: 'center', marginTop: 20, marginBottom: 8 }}>
+              <button onClick={() => setShowScheduleModal(true)} style={s.scheduleBtn}>
+                📋 View Full Repayment Schedule
+              </button>
+            </div>
 
             {/* Manual verify fallback */}
             {!lastReference && isActive && (
-              <div className="lrp-manual-verify">
-                <span className="lrp-manual-text">Already paid but balance not updated?</span>
-                <button className="lrp-manual-btn" onClick={() => handleVerifyPayment(null)}>
+              <div style={s.verifyManual}>
+                <span style={s.verifyManualText}>Already paid but balance not updated?</span>
+                <button style={s.verifyManualBtn} onClick={() => handleVerifyPayment(null)}>
                   Verify Payment Manually
                 </button>
               </div>
             )}
           </>
         ) : (
-          <div className="lrp-no-loan">
-            <div className="lrp-no-loan-icon">💳</div>
-            <h2 className="lrp-no-loan-title">No Active Loan</h2>
-            <p className="lrp-no-loan-text">You currently have no active loan.</p>
-            <button className="lrp-apply-btn" onClick={() => navigate('/loans/apply')}>Apply for a Loan</button>
+          <div style={s.noLoanBox}>
+            <div style={s.noLoanIcon}>💳</div>
+            <h2 style={s.noLoanTitle}>No Active Loan</h2>
+            <p style={s.noLoanText}>You currently have no active loan.</p>
+            <button style={s.applyBtn} onClick={() => navigate('/loans/apply')}>Apply for a Loan</button>
           </div>
         )}
 
         {/* Loan History */}
         {loanHistory.length > 0 && (
-          <div className="lrp-history">
-            <h2 className="lrp-history-title">Loan History</h2>
+          <div style={s.historyCard}>
+            <h2 style={s.historyTitle}>Loan History</h2>
             {loanHistory.map(l => (
-              <div key={l.id} className="lrp-history-item">
-                <div className="lrp-history-left">
-                  <div className="lrp-history-dot" style={getStatusStyle(l.status)}>₦</div>
+              <div key={l.id} style={s.historyItem}>
+                <div style={s.historyLeft}>
+                  <div style={{ ...s.historyDot, ...getStatusStyle(l.status) }}>₦</div>
                   <div>
-                    <div className="lrp-history-amount">₦{Number(l.amount).toLocaleString()}</div>
-                    <div className="lrp-history-meta">{fmtDate(l.created_at)} — {l.purpose}</div>
+                    <div style={s.historyAmount}>₦{Number(l.amount).toLocaleString()}</div>
+                    <div style={s.historyMeta}>{fmtDate(l.created_at)} — {l.purpose}</div>
                     {l.disbursed_at && (
-                      <div style={{ fontSize:11, color:'#888', marginTop:2 }}>
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
                         Disbursed: {fmtDate(l.disbursed_at)}{l.due_date && ` · Due: ${fmtDate(l.due_date)}`}
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="lrp-history-badge" style={getStatusStyle(l.status)}>{l.status}</div>
+                <div style={{ ...s.historyBadge, ...getStatusStyle(l.status) }}>{l.status}</div>
               </div>
             ))}
           </div>
@@ -593,46 +427,43 @@ export default function LoanRepayPage() {
 
       {/* Schedule Modal */}
       {showScheduleModal && (
-        <div className="lrp-modal-overlay" onClick={() => setShowScheduleModal(false)}>
-          <div className="lrp-modal-box" onClick={e => e.stopPropagation()}>
-            <div className="lrp-modal-header">
-              <h2 className="lrp-modal-title">📋 Repayment Schedule</h2>
-              <button className="lrp-modal-close" onClick={() => setShowScheduleModal(false)}>✕</button>
+        <div style={s.modalOverlay} onClick={() => setShowScheduleModal(false)}>
+          <div style={s.modalContent} onClick={e => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <h2 style={s.modalTitle}>📋 Repayment Schedule</h2>
+              <button style={s.closeBtn} onClick={() => setShowScheduleModal(false)}>✕</button>
             </div>
-            <div className="lrp-modal-tabs">
-              <button className={scheduleView==='monthly' ? 'lrp-modal-tab-active' : 'lrp-modal-tab'}
-                onClick={() => setScheduleView('monthly')}>Monthly</button>
-              <button className={scheduleView==='weekly' ? 'lrp-modal-tab-active' : 'lrp-modal-tab'}
-                onClick={() => setScheduleView('weekly')}>Weekly</button>
-              <div className="lrp-modal-tab-info">
-                {scheduleView==='monthly' ? `₦${monthlyInstalment.toLocaleString()} / month` : `₦${weeklyInstalment.toLocaleString()} / week`}
+            <div style={s.modalTabs}>
+              <button style={scheduleView === 'monthly' ? s.modalTabActive : s.modalTab} onClick={() => setScheduleView('monthly')}>Monthly</button>
+              <button style={scheduleView === 'weekly' ? s.modalTabActive : s.modalTab} onClick={() => setScheduleView('weekly')}>Weekly</button>
+              <div style={s.modalTabInfo}>
+                {scheduleView === 'monthly' ? `₦${monthlyInstalment.toLocaleString()} / month` : `₦${weeklyInstalment.toLocaleString()} / week`}
               </div>
             </div>
-            <div className="lrp-schedule-head">
+            <div style={s.scheduleHeadRow}>
               <span>#</span><span>Due Date</span><span>Amount</span><span>Status</span>
             </div>
-            <div className="lrp-schedule-body">
+            <div style={s.scheduleBody}>
               {schedule.map(row => (
-                <div key={row.num} className="lrp-schedule-row"
-                  style={{ background: row.paid ? '#f0fff4' : row.overdue ? '#fff8f8' : '#fff' }}>
-                  <span className="lrp-sched-num">{row.num}</span>
-                  <span className="lrp-sched-date">{fmtDate(row.date)}</span>
-                  <span className="lrp-sched-amt">₦{row.amount.toLocaleString()}</span>
+                <div key={row.num} style={{ ...s.scheduleRow, background: row.paid ? '#f0fff4' : row.overdue ? '#fff8f8' : '#fff' }}>
+                  <span style={s.scheduleNum}>{row.num}</span>
+                  <span style={s.scheduleDate}>{fmtDate(row.date)}</span>
+                  <span style={s.scheduleAmt}>₦{row.amount.toLocaleString()}</span>
                   <span>
-                    {row.paid ? <span className="lrp-paid-badge">✓ Paid</span>
-                      : row.overdue ? <span className="lrp-overdue-badge">⚠ Overdue</span>
-                      : <span className="lrp-upcoming-badge">Upcoming</span>}
+                    {row.paid ? <span style={s.paidBadge}>✓ Paid</span>
+                      : row.overdue ? <span style={s.overdueBadge}>⚠ Overdue</span>
+                      : <span style={s.upcomingBadge}>Upcoming</span>}
                   </span>
                 </div>
               ))}
             </div>
-            <div className="lrp-modal-summary">
+            <div style={s.modalSummary}>
               <span>Total: ₦{totalRepayment.toLocaleString()}</span>
-              <span style={{ color:'#1a7a3a' }}>Paid: ₦{amountPaid.toLocaleString()}</span>
-              <span style={{ color:'#cc0000' }}>Balance: ₦{balance.toLocaleString()}</span>
+              <span style={{ color: '#1a7a3a' }}>Paid: ₦{amountPaid.toLocaleString()}</span>
+              <span style={{ color: '#cc0000' }}>Balance: ₦{balance.toLocaleString()}</span>
             </div>
-            <div className="lrp-modal-footer">
-              <button className="lrp-close-modal-btn" onClick={() => setShowScheduleModal(false)}>Close</button>
+            <div style={s.modalFooter}>
+              <button style={s.closeModalBtn} onClick={() => setShowScheduleModal(false)}>Close</button>
             </div>
           </div>
         </div>
@@ -640,3 +471,115 @@ export default function LoanRepayPage() {
     </div>
   );
 }
+
+const s = {
+  page: { minHeight: '100vh', backgroundColor: '#f7f5f0', fontFamily: 'Arial, sans-serif' },
+  toast: { position: 'fixed', top: 20, right: 20, background: '#1f4d1f', color: '#fff', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 500, zIndex: 1001, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' },
+  verifyingOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  verifyingBox: { background: '#fff', borderRadius: 12, padding: '40px', textAlign: 'center', maxWidth: 320 },
+  verifyingIcon: { fontSize: 48, marginBottom: 16 },
+  verifyingText: { fontSize: 18, fontWeight: 700, color: '#1f4d1f', marginBottom: 8 },
+  verifyingSub: { fontSize: 13, color: '#888' },
+  successBanner: { background: '#eafaf0', border: '2px solid #1a7a3a', borderRadius: 10, padding: '14px 20px', marginBottom: 20, fontSize: 14, fontWeight: 600, color: '#1a7a3a', textAlign: 'center' },
+  nav: { background: '#1f4d1f', padding: '12px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', position: 'sticky', top: 0, zIndex: 100 },
+  navLeft: { display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
+  logoImg: { width: 35, height: 35, borderRadius: 4 },
+  logoText: { fontWeight: 'bold', fontSize: 18 },
+  navLinks: { display: 'flex', gap: 24, alignItems: 'center' },
+  navLink: { color: '#f0c050', fontSize: 14, cursor: 'pointer', fontWeight: 500 },
+  navRight: { display: 'flex', alignItems: 'center', gap: 16 },
+  cartIcon: { fontSize: 22, cursor: 'pointer', position: 'relative' },
+  badge: { position: 'absolute', top: -8, right: -10, background: '#f0c050', color: '#1f4d1f', fontSize: 10, fontWeight: 'bold', width: 18, height: 18, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  container: { maxWidth: 900, margin: '0 auto', padding: '40px 16px' },
+  pageTitleRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  pageTitle: { fontSize: 28, fontWeight: 700, color: '#111', margin: 0 },
+  refreshBtn: { padding: '8px 18px', background: '#fff', color: '#1f4d1f', border: '1px solid #1f4d1f', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  error: { background: '#fff0f0', color: '#cc0000', padding: '12px 16px', borderRadius: 7, marginBottom: 24, fontSize: 14 },
+  center: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontSize: 16, color: '#666' },
+  verifyBanner: { background: '#f0fff4', border: '2px solid #1f4d1f', borderRadius: 10, padding: '16px 20px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
+  verifyBannerText: {},
+  verifyBannerTitle: { fontSize: 15, fontWeight: 700, color: '#1f4d1f', marginBottom: 4 },
+  verifyBannerSub: { fontSize: 13, color: '#555' },
+  verifyBtn: { padding: '11px 24px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  verifyBtnDisabled: { padding: '11px 24px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, cursor: 'not-allowed', fontFamily: 'inherit' },
+  heroCard: { background: '#1a3d1a', borderRadius: 12, padding: 28, marginBottom: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 },
+  heroLeft: {},
+  heroBadge: { display: 'inline-block', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 99, marginBottom: 10, letterSpacing: 1 },
+  heroAmount: { fontSize: 40, fontWeight: 900, color: '#fff', marginBottom: 4 },
+  heroSub: { fontSize: 12, color: '#a8d5a8', marginBottom: 16, textTransform: 'capitalize' },
+  heroStats: { display: 'flex', alignItems: 'center', gap: 16, marginBottom: 14 },
+  heroStat: {},
+  heroStatVal: { fontSize: 15, fontWeight: 700, color: '#f0c050' },
+  heroStatLabel: { fontSize: 10, color: '#a8d5a8', marginTop: 2 },
+  heroStatDivider: { width: 1, height: 28, background: 'rgba(255,255,255,0.2)' },
+  disbursedInfo: { background: 'rgba(255,255,255,0.08)', borderRadius: 6, padding: '8px 12px', fontSize: 12, color: '#a8d5a8', display: 'flex', flexDirection: 'column', gap: 3 },
+  pendingDisbursement: { background: 'rgba(240,192,80,0.15)', border: '1px solid rgba(240,192,80,0.3)', borderRadius: 6, padding: '10px 14px', fontSize: 12, color: '#f0c050', marginTop: 10 },
+  heroRight: { display: 'flex', flexDirection: 'column', justifyContent: 'center' },
+  progressTitle: { fontSize: 11, color: '#a8d5a8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 1 },
+  progressPct: { fontSize: 28, fontWeight: 700, color: '#f0c050', marginBottom: 8 },
+  progressBg: { background: 'rgba(255,255,255,0.15)', borderRadius: 99, height: 10, marginBottom: 6, overflow: 'hidden' },
+  progressFill: { background: '#f0c050', height: 10, borderRadius: 99 },
+  progressNote: { fontSize: 11, color: '#a8d5a8', marginBottom: 14 },
+  instalmentCards: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
+  instalmentCard: { background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 12, textAlign: 'center' },
+  instalmentIcon: { fontSize: 18, marginBottom: 4 },
+  instalmentVal: { fontSize: 14, fontWeight: 700, color: '#f0c050' },
+  instalmentLabel: { fontSize: 10, color: '#a8d5a8', marginTop: 2 },
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 },
+  statCard: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: 16, textAlign: 'center' },
+  statIcon: { fontSize: 20, marginBottom: 6 },
+  statVal: { fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 2 },
+  statLabel: { fontSize: 11, color: '#888' },
+  fullBalanceContainer: { marginBottom: 16 },
+  fullBalanceBtn: { width: '100%', padding: '16px', background: '#f0c050', color: '#1a3d1a', border: 'none', borderRadius: 10, fontSize: 16, fontWeight: 900, cursor: 'pointer', letterSpacing: 0.5 },
+  fullBalanceBtnDisabled: { width: '100%', padding: '16px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 10, fontSize: 16, cursor: 'not-allowed' },
+  repaySection: { background: '#fff', borderRadius: 12, border: '1px solid #e8e4dc', padding: 28, marginBottom: 16 },
+  repaySectionTitle: { fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 6 },
+  repaySectionSub: { fontSize: 13, color: '#888', marginBottom: 20 },
+  quickAmounts: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 20 },
+  quickAmt: { padding: '10px 18px', border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer', background: '#fff', fontSize: 13, fontFamily: 'inherit' },
+  quickAmtSelected: { padding: '10px 18px', border: '1px solid #1f4d1f', borderRadius: 6, background: '#1f4d1f', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' },
+  repayForm: { display: 'flex', gap: 12, flexWrap: 'wrap' },
+  repayInput: { flex: 1, minWidth: 200, padding: '13px 16px', border: '2px solid #1f4d1f', borderRadius: 8, fontSize: 15, outline: 'none', fontFamily: 'inherit' },
+  repayBtn: { padding: '13px 24px', background: '#f0c050', color: '#1a3d1a', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  repayBtnDisabled: { padding: '13px 24px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 8, cursor: 'not-allowed', fontSize: 14, fontFamily: 'inherit' },
+  repayNote: { fontSize: 12, color: '#888', marginTop: 12, textAlign: 'center' },
+  scheduleBtn: { padding: '11px 24px', background: '#fff', color: '#1f4d1f', border: '2px solid #1f4d1f', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  verifyManual: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16, padding: '12px', background: '#f7f5f0', borderRadius: 8, flexWrap: 'wrap' },
+  verifyManualText: { fontSize: 13, color: '#888' },
+  verifyManualBtn: { padding: '7px 16px', background: 'none', color: '#1f4d1f', border: '1px solid #1f4d1f', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  noLoanBox: { background: '#fff', borderRadius: 12, border: '2px dashed #c5ddb8', padding: 60, textAlign: 'center' },
+  noLoanIcon: { fontSize: 60, marginBottom: 16 },
+  noLoanTitle: { fontSize: 22, fontWeight: 700, color: '#111', marginBottom: 8 },
+  noLoanText: { color: '#666', marginBottom: 24, fontSize: 14 },
+  applyBtn: { background: '#1f4d1f', color: '#fff', border: 'none', padding: '14px 32px', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontFamily: 'inherit' },
+  historyCard: { background: '#fff', borderRadius: 12, border: '1px solid #e8e4dc', padding: 24, marginTop: 24 },
+  historyTitle: { fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 16 },
+  historyItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap', gap: 8 },
+  historyLeft: { display: 'flex', alignItems: 'center', gap: 12 },
+  historyDot: { width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 },
+  historyAmount: { fontSize: 15, fontWeight: 700, color: '#111' },
+  historyMeta: { fontSize: 12, color: '#888', marginTop: 2 },
+  historyBadge: { fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 99, textTransform: 'capitalize' },
+  modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 },
+  modalContent: { background: '#fff', borderRadius: 12, width: '100%', maxWidth: 680, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+  modalHeader: { padding: '20px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 },
+  modalTitle: { fontSize: 18, fontWeight: 700, color: '#111', margin: 0 },
+  closeBtn: { background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#888' },
+  modalTabs: { display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', borderBottom: '1px solid #eee', flexShrink: 0 },
+  modalTab: { padding: '7px 18px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13, color: '#555', cursor: 'pointer', background: '#fff', fontFamily: 'inherit' },
+  modalTabActive: { padding: '7px 18px', border: '1px solid #1f4d1f', borderRadius: 6, fontSize: 13, color: '#fff', cursor: 'pointer', background: '#1f4d1f', fontFamily: 'inherit' },
+  modalTabInfo: { marginLeft: 'auto', fontSize: 13, color: '#1f4d1f', fontWeight: 700 },
+  scheduleHeadRow: { display: 'grid', gridTemplateColumns: '40px 1fr 120px 100px', padding: '10px 24px', background: '#f7f5f0', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', flexShrink: 0 },
+  scheduleBody: { overflowY: 'auto', flex: 1 },
+  scheduleRow: { display: 'grid', gridTemplateColumns: '40px 1fr 120px 100px', padding: '11px 24px', borderBottom: '1px solid #f5f5f5', alignItems: 'center' },
+  scheduleNum: { fontSize: 13, color: '#888' },
+  scheduleDate: { fontSize: 13, color: '#333' },
+  scheduleAmt: { fontSize: 13, fontWeight: 600, color: '#111' },
+  paidBadge: { background: '#eafaf0', color: '#1a7a3a', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99 },
+  overdueBadge: { background: '#fff0f0', color: '#cc0000', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99 },
+  upcomingBadge: { background: '#f0f0f0', color: '#888', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 99 },
+  modalSummary: { display: 'flex', justifyContent: 'space-around', padding: '14px 24px', borderTop: '1px solid #eee', fontSize: 13, fontWeight: 600, flexShrink: 0 },
+  modalFooter: { padding: '14px 24px', borderTop: '1px solid #eee', textAlign: 'right', flexShrink: 0 },
+  closeModalBtn: { padding: '10px 24px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 },
+};

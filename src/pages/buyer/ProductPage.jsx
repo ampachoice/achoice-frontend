@@ -1,19 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct, getAllProducts, getProductReviews, submitProductReview } from '../../services/productService';
-import { getMyOrders } from '../../services/orderService';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  getProduct,
+  getAllProducts,
+  getProductReviews,
+  submitProductReview,
+} from "../../services/productService";
+import NotificationBell from '../../components/buyer/NotificationBell';
+import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 
 function StarRating({ rating = 0, size = 14 }) {
   const full = Math.floor(rating);
   const half = rating - full >= 0.5;
   return (
-    <span style={{ color: '#f0c050', fontSize: size }}>
+    <span style={{ color: "#f0c050", fontSize: size }}>
       {Array.from({ length: 5 }, (_, i) => {
-        if (i < full) return '★';
-        if (i === full && half) return '⯨';
-        return '☆';
-      }).join('')}
+        if (i < full) return "★";
+        if (i === full && half) return "⯨";
+        return "☆";
+      }).join("")}
     </span>
   );
 }
@@ -22,35 +27,41 @@ export default function ProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const userRaw = localStorage.getItem('user');
+  const userRaw = localStorage.getItem("user");
   const user = userRaw ? JSON.parse(userRaw) : null;
 
-  const [allProducts, setAllProducts]           = useState([]);
-  const [searchTerm, setSearchTerm]             = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [listLoading, setListLoading]         = useState(false);
-  const [listError, setListError]             = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState(null);
 
-  const [product, setProduct]           = useState(null);
-  const [reviews, setReviews]           = useState([]);
+  const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [activeImg, setActiveImg]       = useState(0);
+  const [activeImg, setActiveImg] = useState(0);
 
-  const [reviewForm, setReviewForm]           = useState({ rating: 5, comment: '' });
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
+    order_id: "",
+  });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewSuccess, setReviewSuccess]     = useState(false);
-  const [reviewError, setReviewError]         = useState(null);
-  const [eligibleOrderId, setEligibleOrderId] = useState(null);
-  const [checkingEligibility, setCheckingEligibility] = useState(false);
-  const [cartCount, setCartCount]             = useState(0);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewError, setReviewError] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
 
-  const categories = ['All', ...new Set(allProducts.map(p => p.category).filter(Boolean))];
+  const categories = [
+    "All",
+    ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
+  ];
 
   useEffect(() => {
-    if (document.getElementById('pp-style')) return;
-    const el = document.createElement('style');
-    el.id = 'pp-style';
+    if (document.getElementById("pp-style")) return;
+    const el = document.createElement("style");
+    el.id = "pp-style";
     el.textContent = `
       body { margin:0; }
       .pp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
@@ -59,9 +70,8 @@ export default function ProductPage() {
       .pp-nav { background:#1f4d1f; padding:10px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:200; gap:12px; }
       .pp-nav-left { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
       .pp-nav-logo { width:36px; height:36px; border-radius:6px; }
-      .pp-nav-name { font-weight:700; font-size:17px; color:#fff; line-height:1.2; }
+      .pp-nav-name { font-weight:700; font-size:17px; color:#fff; }
       .pp-nav-name span { color:#f0c050; }
-      .pp-nav-motto { font-size:9px; color:#a8d5a8; letter-spacing:.3px; }
       .pp-search-group { flex:1; max-width:500px; margin:0 20px; display:flex; background:#fff; border-radius:25px; overflow:hidden; border:2px solid #f0c050; }
       .pp-search-group select { padding:8px 12px; border:none; border-right:1px solid #eee; background:#f9f9f9; font-size:13px; outline:none; cursor:pointer; }
       .pp-search-group input  { flex:1; padding:9px 14px; border:none; outline:none; font-size:14px; min-width:0; }
@@ -155,9 +165,6 @@ export default function ProductPage() {
       .pp-review-submit-dis { padding:12px 28px; background:#ccc; color:#fff; border:none; border-radius:7px; font-size:14px; cursor:not-allowed; }
       .pp-review-ok  { background:#f0fff4; color:#1f4d1f; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:14px; border:1px solid #a8d5a8; }
       .pp-review-err { background:#fff0f0; color:#cc0000; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:14px; border:1px solid #ffb3b3; }
-      .pp-review-checking { font-size:13px; color:#888; padding:10px 0; }
-      .pp-review-locked { background:#fff8e7; border:1px solid #f0c050; border-radius:8px; padding:14px 16px; font-size:13px; color:#7a5c00; display:flex; flex-direction:column; gap:10px; }
-      .pp-review-locked-btn { align-self:flex-start; padding:8px 16px; background:#1f4d1f; color:#fff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
       .pp-empty { text-align:center; color:#888; padding:60px 0; font-size:16px; }
 
       /* ── TABLET ── */
@@ -210,19 +217,24 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (id) return;
-    setListLoading(true); setListError(null);
+    setListLoading(true);
+    setListError(null);
     getAllProducts()
-      .then(res => {
+      .then((res) => {
         const data = res.data?.data || res.data || [];
         setAllProducts(data);
+        setFilteredProducts(data);
       })
-      .catch(() => setListError('Failed to load products. Please try again.'))
+      .catch(() => setListError("Failed to load products. Please try again."))
       .finally(() => setListLoading(false));
   }, []);
 
   useEffect(() => {
     if (!id) return;
-    setDetailLoading(true); setProduct(null); setReviews([]); setActiveImg(0);
+    setDetailLoading(true);
+    setProduct(null);
+    setReviews([]);
+    setActiveImg(0);
     Promise.all([getProduct(id), getProductReviews(id)])
       .then(([pRes, rRes]) => {
         setProduct(pRes.data);
@@ -234,114 +246,112 @@ export default function ProductPage() {
       .finally(() => setDetailLoading(false));
   }, [id]);
 
-  // ✅ FIX 3: Auto-find a delivered order containing this product, so the
-  // user never has to type/know an Order ID. Runs silently in background.
-  // ✅ FIX: depend on user?.id (stable primitive) not the user object itself,
-  // since `user` is re-parsed from localStorage on every render and would be
-  // a new object reference each time — causing this effect to re-fire on
-  // every keystroke and remount the review form (the "blinking" textarea).
   useEffect(() => {
-    if (!id || !user?.id) return;
-    setCheckingEligibility(true);
-    getMyOrders()
-      .then(res => {
-        const raw = res.data;
-        const list = raw?.data || (Array.isArray(raw) ? raw : []);
-        const match = list.find(o =>
-          o.items?.some(it => String(it.product_id) === String(id) || String(it.product?.id) === String(id))
-        );
-        setEligibleOrderId(match ? match.id : null);
-      })
-      .catch(() => setEligibleOrderId(null))
-      .finally(() => setCheckingEligibility(false));
-  }, [id, user?.id]);
-
-  useEffect(() => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     setCartCount(cart.reduce((acc, item) => acc + item.quantity, 0));
   }, []);
 
-  // ✅ FIX 1: Filter inline — no useEffect needed, works for any length search
-  const filtered = (() => {
+  useEffect(() => {
     let results = allProducts;
-    if (selectedCategory !== 'All') results = results.filter(p => p.category === selectedCategory);
-    if (searchTerm.trim()) {
-      const q = searchTerm.trim().toLowerCase();
-      results = results.filter(p =>
-        p.name?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q) ||
-        p.seller?.business_name?.toLowerCase().includes(q)
+    if (selectedCategory !== "All")
+      results = results.filter((p) => p.category === selectedCategory);
+    if (searchTerm)
+      results = results.filter((p) =>
+        p.name?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
-    }
-    return results;
-  })();
+    setFilteredProducts(results);
+  }, [searchTerm, selectedCategory, allProducts]);
 
   const handleAddToCart = (p) => {
     if (!p) return;
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const idx = cart.findIndex(item => item.id === p.id);
+    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+    const idx = cart.findIndex((item) => item.id === p.id);
     if (idx > -1) cart[idx].quantity += 1;
-    else cart.push({ id:p.id, name:p.name, price:p.discount_price||p.price, image:p.images?.[0]?.url||p.image, quantity:1 });
-    localStorage.setItem('cart', JSON.stringify(cart));
+    else
+      cart.push({
+        id: p.id,
+        name: p.name,
+        price: p.discount_price || p.price,
+        image: p.images?.[0]?.image_url || p.images?.[0]?.url || p.image,
+        quantity: 1,
+      });
+    localStorage.setItem("cart", JSON.stringify(cart));
     setCartCount(cart.reduce((acc, item) => acc + item.quantity, 0));
-    navigate('/cart');
+    navigate("/cart");
   };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    setReviewSubmitting(true); setReviewError(null);
+    setReviewSubmitting(true);
+    setReviewError(null);
     try {
-      const payload = eligibleOrderId
-        ? { ...reviewForm, order_id: eligibleOrderId }
-        : reviewForm;
-      await submitProductReview(id, payload);
+      await submitProductReview(id, reviewForm);
       setReviewSuccess(true);
-      setReviewForm({ rating:5, comment:'' });
+      setReviewForm({ rating: 5, comment: "", order_id: "" });
       const res = await getProductReviews(id);
       const rd = res.data;
       setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
       setReviewSummary(rd?.summary || null);
     } catch (err) {
-      const msg = err.response?.data?.message || '';
-      if (msg.toLowerCase().includes('order')) {
-        setReviewError('You can only review products you have purchased and received.');
-      } else {
-        setReviewError(msg || 'Failed to submit review.');
-      }
-    } finally { setReviewSubmitting(false); }
+      setReviewError(err.response?.data?.message || "Failed to submit review.");
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
-  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', { day:'numeric', month:'short', year:'numeric' }) : '';
+  const fmtDate = (d) =>
+    d
+      ? new Date(d).toLocaleDateString("en-NG", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
 
   // ── NAV ──────────────────────────────────────────────────────────────────
-  const navbarJsx = (
+  const Navbar = () => (
     <>
       <nav className="pp-nav">
-        <div className="pp-nav-left" onClick={() => navigate('/products')}>
-          <img src="/android-chrome-192x192.png" alt="Logo" className="pp-nav-logo" />
-          <div>
-            <div className="pp-nav-name">ACHOICE <span>MARKET</span></div>
-            <div className="pp-nav-motto">Your needs our solutions</div>
+        <div className="pp-nav-left" onClick={() => navigate("/products")}>
+          <img
+            src="/android-chrome-192x192.png"
+            alt="Logo"
+            className="pp-nav-logo"
+          />
+          <div className="pp-nav-name">
+            ACHOICE <span>MARKET</span>
           </div>
         </div>
 
         {/* Desktop search — only on listing page */}
         {!id && (
           <div className="pp-search-group">
-            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
-            <input placeholder="Search products..." value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)} />
+            <input
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         )}
 
         <div className="pp-nav-right">
-          <div className="pp-cart-btn" onClick={() => navigate('/cart')}>
+          <div className="pp-cart-btn" onClick={() => navigate("/cart")}>
             🛒
-            {cartCount > 0 && <span className="pp-cart-badge">{cartCount}</span>}
+            {cartCount > 0 && (
+              <span className="pp-cart-badge">{cartCount}</span>
+            )}
           </div>
+          <NotificationBell />
           <BuyerDropdown cartCount={cartCount} />
         </div>
       </nav>
@@ -350,27 +360,46 @@ export default function ProductPage() {
       {!id && (
         <div className="pp-mobile-searchbar">
           <div className="pp-mobile-searchbar-inner">
-            <select value={selectedCategory} onChange={e => { setSelectedCategory(e.target.value); }}>
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+              }}
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
             <input
               type="search"
               placeholder="🔍 Search products..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               autoComplete="off"
             />
             {searchTerm && (
               <button
-                onClick={() => setSearchTerm('')}
-                style={{ background:'none', border:'none', color:'#888', fontSize:18, cursor:'pointer', padding:'0 4px', flexShrink:0 }}>
+                onClick={() => setSearchTerm("")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#888",
+                  fontSize: 18,
+                  cursor: "pointer",
+                  padding: "0 4px",
+                  flexShrink: 0,
+                }}
+              >
                 ✕
               </button>
             )}
           </div>
           {searchTerm && (
             <div className="pp-mobile-searchbar-count">
-              {filtered.length} result{filtered.length !== 1 ? 's' : ''} for "{searchTerm}"
+              {filteredProducts.length} result
+              {filteredProducts.length !== 1 ? "s" : ""} for "{searchTerm}"
             </div>
           )}
         </div>
@@ -379,78 +408,197 @@ export default function ProductPage() {
   );
 
   // ── LOADING / ERROR ───────────────────────────────────────────────────────
-  if (!id && listLoading) return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#888', padding:80, fontSize:16 }}>Loading products...</div></div>;
-  if (!id && listError)   return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#cc0000', padding:80, fontSize:14 }}>{listError}</div></div>;
-  if (id && detailLoading) return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#888', padding:80, fontSize:16 }}>Loading product...</div></div>;
-  if (id && !product && !detailLoading) return <div className="pp-wrap">{navbarJsx}<div style={{ textAlign:'center', color:'#888', padding:80, fontSize:16 }}>Product not found.</div></div>;
+  if (!id && listLoading)
+    return (
+      <div className="pp-wrap">
+        <Navbar />
+        <div
+          style={{
+            textAlign: "center",
+            color: "#888",
+            padding: 80,
+            fontSize: 16,
+          }}
+        >
+          Loading products...
+        </div>
+      </div>
+    );
+  if (!id && listError)
+    return (
+      <div className="pp-wrap">
+        <Navbar />
+        <div
+          style={{
+            textAlign: "center",
+            color: "#cc0000",
+            padding: 80,
+            fontSize: 14,
+          }}
+        >
+          {listError}
+        </div>
+      </div>
+    );
+  if (id && detailLoading)
+    return (
+      <div className="pp-wrap">
+        <Navbar />
+        <div
+          style={{
+            textAlign: "center",
+            color: "#888",
+            padding: 80,
+            fontSize: 16,
+          }}
+        >
+          Loading product...
+        </div>
+      </div>
+    );
+  if (id && !product && !detailLoading)
+    return (
+      <div className="pp-wrap">
+        <Navbar />
+        <div
+          style={{
+            textAlign: "center",
+            color: "#888",
+            padding: 80,
+            fontSize: 16,
+          }}
+        >
+          Product not found.
+        </div>
+      </div>
+    );
 
   // ── DETAIL DATA ───────────────────────────────────────────────────────────
-  const images     = product?.images?.length > 0 ? product.images.map(img => img.url || img) : product?.image ? [product.image] : [];
-  const hasDiscount = product?.discount_price && Number(product.discount_price) > 0;
+  const images =
+    product?.images?.length > 0
+      ? product.images.map((img) => img.image_url || img.url || img)
+      : product?.image
+        ? [product.image]
+        : [];
+  const hasDiscount =
+    product?.discount_price && Number(product.discount_price) > 0;
   const displayPrice = hasDiscount ? product.discount_price : product?.price;
-  const avgRating  = parseFloat(product?.reviews_avg_rating || 0);
+  const avgRating = parseFloat(product?.reviews_avg_rating || 0);
   const reviewCount = product?.reviews_count || 0;
-  const seller     = product?.seller;
+  const seller = product?.seller;
 
   return (
     <div className="pp-wrap">
-      {navbarJsx}
+      <Navbar />
       <div className="pp-container">
-
         {/* ══ LISTING ══════════════════════════════════════════════════════ */}
-        {!id && (
-          filtered.length === 0
-            ? <p className="pp-empty">
-                {searchTerm ? `No products found for "${searchTerm}"` : 'No products found.'}
-              </p>
-            : <div className="pp-grid">
-                {filtered.map(p => {
-                  const pDiscount = p.discount_price && Number(p.discount_price) > 0;
-                  const pImg = p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
-                  return (
-                    <div key={p.id} className="pp-card">
-                      <div className="pp-card-img-box" onClick={() => navigate(`/product/${p.id}`)}>
-                        {pImg ? <img src={pImg} alt={p.name} /> : <span style={{ fontSize:40 }}>📦</span>}
-                        {pDiscount && <div className="pp-sale-badge">SALE</div>}
-                        {p.category && <div className="pp-cat-badge">{p.category}</div>}
-                      </div>
-                      <div className="pp-card-body">
-                        <div className="pp-card-name">{p.name}</div>
-                        <div className="pp-card-seller">{p.seller?.business_name || 'ACHOICE Seller'}</div>
-                        <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:6 }}>
-                          <StarRating rating={parseFloat(p.reviews_avg_rating||0)} />
-                          <span style={{ fontSize:11, color:'#888' }}>({p.reviews_count||0})</span>
-                        </div>
-                        <div className="pp-card-price">₦{Number(pDiscount ? p.discount_price : p.price).toLocaleString()}</div>
-                        {pDiscount && <div className="pp-card-orig">₦{Number(p.price).toLocaleString()}</div>}
-                        <button className="pp-card-btn" onClick={() => handleAddToCart(p)}>Add & Checkout</button>
-                      </div>
+        {!id &&
+          (filteredProducts.length === 0 ? (
+            <p className="pp-empty">No products found.</p>
+          ) : (
+            <div className="pp-grid">
+              {filteredProducts.map((p) => {
+                const pDiscount =
+                  p.discount_price && Number(p.discount_price) > 0;
+                const pImg =
+                  p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
+                return (
+                  <div key={p.id} className="pp-card">
+                    <div
+                      className="pp-card-img-box"
+                      onClick={() => navigate(`/product/${p.id}`)}
+                    >
+                      {pImg ? (
+                        <img src={pImg} alt={p.name} />
+                      ) : (
+                        <span style={{ fontSize: 40 }}>📦</span>
+                      )}
+                      {pDiscount && <div className="pp-sale-badge">SALE</div>}
+                      {p.category && (
+                        <div className="pp-cat-badge">{p.category}</div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-        )}
+                    <div className="pp-card-body">
+                      <div className="pp-card-name">{p.name}</div>
+                      <div className="pp-card-seller">
+                        {p.seller?.business_name || "ACHOICE Seller"}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <StarRating
+                          rating={parseFloat(p.reviews_avg_rating || 0)}
+                        />
+                        <span style={{ fontSize: 11, color: "#888" }}>
+                          ({p.reviews_count || 0})
+                        </span>
+                      </div>
+                      <div className="pp-card-price">
+                        ₦
+                        {Number(
+                          pDiscount ? p.discount_price : p.price,
+                        ).toLocaleString()}
+                      </div>
+                      {pDiscount && (
+                        <div className="pp-card-orig">
+                          ₦{Number(p.price).toLocaleString()}
+                        </div>
+                      )}
+                      <button
+                        className="pp-card-btn"
+                        onClick={() => handleAddToCart(p)}
+                      >
+                        Add & Checkout
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
 
         {/* ══ DETAIL ═══════════════════════════════════════════════════════ */}
         {id && product && (
           <>
-            <button className="pp-back-btn" onClick={() => navigate('/products')}>← Back to Products</button>
+            <button
+              className="pp-back-btn"
+              onClick={() => navigate("/products")}
+            >
+              ← Back to Products
+            </button>
 
             <div className="pp-detail-card">
               {/* Images */}
               <div>
                 <div className="pp-main-img-box">
-                  {images.length > 0
-                    ? <img src={images[activeImg]} alt={product.name} />
-                    : <div className="pp-img-placeholder">🌿</div>}
+                  {images.length > 0 ? (
+                    <img src={images[activeImg]} alt={product.name} />
+                  ) : (
+                    <div className="pp-img-placeholder">🌿</div>
+                  )}
                   {hasDiscount && <div className="pp-detail-sale">SALE</div>}
                 </div>
                 {images.length > 1 && (
                   <div className="pp-thumbs">
                     {images.map((img, i) => (
-                      <img key={i} src={img} alt="" className="pp-thumb"
-                        style={{ border: i === activeImg ? '2.5px solid #1f4d1f' : '2px solid #eee' }}
-                        onClick={() => setActiveImg(i)} />
+                      <img
+                        key={i}
+                        src={img}
+                        alt=""
+                        className="pp-thumb"
+                        style={{
+                          border:
+                            i === activeImg
+                              ? "2.5px solid #1f4d1f"
+                              : "2px solid #eee",
+                        }}
+                        onClick={() => setActiveImg(i)}
+                      />
                     ))}
                   </div>
                 )}
@@ -462,39 +610,83 @@ export default function ProductPage() {
                 <h1 className="pp-detail-name">{product.name}</h1>
                 <div className="pp-rating-row">
                   <StarRating rating={avgRating} size={18} />
-                  <span>{avgRating.toFixed(1)} ({reviewCount} review{reviewCount !== 1 ? 's' : ''})</span>
+                  <span>
+                    {avgRating.toFixed(1)} ({reviewCount} review
+                    {reviewCount !== 1 ? "s" : ""})
+                  </span>
                 </div>
                 <div className="pp-price-row">
-                  <div className="pp-price">₦{Number(displayPrice).toLocaleString()}</div>
-                  {hasDiscount && <div className="pp-orig-price">₦{Number(product.price).toLocaleString()}</div>}
+                  <div className="pp-price">
+                    ₦{Number(displayPrice).toLocaleString()}
+                  </div>
+                  {hasDiscount && (
+                    <div className="pp-orig-price">
+                      ₦{Number(product.price).toLocaleString()}
+                    </div>
+                  )}
                 </div>
                 <p className="pp-desc">{product.description}</p>
-                {product.min_order_qty && <div className="pp-info-tag">📦 Min. order: {product.min_order_qty} units</div>}
+                {product.min_order_qty && (
+                  <div className="pp-info-tag">
+                    📦 Min. order: {product.min_order_qty} units
+                  </div>
+                )}
                 {product.whatsapp_number && (
-                  <a href={`https://wa.me/${product.whatsapp_number.replace(/\D/g,'')}?text=Hi, I'm interested in ${encodeURIComponent(product.name)}`}
-                    target="_blank" rel="noreferrer" className="pp-whatsapp-btn">
+                  <a
+                    href={`https://wa.me/${product.whatsapp_number.replace(/\D/g, "")}?text=Hi, I'm interested in ${encodeURIComponent(product.name)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pp-whatsapp-btn"
+                  >
                     💬 Chat on WhatsApp
                   </a>
                 )}
-                <button className="pp-add-btn" onClick={() => handleAddToCart(product)}>🛒 Add to Cart</button>
+                <button
+                  className="pp-add-btn"
+                  onClick={() => handleAddToCart(product)}
+                >
+                  🛒 Add to Cart
+                </button>
 
                 {seller && (
                   <div className="pp-seller-card">
                     <div className="pp-seller-label">Sold by</div>
                     <div className="pp-seller-name">{seller.business_name}</div>
                     {seller.rating > 0 && (
-                      <div style={{ display:'flex', alignItems:'center', gap:6, margin:'4px 0 6px' }}>
-                        <StarRating rating={parseFloat(seller.rating)} size={13} />
-                        <span style={{ fontSize:13, color:'#666' }}>{parseFloat(seller.rating).toFixed(1)}</span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          margin: "4px 0 6px",
+                        }}
+                      >
+                        <StarRating
+                          rating={parseFloat(seller.rating)}
+                          size={13}
+                        />
+                        <span style={{ fontSize: 13, color: "#666" }}>
+                          {parseFloat(seller.rating).toFixed(1)}
+                        </span>
                       </div>
                     )}
                     <div className="pp-seller-meta">
-                      {seller.total_sales > 0 && <span>🛍 {seller.total_sales} sales</span>}
-                      {seller.state && <span>📍 {seller.business_address || seller.state}</span>}
+                      {seller.total_sales > 0 && (
+                        <span>🛍 {seller.total_sales} sales</span>
+                      )}
+                      {seller.state && (
+                        <span>
+                          📍 {seller.business_address || seller.state}
+                        </span>
+                      )}
                     </div>
                     {seller.whatsapp_number && (
-                      <a href={`https://wa.me/${seller.whatsapp_number.replace(/\D/g,'')}`}
-                        target="_blank" rel="noreferrer" className="pp-seller-wa">
+                      <a
+                        href={`https://wa.me/${seller.whatsapp_number.replace(/\D/g, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="pp-seller-wa"
+                      >
                         💬 Contact Seller
                       </a>
                     )}
@@ -510,18 +702,28 @@ export default function ProductPage() {
               {reviewSummary && (
                 <div className="pp-rating-breakdown">
                   <div className="pp-rating-big">
-                    <div className="pp-rating-big-num">{avgRating.toFixed(1)}</div>
+                    <div className="pp-rating-big-num">
+                      {avgRating.toFixed(1)}
+                    </div>
                     <StarRating rating={avgRating} size={22} />
-                    <div className="pp-rating-big-count">{reviewCount} reviews</div>
+                    <div className="pp-rating-big-count">
+                      {reviewCount} reviews
+                    </div>
                   </div>
                   <div className="pp-rating-bars">
-                    {[5,4,3,2,1].map(star => {
+                    {[5, 4, 3, 2, 1].map((star) => {
                       const count = reviewSummary[star] || 0;
-                      const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
+                      const pct =
+                        reviewCount > 0 ? (count / reviewCount) * 100 : 0;
                       return (
                         <div key={star} className="pp-bar-row">
                           <span className="pp-bar-label">{star}★</span>
-                          <div className="pp-bar-bg"><div className="pp-bar-fill" style={{ width:`${pct}%` }} /></div>
+                          <div className="pp-bar-bg">
+                            <div
+                              className="pp-bar-fill"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
                           <span className="pp-bar-count">{count}</span>
                         </div>
                       );
@@ -533,87 +735,110 @@ export default function ProductPage() {
               {reviews.length > 0 ? (
                 <div className="pp-review-list">
                   {reviews.map((r, i) => (
-                    <div key={r.id||i} className="pp-review-item">
+                    <div key={r.id || i} className="pp-review-item">
                       <div className="pp-review-header">
-                        <div className="pp-review-avatar">{r.user?.name?.charAt(0)||'?'}</div>
+                        <div className="pp-review-avatar">
+                          {r.user?.name?.charAt(0) || "?"}
+                        </div>
                         <div>
-                          <div className="pp-review-user">{r.user?.name||'Anonymous'}</div>
+                          <div className="pp-review-user">
+                            {r.user?.name || "Anonymous"}
+                          </div>
                           <StarRating rating={r.rating} size={13} />
                         </div>
-                        <div className="pp-review-date">{fmtDate(r.created_at)}</div>
+                        <div className="pp-review-date">
+                          {fmtDate(r.created_at)}
+                        </div>
                       </div>
                       <p className="pp-review-comment">{r.comment}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="pp-no-reviews">No reviews yet. Be the first to review this product!</p>
+                <p className="pp-no-reviews">
+                  No reviews yet. Be the first to review this product!
+                </p>
               )}
 
               {user && (
                 <div className="pp-review-form">
                   <h3>Leave a Review</h3>
-
-                  {checkingEligibility && (
-                    <div className="pp-review-checking">⏳ Checking your purchase history...</div>
-                  )}
-
-                  {!checkingEligibility && !eligibleOrderId && (
-                    <div className="pp-review-locked">
-                      🔒 You can review this product once you've purchased and received it.
-                      <button className="pp-review-locked-btn" onClick={() => navigate('/orders')}>
-                        View My Orders →
-                      </button>
+                  {reviewSuccess && (
+                    <div className="pp-review-ok">
+                      ✅ Review submitted! Thank you.
                     </div>
                   )}
-
-                  {!checkingEligibility && eligibleOrderId && (
-                    <>
-                      {reviewSuccess && <div className="pp-review-ok">✅ Review submitted! Thank you.</div>}
-                      {reviewError   && <div className="pp-review-err">⚠️ {reviewError}</div>}
-                      <form onSubmit={handleReviewSubmit}>
-
-                        {/* ✅ Clickable star rating — simple, no dropdown, no order ID needed from user */}
-                        <div className="pp-review-field">
-                          <label className="pp-review-label">Your Rating</label>
-                          <div style={{ display:'flex', gap:6, alignItems:'center', margin:'6px 0' }}>
-                            {[1,2,3,4,5].map(star => (
-                              <span key={star}
-                                onClick={() => setReviewForm(f => ({ ...f, rating: star }))}
-                                style={{
-                                  fontSize: 32,
-                                  cursor: 'pointer',
-                                  color: star <= reviewForm.rating ? '#f0c050' : '#ddd',
-                                  transition: 'color .15s',
-                                  lineHeight: 1,
-                                  userSelect: 'none',
-                                }}
-                                title={`${star} star${star > 1 ? 's' : ''}`}
-                              >
-                                ★
-                              </span>
-                            ))}
-                            <span style={{ fontSize:13, color:'#888', marginLeft:8 }}>
-                              {['','Poor','Fair','Good','Very Good','Excellent'][reviewForm.rating]}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pp-review-field">
-                          <label className="pp-review-label">Your Review</label>
-                          <textarea className="pp-review-textarea" rows={4} required
-                            placeholder="Share your experience with this product..."
-                            value={reviewForm.comment}
-                            onChange={e => setReviewForm(f => ({ ...f, comment:e.target.value }))} />
-                        </div>
-                        <button type="submit"
-                          className={reviewSubmitting ? 'pp-review-submit-dis' : 'pp-review-submit'}
-                          disabled={reviewSubmitting}>
-                          {reviewSubmitting ? 'Submitting...' : `Submit ${reviewForm.rating}★ Review →`}
-                        </button>
-                      </form>
-                    </>
+                  {reviewError && (
+                    <div className="pp-review-err">⚠️ {reviewError}</div>
                   )}
+                  <form onSubmit={handleReviewSubmit}>
+                    <div className="pp-review-field">
+                      <label className="pp-review-label">Rating</label>
+                      <select
+                        className="pp-review-select"
+                        value={reviewForm.rating}
+                        onChange={(e) =>
+                          setReviewForm({
+                            ...reviewForm,
+                            rating: Number(e.target.value),
+                          })
+                        }
+                      >
+                        {[5, 4, 3, 2, 1].map((n) => (
+                          <option key={n} value={n}>
+                            {n} Star{n > 1 ? "s" : ""} {"★".repeat(n)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="pp-review-field">
+                      <label className="pp-review-label">
+                        Order ID{" "}
+                        <span style={{ color: "#aaa", fontWeight: 400 }}>
+                          (optional)
+                        </span>
+                      </label>
+                      <input
+                        className="pp-review-input"
+                        type="text"
+                        placeholder="Your order ID"
+                        value={reviewForm.order_id}
+                        onChange={(e) =>
+                          setReviewForm({
+                            ...reviewForm,
+                            order_id: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="pp-review-field">
+                      <label className="pp-review-label">Your Review</label>
+                      <textarea
+                        className="pp-review-textarea"
+                        rows={4}
+                        required
+                        placeholder="Share your experience with this product..."
+                        value={reviewForm.comment}
+                        onChange={(e) =>
+                          setReviewForm({
+                            ...reviewForm,
+                            comment: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className={
+                        reviewSubmitting
+                          ? "pp-review-submit-dis"
+                          : "pp-review-submit"
+                      }
+                      disabled={reviewSubmitting}
+                    >
+                      {reviewSubmitting ? "Submitting..." : "Submit Review →"}
+                    </button>
+                  </form>
                 </div>
               )}
             </div>
@@ -623,3 +848,5 @@ export default function ProductPage() {
     </div>
   );
 }
+
+

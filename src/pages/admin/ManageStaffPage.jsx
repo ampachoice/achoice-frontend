@@ -223,7 +223,6 @@ export default function ManageStaffPage() {
             { icon: '⚙️', label: 'Loan Settings', path: '/admin/loan-settings' },
             { icon: '🚚', label: 'Delivery Zones', path: '/admin/delivery-zones' },
             { icon: '📈', label: 'Reports', path: '/admin/reports' },
-             { icon: '🖼️', label: 'Site Settings', path: '/admin/settings'},
           ].map(item => (
             <div key={item.label}
               style={{ ...s.sidebarItem, ...(item.active ? s.sidebarItemActive : {}) }}
