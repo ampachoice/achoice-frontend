@@ -25,11 +25,12 @@ export default function ComplaintsPage() {
   const [loadingComplaints, setLoadingComplaints] = useState(true);
 
   // Form state
-  const [issueType, setIssueType]         = useState("");
-  const [orderId, setOrderId]             = useState("");
-  const [subject, setSubject]             = useState("");
-  const [description, setDescription]     = useState("");
-  const [evidence, setEvidence]           = useState(null);
+  const [category, setCategory]   = useState("");
+  const [issueType, setIssueType] = useState("");
+  const [orderId, setOrderId]     = useState("");
+  const [subject, setSubject]     = useState("");
+  const [description, setDescription] = useState("");
+  const [evidence, setEvidence]   = useState(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -59,14 +60,15 @@ export default function ComplaintsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!issueType || !subject.trim() || !description.trim()) {
+    if (!category || !issueType || !subject.trim() || !description.trim()) {
       showToast("Please fill in all required fields.");
       return;
     }
     setSubmitting(true);
     try {
       const payload = new FormData();
-      payload.append("type",        issueType);
+      payload.append("category",    category);
+      payload.append("issue_type",  issueType);
       payload.append("subject",     subject);
       payload.append("description", description);
       if (orderId) payload.append("order_id", orderId);
@@ -80,7 +82,8 @@ export default function ComplaintsPage() {
       setComplaints(prev => [newComplaint, ...prev]);
 
       // Reset form
-      setIssueType(""); setOrderId(""); setSubject(""); setDescription(""); setEvidence(null);
+      setCategory(""); setIssueType(""); setOrderId("");
+      setSubject(""); setDescription(""); setEvidence(null);
       const fileInput = document.getElementById("evidence-input");
       if (fileInput) fileInput.value = "";
 
@@ -150,7 +153,6 @@ export default function ComplaintsPage() {
       `}</style>
 
       <div className="cmp-wrap">
-        {/* NAV */}
         <nav className="cmp-nav">
           <div className="cmp-nav-left" onClick={() => navigate("/products")}>
             <img src={LOGO_PATH} alt="Logo" className="cmp-nav-logo"
@@ -160,15 +162,24 @@ export default function ComplaintsPage() {
           <div className="cmp-nav-right"><BuyerDropdown /></div>
         </nav>
 
-        {/* BODY */}
         <div className="cmp-body">
-          <h1 className="cmp-title">📋 Complaints &amp; Refunds</h1>
+          <h1 className="cmp-title">📋 Complaints</h1>
           <p className="cmp-sub">Submit a complaint. Our team will review and respond within 48 hours.</p>
 
-          {/* FORM */}
           <div className="cmp-card">
             <div className="cmp-card-title">Submit a New Complaint</div>
             <form onSubmit={handleSubmit}>
+
+              {/* Category */}
+              <div className="cmp-field">
+                <label className="cmp-label">Category <span style={{color:"red"}}>*</span></label>
+                <select className="cmp-select" value={category}
+                  onChange={e => { setCategory(e.target.value); setIssueType(""); }} required>
+                  <option value="">-- Select Category --</option>
+                  <option value="orders">Orders</option>
+                  <option value="loan">Loan</option>
+                </select>
+              </div>
 
               {/* Issue Type */}
               <div className="cmp-field">
@@ -189,9 +200,7 @@ export default function ComplaintsPage() {
                   onChange={e => setOrderId(e.target.value)}>
                   <option value="">-- Select Order (Optional) --</option>
                   {orders.map(order => (
-                    <option key={order.id} value={order.id}>
-                      {order.label}
-                    </option>
+                    <option key={order.id} value={order.id}>{order.label}</option>
                   ))}
                 </select>
                 {orders.length === 0 && (
@@ -230,7 +239,6 @@ export default function ComplaintsPage() {
             </form>
           </div>
 
-          {/* COMPLAINTS LIST */}
           <div className="cmp-list-title">Your Submitted Complaints</div>
           {loadingComplaints ? (
             <div className="cmp-loading">Loading complaints...</div>
@@ -263,7 +271,6 @@ export default function ComplaintsPage() {
           )}
         </div>
 
-        {/* FOOTER */}
         <footer style={{background:"#1f4d1f", padding:"16px 40px", textAlign:"center"}}>
           <p style={{color:"#ccc", fontSize:12, margin:0}}>
             © {new Date().getFullYear()} Achoice Market. All rights reserved.
