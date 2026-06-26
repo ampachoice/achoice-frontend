@@ -5,10 +5,19 @@ import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 
 const LOGO_PATH = "/achoice logo.png";
 
+const complaintTypes = [
+  { value: "refund_request", label: "Refund Request" },
+  { value: "damaged_item",   label: "Damaged Item" },
+  { value: "wrong_item",     label: "Wrong Item Received" },
+  { value: "late_delivery",  label: "Late Delivery" },
+  { value: "loan_complaint", label: "Loan Complaint" },
+  { value: "payment_issue",  label: "Payment Issue" },
+  { value: "other",          label: "Other" },
+];
+
 export default function ComplaintsPage() {
   const navigate = useNavigate();
 
-  const [issueTypes, setIssueTypes]       = useState({});
   const [orders, setOrders]               = useState([]);
   const [complaints, setComplaints]       = useState([]);
   const [toast, setToast]                 = useState("");
@@ -16,8 +25,6 @@ export default function ComplaintsPage() {
   const [loadingComplaints, setLoadingComplaints] = useState(true);
 
   // Form state
-  const [category, setCategory]           = useState("");
-  const [issueOptions, setIssueOptions]   = useState([]);
   const [issueType, setIssueType]         = useState("");
   const [orderId, setOrderId]             = useState("");
   const [subject, setSubject]             = useState("");
@@ -29,18 +36,16 @@ export default function ComplaintsPage() {
     setTimeout(() => setToast(""), 3500);
   };
 
-  // Load issue types
   useEffect(() => {
-    api.get("/complaints/issue-types")
-      .then(res => setIssueTypes(res.data || {}))
-      .catch(() => {});
-
-    api.get("/complaints/my-orders")
-      .then(res => setOrders(
-        Array.isArray(res.data.orders) ? res.data.orders :
-        Array.isArray(res.data) ? res.data : []
-      ))
-      .catch(() => {});
+    const fetchMyOrders = async () => {
+      try {
+        const res = await api.get("/complaints/my-orders");
+        setOrders(res.data.orders || []);
+      } catch (err) {
+        console.error("Failed to load orders", err);
+      }
+    };
+    fetchMyOrders();
 
     api.get("/complaints/my-complaints")
       .then(res => setComplaints(
@@ -52,15 +57,9 @@ export default function ComplaintsPage() {
       .finally(() => setLoadingComplaints(false));
   }, []);
 
-  const handleCategoryChange = (val) => {
-    setCategory(val);
-    setIssueType("");
-    setIssueOptions(Object.entries(issueTypes[val] || {}));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!category || !issueType || !subject.trim() || !description.trim()) {
+    if (!issueType || !subject.trim() || !description.trim()) {
       showToast("Please fill in all required fields.");
       return;
     }
@@ -81,8 +80,7 @@ export default function ComplaintsPage() {
       setComplaints(prev => [newComplaint, ...prev]);
 
       // Reset form
-      setCategory(""); setIssueType(""); setIssueOptions([]);
-      setOrderId(""); setSubject(""); setDescription(""); setEvidence(null);
+      setIssueType(""); setOrderId(""); setSubject(""); setDescription(""); setEvidence(null);
       const fileInput = document.getElementById("evidence-input");
       if (fileInput) fileInput.value = "";
 
@@ -172,51 +170,36 @@ export default function ComplaintsPage() {
             <div className="cmp-card-title">Submit a New Complaint</div>
             <form onSubmit={handleSubmit}>
 
-              {/* Step 1 — Category */}
+              {/* Issue Type */}
               <div className="cmp-field">
-                <label className="cmp-label">Category <span style={{color:"red"}}>*</span></label>
-                <select className="cmp-select" value={category}
-                  onChange={e => handleCategoryChange(e.target.value)} required>
-                  <option value="">-- Select Category --</option>
-                  <option value="orders">Orders</option>
-                  <option value="loan">Loan</option>
+                <label className="cmp-label">Issue Type <span style={{color:"red"}}>*</span></label>
+                <select className="cmp-select" value={issueType}
+                  onChange={e => setIssueType(e.target.value)} required>
+                  <option value="">-- Select Issue Type --</option>
+                  {complaintTypes.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
                 </select>
               </div>
 
-              {/* Step 2 — Issue Type */}
-              {category && (
-                <div className="cmp-field">
-                  <label className="cmp-label">Issue Type <span style={{color:"red"}}>*</span></label>
-                  <select className="cmp-select" value={issueType}
-                    onChange={e => setIssueType(e.target.value)} required>
-                    <option value="">-- Select Issue --</option>
-                    {issueOptions.map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Order */}
+              <div className="cmp-field">
+                <label className="cmp-label">Select Order <span style={{color:"#aaa", fontWeight:400}}>(optional)</span></label>
+                <select className="cmp-select" value={orderId}
+                  onChange={e => setOrderId(e.target.value)}>
+                  <option value="">-- Select Order (Optional) --</option>
+                  {orders.map(order => (
+                    <option key={order.id} value={order.id}>
+                      {order.label}
+                    </option>
+                  ))}
+                </select>
+                {orders.length === 0 && (
+                  <p className="cmp-no-orders">Only delivered, shipped or cancelled orders appear here.</p>
+                )}
+              </div>
 
-              {/* Step 3 — Order (only for orders category) */}
-              {category === "orders" && (
-                <div className="cmp-field">
-                  <label className="cmp-label">Select Order <span style={{color:"#aaa", fontWeight:400}}>(optional)</span></label>
-                  <select className="cmp-select" value={orderId}
-                    onChange={e => setOrderId(e.target.value)}>
-                    <option value="">-- Select Order (Optional) --</option>
-                    {orders.map(o => (
-                      <option key={o.id} value={o.id}>
-                        {o.label || o.order_number || `Order #${o.id}`}
-                      </option>
-                    ))}
-                  </select>
-                  {orders.length === 0 && (
-                    <p className="cmp-no-orders">Only delivered, shipped or cancelled orders appear here.</p>
-                  )}
-                </div>
-              )}
-
-              {/* Step 4 — Subject */}
+              {/* Subject */}
               <div className="cmp-field">
                 <label className="cmp-label">Subject <span style={{color:"red"}}>*</span></label>
                 <input className="cmp-input" type="text" value={subject}
@@ -224,7 +207,7 @@ export default function ComplaintsPage() {
                   placeholder="Brief summary of your complaint" required />
               </div>
 
-              {/* Step 5 — Description */}
+              {/* Description */}
               <div className="cmp-field">
                 <label className="cmp-label">Description <span style={{color:"red"}}>*</span></label>
                 <textarea className="cmp-textarea" value={description}
