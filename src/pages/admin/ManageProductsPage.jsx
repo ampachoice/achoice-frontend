@@ -247,7 +247,6 @@ export default function ManageProductsPage() {
       });
       setSelectedFile(null);
       setImagePreview(null);
-      
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to create product.");
     } finally {
@@ -478,6 +477,7 @@ export default function ManageProductsPage() {
         <nav style={s.sidebarNav}>
           {[
             { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
+            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
             { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
             {
               icon: "🌾",
@@ -1276,12 +1276,3 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
 };
-
-
-
-
-
-
-
-
-

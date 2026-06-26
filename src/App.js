@@ -35,8 +35,8 @@ import ManageLoansPage    from './pages/admin/ManageLoansPage';
 import LoanSettingsPage   from './pages/admin/LoanSettingsPage';
 import DeliveryZonesPage  from './pages/admin/DeliveryZonesPage';
 import ManageStaffPage    from './pages/admin/ManageStaffPage';
+import ManageBuyersPage   from './pages/admin/ManageBuyersPage';
 import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
-import ManageBuyersPage  from './pages/admin/ManageBuyersPage'; // ✅ correct import
 
 // ── PROTECTED ROUTE ───────────────────────────────────────────────────────────
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -113,6 +113,10 @@ const router = createBrowserRouter([
       {
         path: 'staff',
         element: <ProtectedRoute adminOnly><ManageStaffPage /></ProtectedRoute>
+      },
+      {
+        path: 'buyers',
+        element: <ProtectedRoute adminOnly><ManageBuyersPage /></ProtectedRoute>
       },
       {
         path: 'settings',  // ✅ lowercase

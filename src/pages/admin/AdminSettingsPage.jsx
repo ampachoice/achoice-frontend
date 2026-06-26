@@ -216,6 +216,7 @@ export default function AdminSettingsPage() {
 
   const sidebarItems = [
     { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
+    { icon: "👤", label: "Buyers", path: "/admin/buyers" },
     { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
     { icon: "🌾", label: "Products", path: "/admin/products" },
     { icon: "📦", label: "Orders", path: "/admin/orders" },

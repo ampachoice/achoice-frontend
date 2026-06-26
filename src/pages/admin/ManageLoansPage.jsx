@@ -352,7 +352,8 @@ export default function ManageLoansPage() {
                     </span>
                   </label>
                   <div style={s.modalRateDisplay}>
-                    {approveForm.duration_months} month{Number(approveForm.duration_months) === 1 ? "" : "s"}
+                    {approveForm.duration_months} month
+                    {Number(approveForm.duration_months) === 1 ? "" : "s"}
                   </div>
                 </div>
                 {approveForm.duration_months && (
@@ -380,7 +381,10 @@ export default function ManageLoansPage() {
                             "Monthly Instalment",
                             `₦${monthly.toLocaleString()}`,
                           ],
-                          ["Duration", `${months} month${months === 1 ? "" : "s"}`],
+                          [
+                            "Duration",
+                            `${months} month${months === 1 ? "" : "s"}`,
+                          ],
                         ].map(([label, val]) => (
                           <div key={label} style={s.previewItem}>
                             <div style={s.previewLabel}>{label}</div>
@@ -421,6 +425,7 @@ export default function ManageLoansPage() {
         <nav style={s.sidebarNav}>
           {[
             { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
+            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
             { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
             { icon: "🌾", label: "Products", path: "/admin/products" },
             { icon: "📦", label: "Orders", path: "/admin/orders" },
@@ -1939,5 +1944,3 @@ const s = {
     fontSize: 14,
   },
 };
-
-

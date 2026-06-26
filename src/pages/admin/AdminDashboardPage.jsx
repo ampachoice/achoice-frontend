@@ -196,6 +196,7 @@ export default function AdminDashboardPage() {
               path: "/admin/dashboard",
               active: true,
             },
+            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
             { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
             { icon: "🌾", label: "Products", path: "/admin/products" },
             { icon: "📦", label: "Orders", path: "/admin/orders" },
