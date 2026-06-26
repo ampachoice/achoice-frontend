@@ -98,6 +98,20 @@ setRevenueReport(Array.isArray(revData) ? revData : []);
     }
   };
 
+  const handleCollectPayment = async (orderId) => {
+    if (!window.confirm("Confirm that cash payment has been collected for this order?")) return;
+    setUpdating(orderId);
+    try {
+      const res = await api.patch(`/staff/agro/orders/${orderId}/collect-payment`);
+      const updated = res.data?.order || res.data;
+      setOrders(orders.map(o => o.id === orderId ? { ...o, ...updated } : o));
+      showToast(res.data?.message || "Payment marked as collected.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to mark payment as collected.");
+    } finally {
+      setUpdating(null);
+    }
+  };
   const getStatusStyle = (status) => ({
     pending:    { background: '#fff8e7', color: '#b36b00' },
     processing: { background: '#e7f0ff', color: '#1a4fa0' },
@@ -300,6 +314,11 @@ setRevenueReport(Array.isArray(revData) ? revData : []);
                         onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
                         disabled={updating === order.id}>
                         {updating === order.id ? 'Updating...' : 'Mark as Shipped'}
+                      </button>
+                    )}
+                    {order.payment_method === 'pay_on_delivery' && order.payment_status === 'pod_pending' && (
+                      <button style={updating === order.id ? s.actionBtnDisabled : s.actionBtn} onClick={() => handleCollectPayment(order.id)} disabled={updating === order.id}>
+                        {updating === order.id ? 'Updating...' : 'Mark Payment Collected'}
                       </button>
                     )}
                     {order.status === 'shipped' && (
