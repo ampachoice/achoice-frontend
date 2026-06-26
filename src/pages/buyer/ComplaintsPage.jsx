@@ -1,361 +1,311 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 
 const LOGO_PATH = "/achoice logo.png";
 
-export default function ComplaintsPage() {
+export default function ComplaintDetailPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const bottomRef = useRef(null);
 
-  const [orders, setOrders]                       = useState([]);
-  const [complaints, setComplaints]               = useState([]);
-  const [toast, setToast]                         = useState("");
-  const [submitting, setSubmitting]               = useState(false);
-  const [loadingComplaints, setLoadingComplaints] = useState(true);
-  const [formData, setFormData]                   = useState({
-    order_id: "",
-    type: "",
-    subject: "",
-    description: "",
-    evidence: null,
-  });
+  const [complaint, setComplaint] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [toast, setToast] = useState("");
 
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3500);
   };
 
-  // Load buyer orders for complaint dropdown
-  useEffect(() => {
-    api
-      .get("/complaints/my-orders")
-      .then((res) =>
-        setOrders(
-          Array.isArray(res.data.orders)
-            ? res.data.orders
-            : Array.isArray(res.data)
-              ? res.data
-              : [],
-        ),
-      )
-      .catch(() => {});
-  }, []);
-
-  // Load existing complaints
-  useEffect(() => {
-    api
-      .get("/complaints/my-complaints")
-      .then((res) =>
-        setComplaints(
-          Array.isArray(res.data.data)
-            ? res.data.data
-            : Array.isArray(res.data.complaints)
-              ? res.data.complaints
-              : Array.isArray(res.data)
-                ? res.data
-                : [],
-        ),
-      )
-      .catch(() => {})
-      .finally(() => setLoadingComplaints(false));
-  }, []);
-
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "evidence") {
-      setFormData((prev) => ({ ...prev, evidence: files[0] || null }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+  const fetchComplaint = async () => {
+    try {
+      const res = await api.get(`/complaints/${id}`);
+      setComplaint(res.data.complaint || res.data);
+    } catch {
+      showToast("Failed to load complaint.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.order_id || !formData.type || !formData.subject.trim() || !formData.description.trim()) {
-      showToast("Please fill in all required fields.");
-      return;
+  useEffect(() => {
+    fetchComplaint();
+  }, [id]);
+
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-    setSubmitting(true);
+  }, [complaint?.messages]);
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    setSending(true);
     try {
-      const payload = new FormData();
-      payload.append("order_id",    formData.order_id);
-      payload.append("type",        formData.type);
-      payload.append("subject",     formData.subject);
-      payload.append("description", formData.description);
-      if (formData.evidence) payload.append("evidence", formData.evidence);
-
-      const res = await api.post("/complaints", payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const newComplaint = res.data.complaint || res.data;
-      setComplaints((prev) => [newComplaint, ...prev]);
-      setFormData({ order_id: "", type: "", subject: "", description: "", evidence: null });
-      const fileInput = document.getElementById("evidence-input");
-      if (fileInput) fileInput.value = "";
-      showToast("Complaint submitted successfully!");
-    } catch (err) {
-      showToast(
-        err?.response?.data?.message ||
-          "Failed to submit complaint. Try again.",
-      );
+      await api.post(`/complaints/${id}/messages`, { message: newMessage });
+      setNewMessage("");
+      fetchComplaint();
+    } catch {
+      showToast("Failed to send message.");
     } finally {
-      setSubmitting(false);
+      setSending(false);
     }
   };
 
   const getStatusStyle = (status) =>
     ({
-      pending:      { background: "#fff8e7", color: "#b36b00" },
+      pending: { background: "#fff8e7", color: "#b36b00" },
       under_review: { background: "#e7f0ff", color: "#1a4fa0" },
-      resolved:     { background: "#eafaf0", color: "#1a7a3a" },
-      rejected:     { background: "#fff0f0", color: "#cc0000" },
+      resolved: { background: "#eafaf0", color: "#1a7a3a" },
+      rejected: { background: "#fff0f0", color: "#cc0000" },
     })[status] || { background: "#f0f0f0", color: "#555" };
-
-  const complaintTypes = [
-    { value: "refund_request", label: "Refund Request" },
-    { value: "damaged_item",   label: "Damaged Item" },
-    { value: "wrong_item",     label: "Wrong Item" },
-    { value: "late_delivery",  label: "Late Delivery" },
-    { value: "loan_complaint", label: "Loan Complaint" },
-    { value: "payment_issue",  label: "Payment Issue" },
-    { value: "other",          label: "Other" },
-  ];
 
   return (
     <>
       <style>{`
-        .cmp-wrap  { min-height:100vh; display:flex; flex-direction:column; background:#f7f5f0; font-family:'Segoe UI',sans-serif; }
-        .cmp-nav   { background:#1f4d1f; padding:10px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
-        .cmp-nav-left  { display:flex; align-items:center; gap:10px; cursor:pointer; }
-        .cmp-nav-logo  { width:36px; height:36px; border-radius:6px; }
-        .cmp-nav-name  { font-weight:700; font-size:17px; color:#fff; }
-        .cmp-nav-name span { color:#f0c050; }
-        .cmp-nav-right { display:flex; align-items:center; gap:14px; }
+        .cdp-wrap  { min-height:100vh; display:flex; flex-direction:column; background:#f7f5f0; font-family:'Segoe UI',sans-serif; }
+        .cdp-nav   { background:#1f4d1f; padding:10px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+        .cdp-nav-left  { display:flex; align-items:center; gap:10px; cursor:pointer; }
+        .cdp-nav-logo  { width:36px; height:36px; border-radius:6px; }
+        .cdp-nav-name  { font-weight:700; font-size:17px; color:#fff; }
+        .cdp-nav-name span { color:#f0c050; }
+        .cdp-nav-right { display:flex; align-items:center; gap:14px; }
+        .cdp-body  { flex:1; max-width:760px; margin:0 auto; width:100%; padding:36px 16px 60px; }
+        .cdp-back  { display:inline-flex; align-items:center; gap:6px; color:#1f4d1f; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:20px; }
+        .cdp-card  { background:#fff; border-radius:12px; padding:24px; box-shadow:0 2px 10px rgba(0,0,0,.07); margin-bottom:20px; }
+        .cdp-card-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+        .cdp-subject { font-size:18px; font-weight:700; color:#111; }
+        .cdp-badge  { font-size:11px; font-weight:600; padding:4px 12px; border-radius:99px; }
+        .cdp-meta   { font-size:12px; color:#888; margin-bottom:4px; }
+        .cdp-desc   { font-size:14px; color:#444; line-height:1.6; margin-top:10px; padding-top:10px; border-top:1px solid #f0ece4; }
 
-        .cmp-body  { flex:1; max-width:860px; margin:0 auto; width:100%; padding:36px 16px 60px; }
-        .cmp-title { font-size:22px; font-weight:800; color:#1f4d1f; margin-bottom:6px; }
-        .cmp-sub   { font-size:13px; color:#777; margin-bottom:28px; }
+        .cdp-chat-title { font-size:15px; font-weight:700; color:#1f4d1f; margin-bottom:16px; }
+        .cdp-messages   { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; max-height:400px; overflow-y:auto; padding:4px; }
+        .cdp-msg-row    { display:flex; }
+        .cdp-msg-row.buyer  { justify-content:flex-end; }
+        .cdp-msg-row.staff  { justify-content:flex-start; }
+        .cdp-msg-row.admin  { justify-content:flex-start; }
+        .cdp-bubble     { max-width:75%; padding:10px 14px; border-radius:12px; }
+        .cdp-bubble.buyer { background:#d4edda; border-bottom-right-radius:4px; }
+        .cdp-bubble.staff { background:#f0f0f0; border-bottom-left-radius:4px; }
+        .cdp-bubble.admin { background:#e7f0ff; border-bottom-left-radius:4px; }
+        .cdp-msg-sender { font-size:11px; color:#888; margin-bottom:4px; }
+        .cdp-msg-text   { font-size:14px; color:#333; line-height:1.5; }
+        .cdp-msg-time   { font-size:10px; color:#aaa; margin-top:4px; text-align:right; }
+        .cdp-msg-attach { font-size:12px; color:#1f4d1f; font-weight:600; margin-top:6px; display:block; }
 
-        .cmp-card       { background:#fff; border-radius:12px; padding:28px; box-shadow:0 2px 10px rgba(0,0,0,.07); margin-bottom:32px; }
-        .cmp-card-title { font-size:16px; font-weight:700; color:#1f4d1f; margin-bottom:20px; padding-bottom:10px; border-bottom:1px solid #eee; }
+        .cdp-input-row  { display:flex; gap:10px; }
+        .cdp-input      { flex:1; padding:12px 14px; border:1.5px solid #ddd; border-radius:8px; font-size:14px; font-family:inherit; outline:none; }
+        .cdp-input:focus { border-color:#1f4d1f; }
+        .cdp-send-btn   { padding:12px 20px; background:#1f4d1f; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+        .cdp-send-btn:disabled { background:#aaa; cursor:not-allowed; }
+        .cdp-resolved-note { background:#eafaf0; border:1px solid #a8d5a8; border-radius:8px; padding:12px 16px; font-size:13px; color:#1a7a3a; text-align:center; }
 
-        .cmp-field    { margin-bottom:18px; }
-        .cmp-label    { display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px; }
-        .cmp-input, .cmp-select, .cmp-textarea {
-          width:100%; padding:11px 14px; border:1.5px solid #ddd; border-radius:8px;
-          font-size:14px; font-family:inherit; color:#333; background:#fff;
-          box-sizing:border-box; transition:border .2s;
-        }
-        .cmp-input:focus, .cmp-select:focus, .cmp-textarea:focus { outline:none; border-color:#1f4d1f; }
-        .cmp-textarea  { resize:vertical; min-height:110px; }
-        .cmp-file-hint { font-size:11px; color:#999; margin-top:5px; }
-
-        .cmp-btn { width:100%; padding:14px; background:#1f4d1f; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:6px; transition:background .2s; }
-        .cmp-btn:hover     { background:#174014; }
-        .cmp-btn:disabled  { background:#aaa; cursor:not-allowed; }
-
-        .cmp-list-title { font-size:16px; font-weight:700; color:#1f4d1f; margin-bottom:16px; }
-        .cmp-item       { background:#fff; border-radius:10px; padding:18px 20px; margin-bottom:12px; box-shadow:0 1px 6px rgba(0,0,0,.06); border-left:4px solid #1f4d1f; }
-        .cmp-item-top   { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px; }
-        .cmp-item-type  { font-weight:700; font-size:14px; color:#1f4d1f; }
-        .cmp-item-badge { font-size:11px; font-weight:600; padding:4px 10px; border-radius:99px; }
-        .cmp-item-subject { font-size:13px; font-weight:600; color:#333; margin-bottom:4px; }
-        .cmp-item-order { font-size:12px; color:#888; margin-bottom:6px; }
-        .cmp-item-desc  { font-size:13px; color:#444; line-height:1.5; }
-        .cmp-item-date  { font-size:11px; color:#aaa; margin-top:8px; }
-
-        .cmp-empty   { text-align:center; padding:40px 20px; color:#aaa; font-size:14px; }
-        .cmp-loading { text-align:center; padding:30px; color:#888; font-size:14px; }
-        .cmp-no-orders { font-size:12px; color:#aaa; margin-top:6px; }
-
-        .cmp-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1f4d1f; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; z-index:9999; box-shadow:0 4px 16px rgba(0,0,0,.2); }
+        .cdp-loading { text-align:center; padding:60px; color:#888; }
+        .cdp-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1f4d1f; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; z-index:9999; }
 
         @media(max-width:600px) {
-          .cmp-nav  { padding:10px 16px; }
-          .cmp-card { padding:18px; }
+          .cdp-nav  { padding:10px 16px; }
+          .cdp-card { padding:16px; }
+          .cdp-bubble { max-width:88%; }
         }
       `}</style>
 
-      <div className="cmp-wrap">
-
+      <div className="cdp-wrap">
         {/* NAV */}
-        <nav className="cmp-nav">
-          <div className="cmp-nav-left" onClick={() => navigate("/products")}>
+        <nav className="cdp-nav">
+          <div className="cdp-nav-left" onClick={() => navigate("/products")}>
             <img
               src={LOGO_PATH}
               alt="Logo"
-              className="cmp-nav-logo"
-              onError={(e) => { e.target.style.display = "none"; }}
+              className="cdp-nav-logo"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
             />
-            <div className="cmp-nav-name">ACHOICE <span>MARKET</span></div>
+            <div className="cdp-nav-name">
+              ACHOICE <span>MARKET</span>
+            </div>
           </div>
-          <div className="cmp-nav-right">
+          <div className="cdp-nav-right">
             <BuyerDropdown />
           </div>
         </nav>
 
-        {/* BODY */}
-        <div className="cmp-body">
-          <h1 className="cmp-title">📋 Complaints &amp; Refunds</h1>
-          <p className="cmp-sub">
-            Submit a complaint about an order. Our team will review and respond within 48 hours.
-          </p>
-
-          {/* FORM */}
-          <div className="cmp-card">
-            <div className="cmp-card-title">Submit a New Complaint</div>
-            <form onSubmit={handleSubmit}>
-
-              <div className="cmp-field">
-                <label className="cmp-label">
-                  Select Order <span style={{ color: "red" }}>*</span>
-                </label>
-                <select
-                  className="cmp-select"
-                  name="order_id"
-                  value={formData.order_id}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">-- Choose an order --</option>
-                  {orders.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.label || o.order_number || `Order #${o.id}`}
-                    </option>
-                  ))}
-                </select>
-                {orders.length === 0 && (
-                  <p className="cmp-no-orders">
-                    Only delivered, shipped, or cancelled orders appear here.
-                  </p>
-                )}
-              </div>
-
-              <div className="cmp-field">
-                <label className="cmp-label">
-                  Complaint Type <span style={{ color: "red" }}>*</span>
-                </label>
-                <select
-                  className="cmp-select"
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">-- Select type --</option>
-                  {complaintTypes.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="cmp-field">
-                <label className="cmp-label">
-                  Subject <span style={{ color: "red" }}>*</span>
-                </label>
-                <input
-                  className="cmp-input"
-                  type="text"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  placeholder="Brief summary of your complaint"
-                  required
-                />
-              </div>
-
-              <div className="cmp-field">
-                <label className="cmp-label">
-                  Description <span style={{ color: "red" }}>*</span>
-                </label>
-                <textarea
-                  className="cmp-textarea"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Describe your complaint in detail (minimum 20 characters)..."
-                  required
-                />
-              </div>
-
-              <div className="cmp-field">
-                <label className="cmp-label">
-                  Upload Evidence{" "}
-                  <span style={{ color: "#aaa", fontWeight: 400 }}>(optional — image or PDF)</span>
-                </label>
-                <input
-                  id="evidence-input"
-                  className="cmp-input"
-                  type="file"
-                  name="evidence"
-                  accept="image/jpeg,image/png,image/jpg,application/pdf"
-                  onChange={handleChange}
-                />
-                <p className="cmp-file-hint">Accepted: JPG, PNG, PDF. Max 5MB.</p>
-              </div>
-
-              <button className="cmp-btn" type="submit" disabled={submitting}>
-                {submitting ? "Submitting..." : "📤 Submit Complaint"}
-              </button>
-            </form>
+        <div className="cdp-body">
+          <div className="cdp-back" onClick={() => navigate("/complaints")}>
+            ← Back to Complaints
           </div>
 
-          {/* COMPLAINTS LIST */}
-          <div className="cmp-list-title">Your Submitted Complaints</div>
-          {loadingComplaints ? (
-            <div className="cmp-loading">Loading complaints...</div>
-          ) : complaints.length === 0 ? (
-            <div className="cmp-empty">You have not submitted any complaints yet.</div>
+          {loading ? (
+            <div className="cdp-loading">Loading complaint...</div>
+          ) : !complaint ? (
+            <div className="cdp-loading">Complaint not found.</div>
           ) : (
-            complaints.map((c) => (
-              <div key={c.id} className="cmp-item">
-                <div className="cmp-item-top">
-                  <span className="cmp-item-type">
-                    {complaintTypes.find((t) => t.value === c.type)?.label || c.type}
-                  </span>
-                  <span className="cmp-item-badge" style={getStatusStyle(c.status)}>
-                    {c.status
-                      ? c.status.replace(/_/g, " ").charAt(0).toUpperCase() +
-                        c.status.replace(/_/g, " ").slice(1)
+            <>
+              {/* Complaint Info */}
+              <div className="cdp-card">
+                <div className="cdp-card-top">
+                  <div className="cdp-subject">{complaint.subject}</div>
+                  <span
+                    className="cdp-badge"
+                    style={getStatusStyle(complaint.status)}
+                  >
+                    {complaint.status
+                      ? complaint.status
+                          .replace(/_/g, " ")
+                          .charAt(0)
+                          .toUpperCase() +
+                        complaint.status.replace(/_/g, " ").slice(1)
                       : "Pending"}
                   </span>
                 </div>
-                {c.subject && <div className="cmp-item-subject">{c.subject}</div>}
-                <div className="cmp-item-order">
-                  Order: {c.order?.order_number || `#${c.order_id}`}
+                <div className="cdp-meta">
+                  Type: {complaint.type?.replace(/_/g, " ")}
                 </div>
-                <div className="cmp-item-desc">{c.description}</div>
-                {c.admin_response && (
-                  <div style={{ marginTop: 10, padding: "10px 14px", background: "#f0f7f0", borderRadius: 6, fontSize: 13, color: "#1f4d1f" }}>
-                    <strong>Response:</strong> {c.admin_response}
+                {complaint.order?.order_number && (
+                  <div className="cdp-meta">
+                    Order: {complaint.order.order_number}
                   </div>
                 )}
-                <div className="cmp-item-date">
+                <div className="cdp-meta">
                   Submitted:{" "}
-                  {c.created_at
-                    ? new Date(c.created_at).toLocaleDateString("en-NG", {
-                        day: "numeric", month: "short", year: "numeric",
-                      })
+                  {complaint.created_at
+                    ? new Date(complaint.created_at).toLocaleDateString(
+                        "en-NG",
+                        {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        },
+                      )
                     : "—"}
                 </div>
+                <div className="cdp-desc">{complaint.description}</div>
+                {complaint.evidence_url && (
+                  <a
+                    href={complaint.evidence_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "inline-block",
+                      marginTop: 10,
+                      fontSize: 13,
+                      color: "#1f4d1f",
+                      fontWeight: 600,
+                    }}
+                  >
+                    📎 View Evidence
+                  </a>
+                )}
               </div>
-            ))
+
+              {/* Chat */}
+              <div className="cdp-card">
+                <div className="cdp-chat-title">💬 Messages</div>
+
+                <div className="cdp-messages">
+                  {!complaint.messages || complaint.messages.length === 0 ? (
+                    <p
+                      style={{
+                        textAlign: "center",
+                        color: "#aaa",
+                        fontSize: 13,
+                      }}
+                    >
+                      No messages yet. Send a message below.
+                    </p>
+                  ) : (
+                    complaint.messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`cdp-msg-row ${msg.sender_role}`}
+                      >
+                        <div className={`cdp-bubble ${msg.sender_role}`}>
+                          <div className="cdp-msg-sender">
+                            {msg.sender?.name} · {msg.sender_role}
+                          </div>
+                          <div className="cdp-msg-text">{msg.message}</div>
+                          {msg.attachment_url && (
+                            <a
+                              href={msg.attachment_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="cdp-msg-attach"
+                            >
+                              📎 View Attachment
+                            </a>
+                          )}
+                          <div className="cdp-msg-time">
+                            {msg.created_at
+                              ? new Date(msg.created_at).toLocaleTimeString(
+                                  "en-NG",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )
+                              : ""}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div ref={bottomRef} />
+                </div>
+
+                {/* Message input */}
+                {complaint.status === "resolved" ||
+                complaint.status === "rejected" ? (
+                  <div className="cdp-resolved-note">
+                    This complaint has been {complaint.status}. No further
+                    messages can be sent.
+                  </div>
+                ) : (
+                  <form onSubmit={sendMessage}>
+                    <div className="cdp-input-row">
+                      <input
+                        className="cdp-input"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        disabled={sending}
+                      />
+                      <button
+                        className="cdp-send-btn"
+                        type="submit"
+                        disabled={sending || !newMessage.trim()}
+                      >
+                        {sending ? "..." : "Send"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </>
           )}
         </div>
 
         {/* FOOTER */}
-        <footer style={{ background: "#1f4d1f", padding: "16px 40px", textAlign: "center" }}>
+        <footer
+          style={{
+            background: "#1f4d1f",
+            padding: "16px 40px",
+            textAlign: "center",
+          }}
+        >
           <p style={{ color: "#ccc", fontSize: 12, margin: 0 }}>
             © {new Date().getFullYear()} Achoice Market. All rights reserved.
           </p>
         </footer>
       </div>
 
-      {toast && <div className="cmp-toast">{toast}</div>}
+      {toast && <div className="cdp-toast">{toast}</div>}
     </>
   );
 }
