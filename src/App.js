@@ -18,6 +18,7 @@ import LoanApplyPage    from './pages/buyer/LoanApplyPage';
 import LoanRepayPage    from './pages/buyer/LoanRepayPage';
 import ProfilePage      from './pages/buyer/ProfilePage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
+import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
 
 // ── STAFF ────────────────────────────────────────────────────────────────────
 import AgroStaffDashboard from './pages/staff/AgroStaffDashboard';
@@ -59,6 +60,7 @@ const router = createBrowserRouter([
   { path: '/loans/repay', element: <ProtectedRoute><LoanRepayPage /></ProtectedRoute> },
   { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
+  { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
 
   // ── Staff ────────────────────────────────────────────────────────────────────
   {
@@ -125,5 +127,7 @@ const router = createBrowserRouter([
 export default function App() {
   return <RouterProvider router={router} />;
 }
+
+
 
 

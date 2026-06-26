@@ -123,9 +123,15 @@ if (reference) {
       : 'Are you sure you want to cancel this order?';
     if (!window.confirm(message)) return;
     try {
-      await cancelOrder(order.id);
+      const res = await cancelOrder(order.id);
       setOrders(orders.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
       showToast('Order cancelled successfully');
+      if (res.data.refund) {
+        const complaints = await api.get('/complaints/my-complaints');
+        const list = complaints.data.data || complaints.data || [];
+        const refundComplaint = list.find(c => c.order_id == order.id && c.type === 'refund_request');
+        if (refundComplaint) navigate('/complaints/' + refundComplaint.id);
+      }
     } catch {
       showToast('Failed to cancel order. Please try again.');
     }
@@ -484,5 +490,6 @@ const s = {
   footer: { background: '#1f4d1f', padding: '20px 60px', marginTop: 'auto' },
   footerBottom: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#a8d5a8' },
 };
+
 
 
