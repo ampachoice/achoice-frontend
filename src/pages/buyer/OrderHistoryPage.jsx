@@ -69,11 +69,6 @@ if (reference) {
   setLastRef(reference);
   localStorage.removeItem('last_order_reference');
   window.history.replaceState({}, '', '/orders');
-}
-if (reference) {
-  setLastRef(reference);
-  localStorage.removeItem('last_order_reference');
-  window.history.replaceState({}, '', '/orders');
 
   // Auto-verify payment immediately
   api.post('/orders/verify-payment', { reference })
@@ -85,6 +80,11 @@ if (reference) {
       console.log('Auto-verify result:', err.response?.data?.message);
     });
 }
+
+    if (localStorage.getItem('pod_order_placed') === 'true') {
+      localStorage.removeItem('pod_order_placed');
+      showToast('Order placed! Pay when your delivery arrives.');
+    }
     getMyOrders()
       .then(res => {
         const raw = res.data;
@@ -116,6 +116,19 @@ if (reference) {
     cancelled:  { background: '#fff0f0', color: '#cc0000' },
   }[status] || { background: '#f0f0f0', color: '#555' });
 
+
+  const getPaymentBadge = (order) => {
+    if (order.payment_method === 'pay_on_delivery') {
+      if (order.payment_status === 'pod_collected') {
+        return { label: "Cash Collected", color: "#1a7a3a" };
+      }
+      return { label: "Pay on Delivery", color: "#b36b00" };
+    }
+    if (order.payment_status === 'paid') {
+      return { label: "Paid Online", color: "#1a4fa0" };
+    }
+    return { label: "Awaiting Payment", color: "#888" };
+  };
   const handleCancel = async (order) => {
     const isPaid = order.payment_status === 'paid';
     const message = isPaid
@@ -290,9 +303,9 @@ if (reference) {
                   <div style={s.summaryLabel}>Payment</div>
                   <div style={{
                     ...s.summaryValue,
-                    color: order.payment_status === 'paid' ? '#1a7a3a' : '#b36b00'
+                    color: getPaymentBadge(order).color,
                   }}>
-                    {order.payment_status || 'Pending'}
+                    {getPaymentBadge(order).label}
                   </div>
                 </div>
               </div>

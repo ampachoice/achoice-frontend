@@ -66,6 +66,21 @@ export default function ManageOrdersPage() {
     }
   };
 
+
+  const handleCollectPod = async (orderId) => {
+    if (!window.confirm("Confirm that cash payment has been collected for this order?")) return;
+    setUpdating(orderId);
+    try {
+      const res = await api.patch(`/admin/orders/${orderId}/collect-pod`);
+      const updated = res.data?.order || res.data;
+      setOrders(orders.map((o) => (o.id === orderId ? { ...o, ...updated } : o)));
+      showToast(res.data?.message || "Payment marked as collected.");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to mark payment as collected.");
+    } finally {
+      setUpdating(null);
+    }
+  };
   const getStatusStyle = (status) =>
     ({
       pending: { background: "#fff8e7", color: "#b36b00" },
@@ -404,6 +419,11 @@ export default function ManageOrdersPage() {
                         : "Mark as Processing"}
                     </button>
                   )}
+                {order.payment_method === "pay_on_delivery" && order.payment_status === "pod_pending" && (
+                  <button style={updating === order.id ? s.actionBtnDisabled : s.actionBtn} onClick={() => handleCollectPod(order.id)} disabled={updating === order.id}>
+                    {updating === order.id ? "Updating..." : "Mark Payment Collected"}
+                  </button>
+                )}
                 {order.status === "processing" && (
                   <button
                     style={

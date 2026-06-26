@@ -61,6 +61,7 @@ export default function CheckoutPage() {
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [showSummary, setShowSummary] = useState(false); // mobile toggle
+  const [paymentMethod, setPaymentMethod] = useState('paystack');
 
   useEffect(() => {
     if (document.getElementById("ckp-style")) return;
@@ -97,7 +98,7 @@ export default function CheckoutPage() {
       .ckp-input:focus { border-color:#1f4d1f; }
       .ckp-textarea { width:100%; padding:13px 14px; border:1.5px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box; resize:vertical; font-family:inherit; outline:none; transition:border .2s; }
       .ckp-textarea:focus { border-color:#1f4d1f; }
-      .ckp-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+      .ckp-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; } .ckp-payment-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:6px; } .ckp-payment-card { border:1.5px solid #ddd; border-radius:10px; padding:16px; cursor:pointer; transition:border .2s, background .2s; } .ckp-payment-card-active { border-color:#1f4d1f; background:#f0f7ec; } .ckp-payment-card-title { font-size:14px; font-weight:700; color:#111; margin-bottom:4px; } .ckp-payment-card-desc { font-size:12px; color:#888; }
       .ckp-delivery-hint { font-size:12px; color:#888; margin-top:6px; }
       .ckp-delivery-box { margin-top:8px; background:#fff8e7; border:1px solid #f0c050; border-radius:8px; padding:10px 14px; font-size:13px; color:#7a5c00; }
       .ckp-delivery-box-free { margin-top:8px; background:#f0fff4; border:1px solid #a8d5a8; border-radius:8px; padding:10px 14px; font-size:13px; color:#1f4d1f; }
@@ -258,6 +259,7 @@ export default function CheckoutPage() {
         delivery_lga: formData.delivery_lga,
         notes: formData.note,
         delivery_fee: deliveryFee,
+        payment_method: paymentMethod,
       });
       if (res.data.payment_url) {
         if (res.data.reference)
@@ -266,6 +268,7 @@ export default function CheckoutPage() {
         window.location.href = res.data.payment_url;
       } else {
         localStorage.removeItem("cart");
+        if (paymentMethod === "pay_on_delivery") localStorage.setItem("pod_order_placed", "true");
         navigate("/orders");
       }
     } catch (err) {
@@ -508,6 +511,7 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Submit button — desktop/tablet only; mobile uses sticky bar */}
+                <div className="ckp-field"><label className="ckp-label">Payment Method</label><div className="ckp-payment-cards"><div className={paymentMethod === "paystack" ? "ckp-payment-card ckp-payment-card-active" : "ckp-payment-card"} onClick={() => setPaymentMethod("paystack")}><div className="ckp-payment-card-title">Pay Online</div><div className="ckp-payment-card-desc">Card, bank transfer or USSD via Paystack</div></div><div className={paymentMethod === "pay_on_delivery" ? "ckp-payment-card ckp-payment-card-active" : "ckp-payment-card"} onClick={() => setPaymentMethod("pay_on_delivery")}><div className="ckp-payment-card-title">Pay on Delivery</div><div className="ckp-payment-card-desc">Pay with cash when your order arrives</div></div></div></div>
                 <button
                   type="submit"
                   className={
@@ -517,13 +521,13 @@ export default function CheckoutPage() {
                   }
                   disabled={loading || !formData.delivery_state}
                 >
-                  {loading
-                    ? "⏳ Finalizing Order..."
-                    : "🔒 Confirm and Pay Now"}
+                  {loading ? "Finalizing Order..." : (paymentMethod === "pay_on_delivery" ? "Place Order" : "Confirm and Pay Now")}
                 </button>
+                {paymentMethod === "paystack" && (
                 <div className="ckp-secure-row">
-                  <span>🔒</span> Secured & encrypted by Paystack
+                  <span>Secured</span> Secured and encrypted by Paystack
                 </div>
+                )}
               </form>
             </div>
           </div>
@@ -555,11 +559,13 @@ export default function CheckoutPage() {
           disabled={loading || !formData.delivery_state}
           onClick={handleSubmit}
         >
-          {loading ? "⏳ Processing..." : "🔒 Pay Now"}
+          {loading ? "Processing..." : (paymentMethod === "pay_on_delivery" ? "Place Order" : "Pay Now")}
         </button>
       </div>
     </div>
   );
 }
+
+
 
 
