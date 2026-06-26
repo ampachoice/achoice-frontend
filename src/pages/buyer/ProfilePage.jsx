@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
+import NotificationBell from '../../components/buyer/NotificationBell';
 
 const LOGO_PATH = '/achoice logo.png';
 
@@ -120,6 +121,7 @@ export default function ProfilePage() {
             Cart {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
           </span>
         </div>
+        <NotificationBell />
         <BuyerDropdown cartCount={cartCount} />
       </nav>
 

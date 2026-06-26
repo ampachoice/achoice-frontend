@@ -17,6 +17,7 @@ import OrderHistoryPage from './pages/buyer/OrderHistoryPage';
 import LoanApplyPage    from './pages/buyer/LoanApplyPage';
 import LoanRepayPage    from './pages/buyer/LoanRepayPage';
 import ProfilePage      from './pages/buyer/ProfilePage';
+import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
 import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
 
@@ -60,6 +61,7 @@ const router = createBrowserRouter([
   { path: '/loans/apply', element: <ProtectedRoute><LoanApplyPage /></ProtectedRoute> },
   { path: '/loans/repay', element: <ProtectedRoute><LoanRepayPage /></ProtectedRoute> },
   { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+  { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
   { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
 

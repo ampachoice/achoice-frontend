@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
+import NotificationBell from '../../components/buyer/NotificationBell';
 
 export default function CartPage() {
   const navigate  = useNavigate();
@@ -205,6 +206,7 @@ export default function CartPage() {
             🛒
             {cartCount > 0 && <span className="crt-cart-badge">{cartCount}</span>}
           </div>
+          <NotificationBell />
           <BuyerDropdown cartCount={cartCount} />
         </div>
       </nav>

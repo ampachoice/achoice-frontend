@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getMyOrders, confirmDelivery, cancelOrder } from '../../services/orderService';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
+import NotificationBell from '../../components/buyer/NotificationBell';
 
 const LOGO_PATH = '/achoice logo.png';
 
@@ -199,6 +200,7 @@ if (reference) {
             Cart {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
           </span>
         </div>
+        <NotificationBell />
         <BuyerDropdown cartCount={cartCount} />
       </nav>
 

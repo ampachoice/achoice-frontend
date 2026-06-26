@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getMyActiveLoan, getMyLoanHistory, repayLoan } from '../../services/loanService';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
+import NotificationBell from '../../components/buyer/NotificationBell';
 
 export default function LoanRepayPage() {
   const navigate = useNavigate();
@@ -209,6 +210,7 @@ export default function LoanRepayPage() {
           <div style={s.cartIcon} onClick={() => navigate('/cart')}>
             🛒 {cartCount > 0 && <span style={s.badge}>{cartCount}</span>}
           </div>
+          <NotificationBell />
           <BuyerDropdown cartCount={cartCount} />
         </div>
       </nav>

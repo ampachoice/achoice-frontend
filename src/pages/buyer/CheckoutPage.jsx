@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createOrder } from "../../services/orderService";
 import api from "../../services/api";
+import NotificationBell from "../../components/buyer/NotificationBell";
 
 const NIGERIAN_STATES_FALLBACK = [
   "Abia",
@@ -399,6 +400,7 @@ export default function CheckoutPage() {
         <span className="ckp-nav-back" onClick={() => navigate("/cart")}>
           ← Return to Cart
         </span>
+        <NotificationBell />
       </nav>
 
       <div className="ckp-container">

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
+import NotificationBell from "../../components/buyer/NotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -391,6 +392,7 @@ export default function LoanApplyPage() {
           <div style={s.cartIcon} onClick={() => navigate("/cart")}>
             🛒 {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
           </div>
+          <NotificationBell />
           <BuyerDropdown cartCount={cartCount} />
         </div>
       </nav>
