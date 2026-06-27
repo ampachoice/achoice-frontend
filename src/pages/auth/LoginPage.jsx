@@ -59,7 +59,7 @@ export default function LoginPage() {
 
       if (!token || !user) { setError('Invalid login response from server.'); return; }
 
-      const expiresAt = new Date().getTime() + (60 * 2 * 60 * 1000);
+      const expiresAt = new Date().getTime() + (60*60*5);
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('session_expires_at', expiresAt);

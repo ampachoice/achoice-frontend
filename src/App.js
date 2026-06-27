@@ -1,6 +1,7 @@
 
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
+
 // ── AUTH ─────────────────────────────────────────────────────────────────────
 import LoginPage          from './pages/auth/LoginPage';
 import RegisterPage       from './pages/auth/RegisterPage';
@@ -38,6 +39,7 @@ import AdminSettingsPage  from './pages/admin/AdminSettingsPage'; // ✅ correct
 
 // ── PROTECTED ROUTE ───────────────────────────────────────────────────────────
 import ProtectedRoute from './components/common/ProtectedRoute';
+
 
 const router = createBrowserRouter([
 
@@ -123,7 +125,7 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+    return <RouterProvider router={router} />;
 }
 
 
