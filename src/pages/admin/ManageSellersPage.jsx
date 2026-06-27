@@ -1063,6 +1063,7 @@ export default function ManageSellersPage() {
           {[
             { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
             { icon: "👤", label: "Buyers", path: "/admin/buyers" },
+            { icon: "📋", label: "Complaints", path: "/admin/complaints" },
             {
               icon: "🏪",
               label: "Sellers",

@@ -478,6 +478,7 @@ export default function ManageProductsPage() {
           {[
             { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
             { icon: "👤", label: "Buyers", path: "/admin/buyers" },
+            { icon: "📋", label: "Complaints", path: "/admin/complaints" },
             { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
             {
               icon: "🌾",

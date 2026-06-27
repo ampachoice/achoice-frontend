@@ -475,6 +475,7 @@ export default function AdminReportsPage() {
   const sidebarItems = [
     { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
     { icon: "👤", label: "Buyers", path: "/admin/buyers" },
+    { icon: "📋", label: "Complaints", path: "/admin/complaints" },
     { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
     { icon: "🌾", label: "Products", path: "/admin/products" },
     { icon: "📦", label: "Orders", path: "/admin/orders" },
