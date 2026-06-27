@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import NotificationBell from "../../components/buyer/NotificationBell";
+
+const LOGO_PATH = "/achoice logo.png";
 
 export default function StaffComplaintsPage() {
   const navigate = useNavigate();
@@ -8,6 +11,9 @@ export default function StaffComplaintsPage() {
   const [loading, setLoading]       = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [toast, setToast] = useState("");
+
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem("user")); } catch {}
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
@@ -28,10 +34,30 @@ export default function StaffComplaintsPage() {
        resolved:{background:"#eafaf0",color:"#1a7a3a"}, rejected:{background:"#fff0f0",color:"#cc0000"}
     })[status] || {background:"#f0f0f0",color:"#555"};
 
+  const navItems = [
+    ...(user?.can_manage_agro ? [{ icon: "📊", label: "Agro Dashboard", path: "/staff/agro" }] : []),
+    ...(user?.can_manage_loans ? [{ icon: "💰", label: "Loan Dashboard", path: "/staff/loans" }] : []),
+    { icon: "📋", label: "Complaints", path: "/staff/complaints", active: true },
+  ];
+
   return (
     <>
       <style>{`
-        .sc-wrap { min-height:100vh; background:#f7f5f0; font-family:'Segoe UI',sans-serif; padding:28px 32px; }
+        .sc-shell { display:flex; min-height:100vh; background:#f0f2f5; font-family:'Segoe UI',sans-serif; }
+        .sc-sidebar { width:240px; background:#1f4d1f; display:flex; flex-direction:column; position:fixed; top:0; left:0; height:100vh; }
+        .sc-sidebar-logo { display:flex; align-items:center; gap:10px; padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); }
+        .sc-sidebar-logo img { width:40px; height:40px; object-fit:contain; }
+        .sc-sidebar-name { font-size:14px; font-weight:700; color:#fff; }
+        .sc-sidebar-sub { font-size:10px; color:#a8d5a8; }
+        .sc-sidebar-nav { flex:1; padding:16px 0; }
+        .sc-sidebar-item { display:flex; align-items:center; gap:10px; padding:12px 20px; color:#a8d5a8; font-size:14px; cursor:pointer; }
+        .sc-sidebar-item-active { background:rgba(255,255,255,0.15); color:#fff; border-left:3px solid #f0c050; }
+        .sc-sidebar-footer { padding:16px 20px; border-top:1px solid rgba(255,255,255,0.1); }
+        .sc-staff-name { font-size:13px; font-weight:600; color:#fff; margin-bottom:2px; }
+        .sc-staff-role { font-size:11px; color:#a8d5a8; margin-bottom:10px; }
+        .sc-logout-btn { width:100%; padding:8px; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
+        .sc-main { flex:1; margin-left:240px; padding:28px 32px; }
+        .sc-topbar { display:flex; justify-content:flex-end; margin-bottom:16px; }
         .sc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
         .sc-title  { font-size:22px; font-weight:800; color:#1f4d1f; }
         .sc-select { padding:9px 14px; border:1.5px solid #ddd; border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff; cursor:pointer; }
@@ -46,54 +72,91 @@ export default function StaffComplaintsPage() {
         .sc-empty  { text-align:center; padding:60px; color:#aaa; font-size:14px; }
         .sc-loading { text-align:center; padding:60px; color:#888; }
         .sc-toast  { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1f4d1f; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; z-index:9999; }
-        @media(max-width:700px) { .sc-wrap { padding:16px; } }
+        @media(max-width:700px) { .sc-main { padding:16px; margin-left:0; } .sc-sidebar { display:none; } }
       `}</style>
 
-      <div className="sc-wrap">
-        <div className="sc-header">
-          <div className="sc-title">📋 My Complaints</div>
-          <select className="sc-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="under_review">Under Review</option>
-            <option value="resolved">Resolved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+      <div className="sc-shell">
+        <div className="sc-sidebar">
+          <div className="sc-sidebar-logo">
+            <img src={LOGO_PATH} alt="Achoice" />
+            <div>
+              <div className="sc-sidebar-name">ACHOICE</div>
+              <div className="sc-sidebar-sub">Staff Panel</div>
+            </div>
+          </div>
+          <nav className="sc-sidebar-nav">
+            {navItems.map((item) => (
+              <div
+                key={item.label}
+                className={"sc-sidebar-item" + (item.active ? " sc-sidebar-item-active" : "")}
+                onClick={() => navigate(item.path)}
+              >
+                <span>{item.icon}</span> {item.label}
+              </div>
+            ))}
+          </nav>
+          <div className="sc-sidebar-footer">
+            <div className="sc-staff-name">{user?.name}</div>
+            <div className="sc-staff-role">Staff</div>
+            <button
+              className="sc-logout-btn"
+              onClick={() => { localStorage.clear(); navigate("/login"); }}
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
-        {loading ? (
-          <div className="sc-loading">Loading complaints...</div>
-        ) : complaints.length === 0 ? (
-          <div className="sc-empty">No complaints assigned to you.</div>
-        ) : (
-          <div className="sc-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Buyer</th>
-                  <th>Category</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {complaints.map(c => (
-                  <tr key={c.id} onClick={() => navigate(`/staff/complaints/${c.id}`)}>
-                    <td>
-                      {c.subject}
-                      {c.unread_count > 0 && <span className="sc-unread">{c.unread_count} new</span>}
-                    </td>
-                    <td>{c.user?.name || "—"}</td>
-                    <td style={{textTransform:"capitalize"}}>{c.category}</td>
-                    <td><span className="sc-badge" style={getStatusStyle(c.status)}>{c.status?.replace(/_/g," ")}</span></td>
-                    <td>{c.created_at ? new Date(c.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}) : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="sc-main">
+          <div className="sc-topbar">
+            <NotificationBell />
           </div>
-        )}
+
+          <div className="sc-header">
+            <div className="sc-title">My Complaints</div>
+            <select className="sc-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="under_review">Under Review</option>
+              <option value="resolved">Resolved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+
+          {loading ? (
+            <div className="sc-loading">Loading complaints...</div>
+          ) : complaints.length === 0 ? (
+            <div className="sc-empty">No complaints assigned to you.</div>
+          ) : (
+            <div className="sc-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Subject</th>
+                    <th>Buyer</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {complaints.map(c => (
+                    <tr key={c.id} onClick={() => navigate(`/staff/complaints/${c.id}`)}>
+                      <td>
+                        {c.subject}
+                        {c.unread_count > 0 && <span className="sc-unread">{c.unread_count} new</span>}
+                      </td>
+                      <td>{c.user?.name || "-"}</td>
+                      <td style={{textTransform:"capitalize"}}>{c.category}</td>
+                      <td><span className="sc-badge" style={getStatusStyle(c.status)}>{c.status?.replace(/_/g," ")}</span></td>
+                      <td>{c.created_at ? new Date(c.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}) : "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
       {toast && <div className="sc-toast">{toast}</div>}
     </>
