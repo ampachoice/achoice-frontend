@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+﻿import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { login } from '../../services/authService';
 
 const LOGO_PATH = '/achoice logo.png';
@@ -39,6 +39,8 @@ const injectCSS = () => {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlMessage = searchParams.get("message");
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
@@ -92,11 +94,11 @@ export default function LoginPage() {
       {/* Top Bar */}
       <div className="lp-topbar" style={s.topBar}>
         <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
-          <span className="lp-topbar-hide">✉ support@achoice.ng</span>
+          <span>ðŸ“ No 6 faith avenue off ekenwan Rd Benin City</span>
+          <span className="lp-topbar-hide">âœ‰ support@achoice.ng</span>
         </div>
         <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-          <span className="lp-topbar-hide">📞 09067794991</span>
+          <span className="lp-topbar-hide">ðŸ“ž 09067794991</span>
           <span className="lp-topbar-hide">Mon-Sat: 07:00am-06:00pm</span>
         </div>
       </div>
@@ -113,7 +115,7 @@ export default function LoginPage() {
         <div className="lp-nav-right" style={s.navRight}>
           <Link className="lp-nav-link-hide" to="/" style={s.navLink}>Home</Link>
           <Link className="lp-nav-link-hide" to="/products" style={s.navLink}>Marketplace</Link>
-          <div style={{ fontSize:20, cursor:'pointer', color:'#333' }} onClick={() => navigate('/cart')}>🛒</div>
+          <div style={{ fontSize:20, cursor:'pointer', color:'#333' }} onClick={() => navigate('/cart')}>ðŸ›’</div>
           <Link to="/register" style={s.registerNavBtn}>Create Account</Link>
         </div>
       </nav>
@@ -126,8 +128,8 @@ export default function LoginPage() {
             <h2 style={s.formTitle}>Welcome Back</h2>
             <p style={s.formSub}>Sign in to your ACHOICE account</p>
           </div>
-
-          {error && <div style={s.error}>⚠️ {error}</div>}
+          {urlMessage && <div style={s.error}><span>&#9888;</span> {urlMessage}</div>}
+          {error && <div style={s.error}><span>&#9888;</span> {error}</div>}
 
           <form onSubmit={handleSubmit}>
             <div style={s.field}>
@@ -147,7 +149,7 @@ export default function LoginPage() {
                   required autoComplete="current-password" />
                 <button type="button" style={s.eyeBtn}
                   onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? '🙈' : '👁'}
+                  {showPassword ? 'ðŸ™ˆ' : 'ðŸ‘'}
                 </button>
               </div>
             </div>
@@ -158,7 +160,7 @@ export default function LoginPage() {
 
             <button style={loading ? s.submitBtnDisabled : s.submitBtn}
               type="submit" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In →'}
+              {loading ? 'Signing in...' : 'Sign In â†’'}
             </button>
           </form>
 
@@ -207,14 +209,14 @@ export default function LoginPage() {
           </div>
           <div>
             <div style={s.footerHeading}>Contact</div>
-            <div style={s.footerLink}>📍 No 6 faith avenue, Benin City</div>
-            <div style={s.footerLink}>📞 09067794991</div>
-            <div style={s.footerLink}>✉ support@achoice.ng</div>
-            <div style={s.footerLink}>🕐 Mon-Sat: 07:00am-06:00pm</div>
+            <div style={s.footerLink}>ðŸ“ No 6 faith avenue, Benin City</div>
+            <div style={s.footerLink}>ðŸ“ž 09067794991</div>
+            <div style={s.footerLink}>âœ‰ support@achoice.ng</div>
+            <div style={s.footerLink}>ðŸ• Mon-Sat: 07:00am-06:00pm</div>
           </div>
         </div>
         <div className="lp-footer-bottom" style={s.footerBottom}>
-          © 2026 ACHOICE LIMITED. All rights reserved.
+          Â© 2026 ACHOICE LIMITED. All rights reserved.
         </div>
       </footer>
     </div>
@@ -273,3 +275,6 @@ const s = {
   footerLink: { fontSize:12, color:'#a8d5a8', marginBottom:9, cursor:'pointer' },
   footerBottom: { borderTop:'1px solid rgba(255,255,255,0.1)', padding:'16px 0', textAlign:'center', fontSize:12, color:'#a8d5a8' },
 };
+
+
+
