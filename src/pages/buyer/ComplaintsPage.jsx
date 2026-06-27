@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
+import NotificationBell from "../../components/buyer/NotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -159,7 +160,7 @@ export default function ComplaintsPage() {
               onError={(e) => { e.target.style.display = "none"; }} />
             <div className="cmp-nav-name">ACHOICE <span>MARKET</span></div>
           </div>
-          <div className="cmp-nav-right"><BuyerDropdown /></div>
+          <div className="cmp-nav-right"><NotificationBell /><BuyerDropdown /></div>
         </nav>
 
         <div className="cmp-body">
@@ -282,3 +283,4 @@ export default function ComplaintsPage() {
     </>
   );
 }
+

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
+import NotificationBell from "../../components/buyer/NotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -124,7 +125,7 @@ export default function ComplaintDetailPage() {
               onError={(e) => { e.target.style.display = "none"; }} />
             <div className="cdp-nav-name">ACHOICE <span>MARKET</span></div>
           </div>
-          <div className="cdp-nav-right"><BuyerDropdown /></div>
+          <div className="cdp-nav-right"><NotificationBell /><BuyerDropdown /></div>
         </nav>
 
         <div className="cdp-body">
@@ -242,3 +243,4 @@ export default function ComplaintDetailPage() {
     </>
   );
 }
+
