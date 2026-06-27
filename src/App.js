@@ -38,6 +38,10 @@ import DeliveryZonesPage  from './pages/admin/DeliveryZonesPage';
 import ManageStaffPage    from './pages/admin/ManageStaffPage';
 import ManageBuyersPage   from './pages/admin/ManageBuyersPage';
 import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
+import AdminComplaintsPage from './pages/admin/AdminComplaintsPage';
+import AdminComplaintDetailPage from './pages/admin/AdminComplaintDetailPage';
+import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
+import StaffComplaintDetailPage from './pages/staff/StaffComplaintDetailPage';
 
 // ── PROTECTED ROUTE ───────────────────────────────────────────────────────────
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -73,6 +77,14 @@ const router = createBrowserRouter([
   {
     path: '/staff/loans',
     element: <ProtectedRoute allowedRoles={['staff', 'admin']}><LoanStaffDashboard /></ProtectedRoute>
+  },
+  {
+    path: '/staff/complaints',
+    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintsPage /></ProtectedRoute>
+  },
+  {
+    path: '/staff/complaints/:id',
+    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintDetailPage /></ProtectedRoute>
   },
 
   // ── Admin ────────────────────────────────────────────────────────────────────
@@ -124,6 +136,14 @@ const router = createBrowserRouter([
         path: 'settings',  // ✅ lowercase
         element: <ProtectedRoute adminOnly><AdminSettingsPage /></ProtectedRoute>
       },
+      {
+        path: 'complaints',
+        element: <ProtectedRoute adminOnly><AdminComplaintsPage /></ProtectedRoute>
+      },
+      {
+        path: 'complaints/:id',
+        element: <ProtectedRoute adminOnly><AdminComplaintDetailPage /></ProtectedRoute>
+      },
     ]
   },
 
@@ -134,6 +154,9 @@ const router = createBrowserRouter([
 export default function App() {
   return <RouterProvider router={router} />;
 }
+
+
+
 
 
 
