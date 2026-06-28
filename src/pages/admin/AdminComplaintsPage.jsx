@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 import NotificationBell from "../../components/buyer/NotificationBell";
 
@@ -12,6 +12,8 @@ export default function AdminComplaintsPage() {
   const [statusFilter, setStatusFilter]     = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [toast, setToast] = useState("");
+  const [searchParams] = useSearchParams();
+  const userFilter = searchParams.get("user");
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
 
@@ -20,13 +22,14 @@ export default function AdminComplaintsPage() {
     const params = new URLSearchParams();
     if (statusFilter)   params.append("status",   statusFilter);
     if (categoryFilter) params.append("category", categoryFilter);
+    if (userFilter) params.append("user", userFilter);
     api.get(`/admin/complaints?${params.toString()}`)
       .then(res => setComplaints(res.data.data || res.data || []))
       .catch(() => showToast("Failed to load complaints."))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchComplaints(); }, [statusFilter, categoryFilter]);
+  useEffect(() => { fetchComplaints(); }, [statusFilter, categoryFilter, userFilter]);
 
   const getStatusStyle = (status) =>
     ({ pending: { background:"#fff8e7",color:"#b36b00" }, under_review: { background:"#e7f0ff",color:"#1a4fa0" },
@@ -122,6 +125,12 @@ export default function AdminComplaintsPage() {
           <div className="ac-header">
             <div className="ac-title">Complaints Management</div>
             <div className="ac-filters">
+            {userFilter && complaints.length > 0 && (
+              <div style={{ fontSize: 12, color: "#1f4d1f", fontWeight: 600, marginTop: 4 }}>
+                Filtering by: {complaints[0].user?.name || "buyer #" + userFilter}{" "}
+                <span style={{ color: "#cc0000", cursor: "pointer", textDecoration: "underline" }} onClick={() => navigate("/admin/complaints")}>Clear</span>
+              </div>
+            )}
               <select className="ac-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                 <option value="">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -178,3 +187,6 @@ export default function AdminComplaintsPage() {
     </>
   );
 }
+
+
+
