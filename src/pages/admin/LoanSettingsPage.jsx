@@ -145,6 +145,12 @@ export default function LoanSettingsPage() {
           >
             <span style={s.sidebarIcon}>📋</span> Complaints
           </div>
+          <div
+            style={s.sidebarItem}
+            onClick={() => navigate("/admin/payments")}
+          >
+            <span style={s.sidebarIcon}>💳</span> Payments
+          </div>
           <div style={s.sidebarItem} onClick={() => navigate("/admin/sellers")}>
             <span style={s.sidebarIcon}>🏪</span> Sellers
           </div>

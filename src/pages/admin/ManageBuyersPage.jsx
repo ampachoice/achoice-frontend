@@ -296,6 +296,12 @@ export default function ManageBuyersPage() {
               path: "/admin/delivery-zones",
             },
             { icon: "👥", label: "Staff", path: "/admin/staff" },
+            {
+              icon: "📋",
+              label: "Complaints",
+              path: "/admin/complaints",
+            },
+            { icon: "💳", label: "Payments", path: "/admin/payments" },
             { icon: "📈", label: "Reports", path: "/admin/reports" },
           ].map((item) => (
             <div

@@ -11,25 +11,35 @@ export default function AdminComplaintDetailPage() {
   const bottomRef = useRef(null);
 
   const [complaint, setComplaint] = useState(null);
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
-  const [sending, setSending]     = useState(false);
-  const [action, setAction]       = useState("");
+  const [sending, setSending] = useState(false);
+  const [action, setAction] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(false);
-  const [toast, setToast]         = useState("");
+  const [toast, setToast] = useState("");
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 3500);
+  };
 
   const fetchComplaint = async () => {
     try {
       const res = await api.get(`/admin/complaints/${id}`);
       setComplaint(res.data.complaint || res.data);
-    } catch { showToast("Failed to load complaint."); }
-    finally { setLoading(false); }
+    } catch {
+      showToast("Failed to load complaint.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchComplaint(); }, [id]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:"smooth" }); }, [complaint?.messages]);
+  useEffect(() => {
+    fetchComplaint();
+  }, [id]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [complaint?.messages]);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -40,12 +50,15 @@ export default function AdminComplaintDetailPage() {
       payload.append("message", newMessage);
       if (action) payload.append("action", action);
       await api.post(`/admin/complaints/${id}/messages`, payload);
-      setNewMessage(""); setAction("");
+      setNewMessage("");
+      setAction("");
       fetchComplaint();
       showToast("Message sent!");
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to send message.");
-    } finally { setSending(false); }
+    } finally {
+      setSending(false);
+    }
   };
 
   const updateStatus = async (newStatus) => {
@@ -54,17 +67,24 @@ export default function AdminComplaintDetailPage() {
       await api.patch(`/admin/complaints/${id}/status`, { status: newStatus });
       fetchComplaint();
       showToast("Status updated!");
-    } catch { showToast("Failed to update status."); }
-    finally { setStatusUpdating(false); }
+    } catch {
+      showToast("Failed to update status.");
+    } finally {
+      setStatusUpdating(false);
+    }
   };
 
   const getStatusStyle = (status) =>
-    ({ pending:{background:"#fff8e7",color:"#b36b00"}, under_review:{background:"#e7f0ff",color:"#1a4fa0"},
-       resolved:{background:"#eafaf0",color:"#1a7a3a"}, rejected:{background:"#fff0f0",color:"#cc0000"}
-    })[status] || {background:"#f0f0f0",color:"#555"};
+    ({
+      pending: { background: "#fff8e7", color: "#b36b00" },
+      under_review: { background: "#e7f0ff", color: "#1a4fa0" },
+      resolved: { background: "#eafaf0", color: "#1a7a3a" },
+      rejected: { background: "#fff0f0", color: "#cc0000" },
+    })[status] || { background: "#f0f0f0", color: "#555" };
 
   const isCancellation = complaint?.type === "cancellation_request";
-  const canAction = isCancellation && ["pending","under_review"].includes(complaint?.status);
+  const canAction =
+    isCancellation && ["pending", "under_review"].includes(complaint?.status);
 
   return (
     <>
@@ -131,15 +151,32 @@ export default function AdminComplaintDetailPage() {
               { icon: "🌾", label: "Products", path: "/admin/products" },
               { icon: "📦", label: "Orders", path: "/admin/orders" },
               { icon: "💰", label: "Loans", path: "/admin/loans" },
-              { icon: "⚙️", label: "Loan Settings", path: "/admin/loan-settings" },
-              { icon: "🚚", label: "Delivery Zones", path: "/admin/delivery-zones" },
-              { icon: "📋", label: "Complaints", path: "/admin/complaints", active: true },
+              {
+                icon: "⚙️",
+                label: "Loan Settings",
+                path: "/admin/loan-settings",
+              },
+              {
+                icon: "🚚",
+                label: "Delivery Zones",
+                path: "/admin/delivery-zones",
+              },
+              {
+                icon: "📋",
+                label: "Complaints",
+                path: "/admin/complaints",
+                active: true,
+              },
               { icon: "👥", label: "Staff", path: "/admin/staff" },
+              { icon: "💳", label: "Payments", path: "/admin/payments" },
               { icon: "📈", label: "Reports", path: "/admin/reports" },
             ].map((item) => (
               <div
                 key={item.label}
-                className={"acd-sidebar-item" + (item.active ? " acd-sidebar-item-active" : "")}
+                className={
+                  "acd-sidebar-item" +
+                  (item.active ? " acd-sidebar-item-active" : "")
+                }
                 onClick={() => navigate(item.path)}
               >
                 <span>{item.icon}</span> {item.label}
@@ -165,69 +202,170 @@ export default function AdminComplaintDetailPage() {
             <NotificationBell />
           </div>
 
-          <div className="acd-back" onClick={() => navigate("/admin/complaints")}>Back to Complaints</div>
+          <div
+            className="acd-back"
+            onClick={() => navigate("/admin/complaints")}
+          >
+            Back to Complaints
+          </div>
 
-          {loading ? <p style={{color:"#888",textAlign:"center",padding:60}}>Loading...</p> : !complaint ? (
-            <p style={{color:"#888",textAlign:"center",padding:60}}>Complaint not found.</p>
+          {loading ? (
+            <p style={{ color: "#888", textAlign: "center", padding: 60 }}>
+              Loading...
+            </p>
+          ) : !complaint ? (
+            <p style={{ color: "#888", textAlign: "center", padding: 60 }}>
+              Complaint not found.
+            </p>
           ) : (
             <div className="acd-layout">
               {/* LEFT — Chat */}
               <div>
                 <div className="acd-card">
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10,marginBottom:12}}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
+                      gap: 10,
+                      marginBottom: 12,
+                    }}
+                  >
                     <div className="acd-subject">{complaint.subject}</div>
-                    <span className="acd-badge" style={getStatusStyle(complaint.status)}>
-                      {complaint.status?.replace(/_/g," ")}
+                    <span
+                      className="acd-badge"
+                      style={getStatusStyle(complaint.status)}
+                    >
+                      {complaint.status?.replace(/_/g, " ")}
                     </span>
                   </div>
                   <div className="acd-meta">Category: {complaint.category}</div>
-                  <div className="acd-meta">Type: {complaint.type?.replace(/_/g," ")}</div>
-                  <div className="acd-meta">Buyer: {complaint.user?.name} ({complaint.user?.email})</div>
+                  <div className="acd-meta">
+                    Type: {complaint.type?.replace(/_/g, " ")}
+                  </div>
+                  <div className="acd-meta">
+                    Buyer: {complaint.user?.name} ({complaint.user?.email})
+                  </div>
                   {complaint.order?.order_number && (
-                    <div className="acd-meta">Order: {complaint.order.order_number} - ₦{Number(complaint.order.total).toLocaleString()} ({complaint.order.status})</div>
+                    <div className="acd-meta">
+                      Order: {complaint.order.order_number} - ₦
+                      {Number(complaint.order.total).toLocaleString()} (
+                      {complaint.order.status})
+                    </div>
                   )}
-                  <div className="acd-meta">Submitted: {complaint.created_at ? new Date(complaint.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"}) : "-"}</div>
+                  <div className="acd-meta">
+                    Submitted:{" "}
+                    {complaint.created_at
+                      ? new Date(complaint.created_at).toLocaleDateString(
+                          "en-NG",
+                          { day: "numeric", month: "short", year: "numeric" },
+                        )
+                      : "-"}
+                  </div>
                 </div>
 
                 {/* Chat */}
                 <div className="acd-card">
                   <div className="acd-card-title">Messages</div>
                   <div className="acd-messages">
-                    {(!complaint.messages || complaint.messages.length === 0) ? (
-                      <p style={{textAlign:"center",color:"#aaa",fontSize:13}}>No messages yet.</p>
-                    ) : complaint.messages.map(msg => (
-                      <div key={msg.id} className={`acd-msg-row ${msg.sender_role}`}>
-                        <div className={`acd-bubble ${msg.sender_role}`}>
-                          <div className="acd-msg-sender">{msg.sender?.name} - {msg.sender_role}</div>
-                          <div className="acd-msg-text">{msg.message}</div>
-                          {msg.action && <div className="acd-msg-action">Action: {msg.action}</div>}
-                          {msg.attachment_url && <a href={msg.attachment_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1f4d1f",fontWeight:600,display:"block",marginTop:6}}>Attachment</a>}
-                          <div className="acd-msg-time">{msg.created_at ? new Date(msg.created_at).toLocaleTimeString("en-NG",{hour:"2-digit",minute:"2-digit"}) : ""}</div>
+                    {!complaint.messages || complaint.messages.length === 0 ? (
+                      <p
+                        style={{
+                          textAlign: "center",
+                          color: "#aaa",
+                          fontSize: 13,
+                        }}
+                      >
+                        No messages yet.
+                      </p>
+                    ) : (
+                      complaint.messages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`acd-msg-row ${msg.sender_role}`}
+                        >
+                          <div className={`acd-bubble ${msg.sender_role}`}>
+                            <div className="acd-msg-sender">
+                              {msg.sender?.name} - {msg.sender_role}
+                            </div>
+                            <div className="acd-msg-text">{msg.message}</div>
+                            {msg.action && (
+                              <div className="acd-msg-action">
+                                Action: {msg.action}
+                              </div>
+                            )}
+                            {msg.attachment_url && (
+                              <a
+                                href={msg.attachment_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  fontSize: 12,
+                                  color: "#1f4d1f",
+                                  fontWeight: 600,
+                                  display: "block",
+                                  marginTop: 6,
+                                }}
+                              >
+                                Attachment
+                              </a>
+                            )}
+                            <div className="acd-msg-time">
+                              {msg.created_at
+                                ? new Date(msg.created_at).toLocaleTimeString(
+                                    "en-NG",
+                                    { hour: "2-digit", minute: "2-digit" },
+                                  )
+                                : ""}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                     <div ref={bottomRef} />
                   </div>
 
                   {/* Action select for cancellation */}
                   {canAction && (
-                    <select className="acd-action-select" value={action} onChange={e => setAction(e.target.value)}>
+                    <select
+                      className="acd-action-select"
+                      value={action}
+                      onChange={(e) => setAction(e.target.value)}
+                    >
                       <option value="">-- No Action (reply only) --</option>
                       <option value="approve">Approve Cancellation</option>
                       <option value="reject">Reject Cancellation</option>
                     </select>
                   )}
 
-                  {["resolved","rejected"].includes(complaint.status) ? (
-                    <p style={{textAlign:"center",color:"#aaa",fontSize:13,padding:"10px 0"}}>
-                      This complaint has been {complaint.status}. No further messages.
+                  {["resolved", "rejected"].includes(complaint.status) ? (
+                    <p
+                      style={{
+                        textAlign: "center",
+                        color: "#aaa",
+                        fontSize: 13,
+                        padding: "10px 0",
+                      }}
+                    >
+                      This complaint has been {complaint.status}. No further
+                      messages.
                     </p>
                   ) : (
                     <form onSubmit={sendMessage}>
                       <div className="acd-input-row">
-                        <input className="acd-input" value={newMessage} onChange={e => setNewMessage(e.target.value)}
-                          placeholder="Type a message..." disabled={sending} />
-                        <button className="acd-send-btn" type="submit" disabled={sending || !newMessage.trim()}>
+                        <input
+                          className="acd-input"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder="Type a message..."
+                          disabled={sending}
+                        />
+                        <button
+                          className="acd-send-btn"
+                          type="submit"
+                          disabled={sending || !newMessage.trim()}
+                        >
                           {sending ? "..." : "Send"}
                         </button>
                       </div>
@@ -240,25 +378,61 @@ export default function AdminComplaintDetailPage() {
               <div>
                 <div className="acd-card">
                   <div className="acd-card-title">Update Status</div>
-                  {["pending","under_review","resolved","rejected"].map(s => (
-                    <button key={s} className="acd-status-btn"
-                      style={getStatusStyle(s)}
-                      disabled={statusUpdating || complaint.status === s}
-                      onClick={() => updateStatus(s)}>
-                      {s.replace(/_/g," ").charAt(0).toUpperCase() + s.replace(/_/g," ").slice(1)}
-                    </button>
-                  ))}
+                  {["pending", "under_review", "resolved", "rejected"].map(
+                    (s) => (
+                      <button
+                        key={s}
+                        className="acd-status-btn"
+                        style={getStatusStyle(s)}
+                        disabled={statusUpdating || complaint.status === s}
+                        onClick={() => updateStatus(s)}
+                      >
+                        {s.replace(/_/g, " ").charAt(0).toUpperCase() +
+                          s.replace(/_/g, " ").slice(1)}
+                      </button>
+                    ),
+                  )}
                 </div>
 
                 <div className="acd-card">
                   <div className="acd-card-title">Details</div>
-                  <div className="acd-info-row"><span className="acd-info-label">Status</span><span className="acd-info-val">{complaint.status?.replace(/_/g," ")}</span></div>
-                  <div className="acd-info-row"><span className="acd-info-label">Category</span><span className="acd-info-val">{complaint.category}</span></div>
-                  <div className="acd-info-row"><span className="acd-info-label">Unread</span><span className="acd-info-val">{complaint.unread_count || 0}</span></div>
-                  {complaint.resolvedBy && <div className="acd-info-row"><span className="acd-info-label">Resolved by</span><span className="acd-info-val">{complaint.resolvedBy.name}</span></div>}
+                  <div className="acd-info-row">
+                    <span className="acd-info-label">Status</span>
+                    <span className="acd-info-val">
+                      {complaint.status?.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div className="acd-info-row">
+                    <span className="acd-info-label">Category</span>
+                    <span className="acd-info-val">{complaint.category}</span>
+                  </div>
+                  <div className="acd-info-row">
+                    <span className="acd-info-label">Unread</span>
+                    <span className="acd-info-val">
+                      {complaint.unread_count || 0}
+                    </span>
+                  </div>
+                  {complaint.resolvedBy && (
+                    <div className="acd-info-row">
+                      <span className="acd-info-label">Resolved by</span>
+                      <span className="acd-info-val">
+                        {complaint.resolvedBy.name}
+                      </span>
+                    </div>
+                  )}
                   {complaint.evidence_url && (
-                    <a href={complaint.evidence_url} target="_blank" rel="noreferrer"
-                      style={{display:"block",marginTop:10,fontSize:13,color:"#1f4d1f",fontWeight:600}}>
+                    <a
+                      href={complaint.evidence_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "block",
+                        marginTop: 10,
+                        fontSize: 13,
+                        color: "#1f4d1f",
+                        fontWeight: 600,
+                      }}
+                    >
                       View Evidence
                     </a>
                   )}

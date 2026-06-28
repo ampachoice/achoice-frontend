@@ -37,6 +37,7 @@ import LoanSettingsPage   from './pages/admin/LoanSettingsPage';
 import DeliveryZonesPage  from './pages/admin/DeliveryZonesPage';
 import ManageStaffPage    from './pages/admin/ManageStaffPage';
 import ManageBuyersPage   from './pages/admin/ManageBuyersPage';
+import AdminPaystackPage  from './pages/admin/AdminPaystackPage';
 import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
 import AdminComplaintsPage from './pages/admin/AdminComplaintsPage';
 import AdminComplaintDetailPage from './pages/admin/AdminComplaintDetailPage';
@@ -131,6 +132,10 @@ const router = createBrowserRouter([
       {
         path: 'buyers',
         element: <ProtectedRoute adminOnly><ManageBuyersPage /></ProtectedRoute>
+      },
+      {
+        path: 'payments',
+        element: <ProtectedRoute adminOnly><AdminPaystackPage /></ProtectedRoute>
       },
       {
         path: 'settings',  // ✅ lowercase
