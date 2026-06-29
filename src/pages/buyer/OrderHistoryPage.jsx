@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getMyOrders, confirmDelivery, cancelOrder } from '../../services/orderService';
+import { getMyOrders, confirmDelivery } from '../../services/orderService';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
@@ -55,6 +55,9 @@ export default function OrderHistoryPage() {
   const [filter, setFilter] = useState('all');
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [lastRef, setLastRef] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
  
 
   useEffect(() => {
@@ -115,6 +118,7 @@ if (reference) {
     shipped:    { background: '#e7f7ff', color: '#0077aa' },
     delivered:  { background: '#eafaf0', color: '#1a7a3a' },
     cancelled:  { background: '#fff0f0', color: '#cc0000' },
+    cancellation_pending: { background: '#fff8e7', color: '#b36b00' },
   }[status] || { background: '#f0f0f0', color: '#555' });
 
 
@@ -130,24 +134,38 @@ if (reference) {
     }
     return { label: "Awaiting Payment", color: "#888" };
   };
-  const handleCancel = async (order) => {
-    const isPaid = order.payment_status === 'paid';
-    const message = isPaid
-      ? 'Are you sure you want to cancel? Your refund will be processed within 14 working days.'
-      : 'Are you sure you want to cancel this order?';
-    if (!window.confirm(message)) return;
+  const openCancelModal = (order) => {
+    setShowCancelModal(order);
+    setCancelReason('');
+  };
+
+  const submitCancellation = async () => {
+    if (cancelReason.trim().length < 10) {
+      showToast('Please enter at least 10 characters explaining your reason.');
+      return;
+    }
+    setCancelSubmitting(true);
     try {
-      const res = await cancelOrder(order.id);
-      setOrders(orders.map(o => o.id === order.id ? { ...o, status: 'cancelled' } : o));
-      showToast('Order cancelled successfully');
-      if (res.data.refund) {
-        const complaints = await api.get('/complaints/my-complaints');
-        const list = complaints.data.data || complaints.data || [];
-        const refundComplaint = list.find(c => c.order_id == order.id && c.type === 'refund_request');
-        if (refundComplaint) navigate('/complaints/' + refundComplaint.id);
+      const res = await api.patch(`/orders/${showCancelModal.id}/cancel`, { reason: cancelReason });
+      setOrders(orders.map(o => o.id === showCancelModal.id ? { ...o, status: 'cancellation_pending' } : o));
+      setShowCancelModal(null);
+      const redirectTo = res.data.redirect_to || (res.data.complaint_id ? '/complaints/' + res.data.complaint_id : null);
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else {
+        showToast(res.data.message || 'Cancellation request submitted.');
       }
-    } catch {
-      showToast('Failed to cancel order. Please try again.');
+    } catch (err) {
+      const data = err.response?.data;
+      if (data?.complaint_id) {
+        showToast(data.message || 'A cancellation request is already in progress.');
+        setShowCancelModal(null);
+        navigate('/complaints/' + data.complaint_id);
+      } else {
+        showToast(data?.message || 'Failed to submit cancellation request. Please try again.');
+      }
+    } finally {
+      setCancelSubmitting(false);
     }
   };
 
@@ -170,6 +188,7 @@ if (reference) {
   return (
     <div style={s.page}>
       {toast && <div style={s.toast}>{toast}</div>}
+      {showCancelModal && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 460, padding: 28 }}><h3 style={{ margin: "0 0 14px", fontSize: 18, color: "#111" }}>Cancel Order?</h3><p style={{ color: "#b36b00", fontWeight: 600, fontSize: 13, marginBottom: 16 }}>Please note: If payment was made, refunds take at least 14 working days to process.</p><textarea style={{ width: "100%", minHeight: 90, padding: 12, border: "1.5px solid #ddd", borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }} placeholder="Please tell us why you want to cancel this order (minimum 10 characters)..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} /><div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}><button style={{ padding: "10px 20px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={() => setShowCancelModal(null)}>Keep My Order</button><button style={{ padding: "10px 20px", background: cancelSubmitting ? "#aaa" : "#cc0000", color: "#fff", border: "none", borderRadius: 7, cursor: cancelSubmitting ? "not-allowed" : "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={submitCancellation} disabled={cancelSubmitting}>{cancelSubmitting ? "Submitting..." : "Submit Cancellation Request"}</button></div></div></div>)}
 
       {/* Top Bar */}
       <div style={s.topBar}>
@@ -386,9 +405,12 @@ if (reference) {
                     {(order.status === 'pending' || order.status === 'processing') && (
                       <button
                         style={{ padding: '12px 24px', background: '#fff0f0', color: '#cc0000', border: '1px solid #cc0000', borderRadius: 7, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}
-                        onClick={() => handleCancel(order)}>
+                        onClick={() => openCancelModal(order)}>
                         Cancel Order
                       </button>
+                    )}
+                    {order.status === 'cancellation_pending' && (
+                      <span style={{ color: "#b36b00", fontSize: 13, fontWeight: 600 }}>Cancellation under review</span>
                     )}
                     {order.status === 'shipped' && (
                       <button style={s.confirmBtn} onClick={() => handleConfirmDelivery(order.id)}>
@@ -505,6 +527,9 @@ const s = {
   footer: { background: '#1f4d1f', padding: '20px 60px', marginTop: 'auto' },
   footerBottom: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#a8d5a8' },
 };
+
+
+
 
 
 
