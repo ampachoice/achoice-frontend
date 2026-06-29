@@ -6,15 +6,6 @@ import NotificationBell from "../../components/buyer/NotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
 
-const complaintTypes = [
-  { value: "refund_request", label: "Refund Request" },
-  { value: "damaged_item",   label: "Damaged Item" },
-  { value: "wrong_item",     label: "Wrong Item Received" },
-  { value: "late_delivery",  label: "Late Delivery" },
-  { value: "loan_complaint", label: "Loan Complaint" },
-  { value: "payment_issue",  label: "Payment Issue" },
-  { value: "other",          label: "Other" },
-];
 
 export default function ComplaintsPage() {
   const navigate = useNavigate();
@@ -32,6 +23,8 @@ export default function ComplaintsPage() {
   const [subject, setSubject]     = useState("");
   const [description, setDescription] = useState("");
   const [evidence, setEvidence]   = useState(null);
+  const [issueTypes, setIssueTypes] = useState({});
+  const [issueOptions, setIssueOptions] = useState([]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -48,6 +41,10 @@ export default function ComplaintsPage() {
       }
     };
     fetchMyOrders();
+
+    api.get("/complaints/issue-types")
+      .then(res => setIssueTypes(res.data || {}))
+      .catch(() => {});
 
     api.get("/complaints/my-complaints")
       .then(res => setComplaints(
@@ -175,7 +172,7 @@ export default function ComplaintsPage() {
               <div className="cmp-field">
                 <label className="cmp-label">Category <span style={{color:"red"}}>*</span></label>
                 <select className="cmp-select" value={category}
-                  onChange={e => { setCategory(e.target.value); setIssueType(""); }} required>
+                  onChange={e => { const cat = e.target.value; setCategory(cat); setIssueType(""); setIssueOptions(Object.entries(issueTypes[cat] || {})); }} required>
                   <option value="">-- Select Category --</option>
                   <option value="orders">Orders</option>
                   <option value="loan">Loan</option>
@@ -188,13 +185,13 @@ export default function ComplaintsPage() {
                 <select className="cmp-select" value={issueType}
                   onChange={e => setIssueType(e.target.value)} required>
                   <option value="">-- Select Issue Type --</option>
-                  {complaintTypes.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+                  {issueOptions.map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Order */}
+              {category === 'orders' && (
               <div className="cmp-field">
                 <label className="cmp-label">Select Order <span style={{color:"#aaa", fontWeight:400}}>(optional)</span></label>
                 <select className="cmp-select" value={orderId}
@@ -208,6 +205,7 @@ export default function ComplaintsPage() {
                   <p className="cmp-no-orders">Only delivered, shipped or cancelled orders appear here.</p>
                 )}
               </div>
+              )}
 
               {/* Subject */}
               <div className="cmp-field">
@@ -283,4 +281,6 @@ export default function ComplaintsPage() {
     </>
   );
 }
+
+
 
