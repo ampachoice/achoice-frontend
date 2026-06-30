@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import api from '../../services/api';
 
@@ -19,7 +19,7 @@ export default function ProtectedRoute({
 
     const checkStatus = async () => {
       try {
-        await api.get('/auth/me');
+        await api.get('/me');
       } catch (err) {
         // api.js interceptor handles 403 ACCOUNT_BANNED/SUSPENDED automatically
       }
@@ -57,3 +57,4 @@ export default function ProtectedRoute({
 
   return children;
 }
+

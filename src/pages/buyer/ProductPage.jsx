@@ -9,6 +9,7 @@ import {
 } from "../../services/productService";
 import NotificationBell from '../../components/buyer/NotificationBell';
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
+import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
 function StarRating({ rating = 0, size = 14 }) {
   const full = Math.floor(rating);
@@ -78,6 +79,10 @@ export default function ProductPage() {
       .pp-cart-btn  { font-size:22px; cursor:pointer; position:relative; color:#fff; }
       .pp-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; }
       .pp-hamburger { display:none; }
+      .pp-desktop-only { display:flex; align-items:center; gap:14px; }
+      @media (max-width:640px) {
+        .pp-desktop-only { display:none; }
+      }
 
       /* ── MOBILE SEARCH BAR — always visible below nav on mobile ── */
       .pp-mobile-searchbar { display:none; }
@@ -358,8 +363,11 @@ export default function ProductPage() {
               <span className="pp-cart-badge">{cartCount}</span>
             )}
           </div>
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
+          <div className="pp-desktop-only">
+            <NotificationBell />
+            <BuyerDropdown cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
 
