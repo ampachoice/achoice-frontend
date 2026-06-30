@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
+import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
 export default function CartPage() {
   const navigate  = useNavigate();
@@ -19,9 +20,10 @@ export default function CartPage() {
       body { margin:0; }
       .crt-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
 
-      /* ── NAV ── */
+      /* â”€â”€ NAV â”€â”€ */
       .crt-nav { background:#1f4d1f; padding:10px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; gap:12px; }
       .crt-nav-left { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
+      .cp-desktop-only { display:flex; align-items:center; gap:14px; }
       .crt-nav-logo { width:36px; height:36px; border-radius:6px; }
       .crt-nav-name { font-weight:700; font-size:17px; color:#fff; line-height:1.2; }
       .crt-nav-name span { color:#f0c050; }
@@ -31,29 +33,29 @@ export default function CartPage() {
       .crt-cart-icon { font-size:22px; position:relative; color:#fff; cursor:pointer; }
       .crt-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; }
 
-      /* ── TOAST ── */
+      /* â”€â”€ TOAST â”€â”€ */
       .crt-toast { position:fixed; top:76px; right:20px; background:#1f4d1f; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; z-index:999; border:1px solid #f0c050; box-shadow:0 4px 16px rgba(0,0,0,0.15); }
 
-      /* ── CANCELLED BANNER ── */
+      /* â”€â”€ CANCELLED BANNER â”€â”€ */
       .crt-banner { background:#fff8e7; border:1px solid #f0c050; border-radius:10px; padding:16px 20px; margin:16px 40px 0; display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
       .crt-banner-title { font-size:15px; font-weight:700; color:#b36b00; margin-bottom:4px; }
       .crt-banner-text  { font-size:13px; color:#7a5000; line-height:1.6; }
       .crt-banner-close { background:none; border:none; font-size:18px; cursor:pointer; color:#b36b00; flex-shrink:0; }
 
-      /* ── CONTAINER ── */
+      /* â”€â”€ CONTAINER â”€â”€ */
       .crt-container { max-width:1100px; margin:0 auto; padding:36px 40px; }
       .crt-title { font-size:26px; font-weight:700; color:#1f4d1f; margin:0 0 28px; }
 
-      /* ── EMPTY ── */
+      /* â”€â”€ EMPTY â”€â”€ */
       .crt-empty { text-align:center; padding:80px 20px; background:#fff; border-radius:14px; border:1px solid #e8e4dc; }
       .crt-empty-icon { font-size:64px; margin-bottom:16px; }
       .crt-empty-text { font-size:17px; color:#666; margin-bottom:24px; }
       .crt-empty-btn  { background:#1f4d1f; color:#fff; border:none; padding:13px 28px; border-radius:8px; font-size:15px; cursor:pointer; font-family:inherit; font-weight:600; }
 
-      /* ── LAYOUT ── */
+      /* â”€â”€ LAYOUT â”€â”€ */
       .crt-layout { display:grid; grid-template-columns:1fr 340px; gap:28px; align-items:start; }
 
-      /* ── ITEMS COL ── */
+      /* â”€â”€ ITEMS COL â”€â”€ */
       .crt-items-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
       .crt-items-count { font-size:14px; color:#888; font-weight:500; }
       .crt-clear-btn { background:none; border:none; color:#cc0000; font-size:13px; cursor:pointer; font-family:inherit; font-weight:600; }
@@ -73,7 +75,7 @@ export default function CartPage() {
       .crt-item-total  { font-size:18px; font-weight:900; color:#1f4d1f; }
       .crt-remove-btn  { background:none; border:none; color:#cc0000; font-size:12px; cursor:pointer; text-decoration:underline; font-family:inherit; }
 
-      /* ── SUMMARY ── */
+      /* â”€â”€ SUMMARY â”€â”€ */
       .crt-summary { background:#fff; border-radius:12px; border:1px solid #e8e4dc; padding:24px; position:sticky; top:80px; }
       .crt-summary-title { font-size:20px; font-weight:700; color:#1f4d1f; margin:0 0 20px; }
       .crt-summary-row   { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
@@ -86,14 +88,14 @@ export default function CartPage() {
       .crt-checkout-btn  { width:100%; padding:15px; background:#1f4d1f; color:#fff; border:none; border-radius:9px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; margin-bottom:12px; }
       .crt-checkout-dis  { width:100%; padding:15px; background:#ccc; color:#fff; border:none; border-radius:9px; font-size:16px; cursor:not-allowed; font-family:inherit; margin-bottom:12px; }
       .crt-continue-btn  { width:100%; padding:13px; background:none; color:#1f4d1f; border:2px solid #1f4d1f; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
-      /* Keep Shopping below items — hidden on desktop (summary has its own), shown on mobile */
+      /* Keep Shopping below items â€” hidden on desktop (summary has its own), shown on mobile */
       .crt-keep-shopping { display:none; margin-top:4px; }
       .crt-security-note { display:flex; align-items:center; gap:6px; font-size:11px; color:#888; margin-top:14px; justify-content:center; }
 
-      /* ── MOBILE SUMMARY STRIP (checkout bar at bottom) ── */
+      /* â”€â”€ MOBILE SUMMARY STRIP (checkout bar at bottom) â”€â”€ */
       .crt-mobile-checkout { display:none; }
 
-      /* ── TABLET ── */
+      /* â”€â”€ TABLET â”€â”€ */
       @media (max-width:860px) {
         .crt-nav { padding:10px 20px; }
         .crt-nav-back { display:none; }
@@ -103,8 +105,9 @@ export default function CartPage() {
         .crt-summary { position:static; }
       }
 
-      /* ── MOBILE ── */
+      /* â”€â”€ MOBILE â”€â”€ */
       @media (max-width:600px) {
+        .cp-desktop-only { display:none; }
         .crt-nav { padding:8px 14px; }
         .crt-nav-name { font-size:15px; }
         .crt-banner { margin:12px 12px 0; padding:14px 16px; }
@@ -119,7 +122,7 @@ export default function CartPage() {
         .crt-qty-btn { font-size:18px; }
         .crt-qty-num { font-size:14px; }
 
-        /* Hide the right-column summary on mobile — replaced by bottom bar */
+        /* Hide the right-column summary on mobile â€” replaced by bottom bar */
         .crt-summary-col { display:none; }
         /* Show the keep shopping button that lives below the items list */
         .crt-keep-shopping { display:block; }
@@ -200,14 +203,17 @@ export default function CartPage() {
             <div className="crt-nav-motto">Your needs our solutions</div>
           </div>
         </div>
-        <span className="crt-nav-back" onClick={() => navigate('/products')}>← Back to Marketplace</span>
+        <span className="crt-nav-back" onClick={() => navigate('/products')}>â† Back to Marketplace</span>
         <div className="crt-nav-right">
           <div className="crt-cart-icon" onClick={() => navigate('/cart')}>
-            🛒
+            ðŸ›’
             {cartCount > 0 && <span className="crt-cart-badge">{cartCount}</span>}
           </div>
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
+          <div className="cp-desktop-only">
+            <NotificationBell />
+            <BuyerDropdown cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
 
@@ -217,21 +223,21 @@ export default function CartPage() {
       {cancelledNotice && (
         <div className="crt-banner">
           <div style={{ flex:1 }}>
-            <div className="crt-banner-title">⚠️ Payment Incomplete</div>
+            <div className="crt-banner-title">âš ï¸ Payment Incomplete</div>
             <div className="crt-banner-text">
-              Your payment was cancelled or not completed. Your cart items are still here — review them and try again.
+              Your payment was cancelled or not completed. Your cart items are still here â€” review them and try again.
             </div>
           </div>
-          <button className="crt-banner-close" onClick={() => setCancelledNotice(false)}>✕</button>
+          <button className="crt-banner-close" onClick={() => setCancelledNotice(false)}>âœ•</button>
         </div>
       )}
 
       <div className="crt-container">
-        <h1 className="crt-title">🛒 Your Shopping Cart</h1>
+        <h1 className="crt-title">ðŸ›’ Your Shopping Cart</h1>
 
         {cart.length === 0 ? (
           <div className="crt-empty">
-            <div className="crt-empty-icon">🛒</div>
+            <div className="crt-empty-icon">ðŸ›’</div>
             <p className="crt-empty-text">Your cart is empty</p>
             <button className="crt-empty-btn" onClick={() => navigate('/products')}>Start Shopping</button>
           </div>
@@ -250,39 +256,39 @@ export default function CartPage() {
                   <div className="crt-item-img">
                     {item.image
                       ? <img src={item.image} alt={item.name} />
-                      : <span style={{ fontSize:36 }}>🌿</span>}
+                      : <span style={{ fontSize:36 }}>ðŸŒ¿</span>}
                   </div>
                   <div className="crt-item-info">
                     <div className="crt-item-name">{item.name}</div>
                     <div className="crt-item-seller">{item.seller?.business_name || 'Verified ACHOICE Seller'}</div>
-                    <div className="crt-item-price">₦{Number(item.price).toLocaleString()} / unit</div>
+                    <div className="crt-item-price">â‚¦{Number(item.price).toLocaleString()} / unit</div>
                   </div>
                   <div className="crt-item-actions">
                     <div className="crt-qty">
-                      <button className="crt-qty-btn" onClick={() => updateQuantity(item.id, item.quantity - 1)}>−</button>
+                      <button className="crt-qty-btn" onClick={() => updateQuantity(item.id, item.quantity - 1)}>âˆ’</button>
                       <span className="crt-qty-num">{item.quantity}</span>
                       <button className="crt-qty-btn" onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
                     </div>
-                    <div className="crt-item-total">₦{(Number(item.price) * item.quantity).toLocaleString()}</div>
+                    <div className="crt-item-total">â‚¦{(Number(item.price) * item.quantity).toLocaleString()}</div>
                     <button className="crt-remove-btn" onClick={() => removeItem(item.id)}>Remove</button>
                   </div>
                 </div>
               ))}
 
-              {/* ✅ Keep Shopping — always visible on ALL screen sizes */}
+              {/* âœ… Keep Shopping â€” always visible on ALL screen sizes */}
               <button className="crt-continue-btn crt-keep-shopping"
                 onClick={() => navigate('/products')}>
-                ← Keep Shopping
+                â† Keep Shopping
               </button>
             </div>
 
-            {/* Summary — desktop/tablet */}
+            {/* Summary â€” desktop/tablet */}
             <div className="crt-summary-col">
               <div className="crt-summary">
                 <h2 className="crt-summary-title">Order Summary</h2>
                 <div className="crt-summary-row">
                   <span className="crt-summary-label">Subtotal ({cart.length} item{cart.length > 1 ? 's' : ''})</span>
-                  <span className="crt-summary-val">₦{total.toLocaleString()}</span>
+                  <span className="crt-summary-val">â‚¦{total.toLocaleString()}</span>
                 </div>
                 <div className="crt-summary-row">
                   <span className="crt-summary-label">Delivery fee</span>
@@ -291,19 +297,19 @@ export default function CartPage() {
                 <div className="crt-divider" />
                 <div className="crt-total-row">
                   <span className="crt-total-label">Total</span>
-                  <span className="crt-total-val">₦{total.toLocaleString()}</span>
+                  <span className="crt-total-val">â‚¦{total.toLocaleString()}</span>
                 </div>
                 <button
                   className={cart.length === 0 ? 'crt-checkout-dis' : 'crt-checkout-btn'}
                   onClick={() => cart.length > 0 && navigate('/checkout')}
                   disabled={cart.length === 0}>
-                  Proceed to Checkout →
+                  Proceed to Checkout â†’
                 </button>
                 <button className="crt-continue-btn" onClick={() => navigate('/products')}>
-                  ← Keep Shopping
+                  â† Keep Shopping
                 </button>
                 <div className="crt-security-note">
-                  <span>🔒</span> Secured by Paystack
+                  <span>ðŸ”’</span> Secured by Paystack
                 </div>
               </div>
             </div>
@@ -311,18 +317,21 @@ export default function CartPage() {
         )}
       </div>
 
-      {/* ✅ Mobile sticky checkout bar */}
+      {/* âœ… Mobile sticky checkout bar */}
       {cart.length > 0 && (
         <div className="crt-mobile-checkout">
           <div className="crt-mobile-total">
             <div className="crt-mobile-total-label">Total</div>
-            <div className="crt-mobile-total-val">₦{total.toLocaleString()}</div>
+            <div className="crt-mobile-total-val">â‚¦{total.toLocaleString()}</div>
           </div>
           <button className="crt-mobile-checkout-btn" onClick={() => navigate('/checkout')}>
-            Checkout →
+            Checkout â†’
           </button>
         </div>
       )}
     </div>
   );
 }
+
+
+
