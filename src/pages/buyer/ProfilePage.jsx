@@ -93,42 +93,83 @@ export default function ProfilePage() {
     <div style={s.page}>
       {toast && <div style={s.toast}>{toast}</div>}
 
+      <style>{`
+        /* ── Top Bar ── */
+        .pf-topbar { background:#1f4d1f; color:#fff; padding:8px 60px; display:flex; justify-content:space-between; font-size:12px; flex-wrap:wrap; gap:6px; }
+        .pf-topbar-left, .pf-topbar-right { display:flex; gap:24px; flex-wrap:wrap; }
+
+        /* ── Navbar ── */
+        .pf-nav { background:#1f4d1f; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:12px; flex-wrap:wrap; }
+        .pf-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
+        .pf-nav-logo-img { width:45px; height:45px; object-fit:contain; }
+        .pf-nav-logo-name { font-size:15px; font-weight:700; color:#fff; }
+        .pf-nav-logo-tag { font-size:10px; color:#888; }
+        .pf-nav-links { display:flex; gap:28px; align-items:center; flex-wrap:wrap; }
+        .pf-nav-link { color:#fff; font-size:14px; cursor:pointer; white-space:nowrap; }
+        .pf-cart-badge { background:#f0c050; color:#1a1a1a; font-size:10px; font-weight:700; border-radius:50%; padding:1px 5px; margin-left:4px; }
+        .pf-nav-right { display:flex; align-items:center; gap:14px; flex-shrink:0; margin-left:auto; }
+
+        /* ── TABLET ── */
+        @media (max-width:900px) {
+          .pf-topbar { padding:8px 24px; }
+          .pf-nav { padding:12px 24px; }
+        }
+
+        /* ── MOBILE ── */
+        @media (max-width:640px) {
+          .pf-topbar { display:none; }
+          .pf-nav { padding:10px 16px; justify-content:space-between; }
+          .pf-nav-links { display:none; }
+          .pf-nav-logo-img { width:36px; height:36px; }
+          .pf-nav-logo-name { font-size:13px; }
+          .pf-nav-logo-tag { display:none; }
+        }
+
+        /* ── Profile Hero + Quick Stats ── */
+        @media (max-width:640px) {
+          .pf-hero-card { flex-direction:column; text-align:center; padding:24px 20px !important; }
+          .pf-quick-stats { grid-template-columns:repeat(2,1fr) !important; }
+        }
+      `}</style>
+
       {/* Top Bar */}
-      <div style={s.topBar}>
-        <div style={s.topBarLeft}>
+      <div className="pf-topbar">
+        <div className="pf-topbar-left">
           <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
           <span>✉ support@achoice.ng</span>
         </div>
-        <div style={s.topBarRight}>
+        <div className="pf-topbar-right">
           <span>📞 09067794991</span>
           <span>Mon - Sat: 07:00am to 06:00pm</span>
         </div>
       </div>
 
       {/* Navbar */}
-      <nav style={s.nav}>
-        <div style={s.navBrand} onClick={() => navigate('/')}>
-          <img src={LOGO_PATH} alt="Achoice Logo" style={s.navLogoImg} />
+      <nav className="pf-nav">
+        <div className="pf-nav-brand" onClick={() => navigate('/')}>
+          <img src={LOGO_PATH} alt="Achoice Logo" className="pf-nav-logo-img" />
           <div>
-            <div style={s.navLogoName}>ACHOICE LIMITED</div>
-            <div style={s.navLogoTag}>Your needs our solutions</div>
+            <div className="pf-nav-logo-name">ACHOICE LIMITED</div>
+            <div className="pf-nav-logo-tag">Your needs our solutions</div>
           </div>
         </div>
-        <div style={s.navLinks}>
-          <span style={s.navLink} onClick={() => navigate('/')}>Home</span>
-          <span style={s.navLink} onClick={() => navigate('/orders')}>My Orders</span>
-          <span style={s.navLink} onClick={() => navigate('/cart')}>
-            Cart {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
+        <div className="pf-nav-links">
+          <span className="pf-nav-link" onClick={() => navigate('/')}>Home</span>
+          <span className="pf-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
+          <span className="pf-nav-link" onClick={() => navigate('/cart')}>
+            Cart {cartCount > 0 && <span className="pf-cart-badge">{cartCount}</span>}
           </span>
         </div>
-        <NotificationBell />
-        <BuyerDropdown cartCount={cartCount} />
+        <div className="pf-nav-right">
+          <NotificationBell />
+          <BuyerDropdown cartCount={cartCount} />
+        </div>
       </nav>
 
       <div style={s.container}>
         {/* Profile Header */}
         <div style={s.profileHeader}>
-          <div style={s.profileHeroCard}>
+          <div style={s.profileHeroCard} className="pf-hero-card">
             <div style={s.avatarLarge}>{initial}</div>
             <div style={s.profileInfo}>
               <h1 style={s.profileName}>{user?.name}</h1>
@@ -145,7 +186,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Quick Stats */}
-          <div style={s.quickStats}>
+          <div style={s.quickStats} className="pf-quick-stats">
             <div style={s.quickStat} onClick={() => navigate('/orders')}>
               <div style={s.quickStatIcon}>📦</div>
               <div style={s.quickStatLabel}>My Orders</div>
