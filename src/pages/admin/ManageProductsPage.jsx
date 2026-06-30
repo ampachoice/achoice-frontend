@@ -749,6 +749,7 @@ export default function ManageProductsPage() {
 
         {/* Products Table */}
         <div style={s.tableCard}>
+          <div className="table-responsive">
           <table style={s.table}>
             <thead>
               <tr style={s.tableHead}>
@@ -889,6 +890,7 @@ export default function ManageProductsPage() {
               })}
             </tbody>
           </table>
+          </div>
           {filtered.length === 0 && (
             <div style={s.empty}>No products found.</div>
           )}
@@ -1278,3 +1280,5 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
 };
+
+
