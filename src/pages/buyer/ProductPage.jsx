@@ -59,7 +59,7 @@ export default function ProductPage() {
   const [categories, setCategories] = useState(["All"]);
 
   useEffect(() => {
-    if (false) { // styles now inline in Navbar component
+    if (true) {
     const el = document.createElement("style");
     el.id = "pp-style-v2";
     el.textContent = `
