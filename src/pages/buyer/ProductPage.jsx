@@ -7,7 +7,7 @@ import {
   getProductReviews,
   submitProductReview,
 } from "../../services/productService";
-import NotificationBell from '../../components/buyer/NotificationBell';
+import NotificationBell from "../../components/buyer/NotificationBell";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
@@ -59,9 +59,9 @@ export default function ProductPage() {
   const [categories, setCategories] = useState(["All"]);
 
   useEffect(() => {
-    if (document.getElementById("pp-style")) return;
+    if (document.getElementById("pp-style-v2")) return;
     const el = document.createElement("style");
-    el.id = "pp-style";
+    el.id = "pp-style-v2";
     el.textContent = `
       body { margin:0; }
       .pp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
@@ -225,7 +225,11 @@ export default function ProductPage() {
         const cd = res.data;
         const catData = cd?.categories || cd || [];
         const list = Array.isArray(catData) ? catData : [];
-        const names = list.map((c) => (typeof c === "string" ? c : c.slug || c.name || c.category)).filter(Boolean);
+        const names = list
+          .map((c) =>
+            typeof c === "string" ? c : c.slug || c.name || c.category,
+          )
+          .filter(Boolean);
         setCategories(["All", ...names]);
       })
       .catch(() => {});
@@ -272,7 +276,6 @@ export default function ProductPage() {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     setCartCount(cart.reduce((acc, item) => acc + item.quantity, 0));
   }, []);
-
 
   const handleAddToCart = (p) => {
     if (!p) return;
@@ -512,128 +515,130 @@ export default function ProductPage() {
             <p className="pp-empty">No products found.</p>
           ) : (
             <>
-            <div className="pp-grid">
-              {products.map((p) => {
-                const pDiscount =
-                  p.discount_price && Number(p.discount_price) > 0;
-                const pImg =
-                  p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
-                return (
-                  <div key={p.id} className="pp-card">
-                    <div
-                      className="pp-card-img-box"
-                      onClick={() => navigate(`/product/${p.id}`)}
-                    >
-                      {pImg ? (
-                        <img src={pImg} alt={p.name} />
-                      ) : (
-                        <span style={{ fontSize: 40 }}>📦</span>
-                      )}
-                      {pDiscount && <div className="pp-sale-badge">SALE</div>}
-                      {p.category && (
-                        <div className="pp-cat-badge">{p.category}</div>
-                      )}
-                    </div>
-                    <div className="pp-card-body">
-                      <div className="pp-card-name">{p.name}</div>
-                      <div className="pp-card-seller">
-                        {p.seller?.business_name || "ACHOICE Seller"}
-                      </div>
+              <div className="pp-grid">
+                {products.map((p) => {
+                  const pDiscount =
+                    p.discount_price && Number(p.discount_price) > 0;
+                  const pImg =
+                    p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
+                  return (
+                    <div key={p.id} className="pp-card">
                       <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                          marginBottom: 6,
-                        }}
+                        className="pp-card-img-box"
+                        onClick={() => navigate(`/product/${p.id}`)}
                       >
-                        <StarRating
-                          rating={parseFloat(p.reviews_avg_rating || 0)}
-                        />
-                        <span style={{ fontSize: 11, color: "#888" }}>
-                          ({p.reviews_count || 0})
-                        </span>
+                        {pImg ? (
+                          <img src={pImg} alt={p.name} />
+                        ) : (
+                          <span style={{ fontSize: 40 }}>📦</span>
+                        )}
+                        {pDiscount && <div className="pp-sale-badge">SALE</div>}
+                        {p.category && (
+                          <div className="pp-cat-badge">{p.category}</div>
+                        )}
                       </div>
-                      <div className="pp-card-price">
-                        ₦
-                        {Number(
-                          pDiscount ? p.discount_price : p.price,
-                        ).toLocaleString()}
-                      </div>
-                      {pDiscount && (
-                        <div className="pp-card-orig">
-                          ₦{Number(p.price).toLocaleString()}
+                      <div className="pp-card-body">
+                        <div className="pp-card-name">{p.name}</div>
+                        <div className="pp-card-seller">
+                          {p.seller?.business_name || "ACHOICE Seller"}
                         </div>
-                      )}
-                      <button
-                        className="pp-card-btn"
-                        onClick={() => handleAddToCart(p)}
-                      >
-                        Add & Checkout
-                      </button>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            marginBottom: 6,
+                          }}
+                        >
+                          <StarRating
+                            rating={parseFloat(p.reviews_avg_rating || 0)}
+                          />
+                          <span style={{ fontSize: 11, color: "#888" }}>
+                            ({p.reviews_count || 0})
+                          </span>
+                        </div>
+                        <div className="pp-card-price">
+                          ₦
+                          {Number(
+                            pDiscount ? p.discount_price : p.price,
+                          ).toLocaleString()}
+                        </div>
+                        {pDiscount && (
+                          <div className="pp-card-orig">
+                            ₦{Number(p.price).toLocaleString()}
+                          </div>
+                        )}
+                        <button
+                          className="pp-card-btn"
+                          onClick={() => handleAddToCart(p)}
+                        >
+                          Add & Checkout
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-            {meta && (meta.last_page || meta.total_pages || 1) > 1 && (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: 16,
-                  padding: "28px 0",
-                }}
-              >
-                <button
-                  style={{
-                    padding: "10px 20px",
-                    background: page <= 1 ? "#e8e4dc" : "#1f4d1f",
-                    color: page <= 1 ? "#aaa" : "#fff",
-                    border: "none",
-                    borderRadius: 7,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: page <= 1 ? "not-allowed" : "pointer",
-                    fontFamily: "inherit",
-                  }}
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Prev
-                </button>
-                <span style={{ fontSize: 13, color: "#555", fontWeight: 500 }}>
-                  Page {page} of {meta.last_page || meta.total_pages || 1}
-                </span>
-                <button
-                  style={{
-                    padding: "10px 20px",
-                    background:
-                      page >= (meta.last_page || meta.total_pages || 1)
-                        ? "#e8e4dc"
-                        : "#1f4d1f",
-                    color:
-                      page >= (meta.last_page || meta.total_pages || 1)
-                        ? "#aaa"
-                        : "#fff",
-                    border: "none",
-                    borderRadius: 7,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor:
-                      page >= (meta.last_page || meta.total_pages || 1)
-                        ? "not-allowed"
-                        : "pointer",
-                    fontFamily: "inherit",
-                  }}
-                  disabled={page >= (meta.last_page || meta.total_pages || 1)}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </button>
+                  );
+                })}
               </div>
-            )}
+              {meta && (meta.last_page || meta.total_pages || 1) > 1 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 16,
+                    padding: "28px 0",
+                  }}
+                >
+                  <button
+                    style={{
+                      padding: "10px 20px",
+                      background: page <= 1 ? "#e8e4dc" : "#1f4d1f",
+                      color: page <= 1 ? "#aaa" : "#fff",
+                      border: "none",
+                      borderRadius: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: page <= 1 ? "not-allowed" : "pointer",
+                      fontFamily: "inherit",
+                    }}
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
+                    Prev
+                  </button>
+                  <span
+                    style={{ fontSize: 13, color: "#555", fontWeight: 500 }}
+                  >
+                    Page {page} of {meta.last_page || meta.total_pages || 1}
+                  </span>
+                  <button
+                    style={{
+                      padding: "10px 20px",
+                      background:
+                        page >= (meta.last_page || meta.total_pages || 1)
+                          ? "#e8e4dc"
+                          : "#1f4d1f",
+                      color:
+                        page >= (meta.last_page || meta.total_pages || 1)
+                          ? "#aaa"
+                          : "#fff",
+                      border: "none",
+                      borderRadius: 7,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor:
+                        page >= (meta.last_page || meta.total_pages || 1)
+                          ? "not-allowed"
+                          : "pointer",
+                      fontFamily: "inherit",
+                    }}
+                    disabled={page >= (meta.last_page || meta.total_pages || 1)}
+                    onClick={() => setPage((p) => p + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </>
           ))}
 
@@ -923,14 +928,4 @@ export default function ProductPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
 

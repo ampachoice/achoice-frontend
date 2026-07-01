@@ -4,6 +4,7 @@ import { getAllProducts } from '../services/productService';
 import api from '../services/api';
 import farmerImg from '../assets/farmer.jpg';
 import NotificationBell from '../components/buyer/NotificationBell';
+import MobileNavDrawer from '../components/buyer/MobileNavDrawer';
 
 const LOGO_PATH = '/achoice logo.png';
 const PRODUCTS_PER_PAGE = 8;
@@ -372,6 +373,7 @@ export default function HomePage() {
             🛒 {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
           </div>
           {token && <NotificationBell />}
+          <MobileNavDrawer cartCount={cartCount} />
           <div className="hp-nav-actions-desktop" style={{ display: 'flex', gap: 8 }}>
             {token ? (
               <button style={s.btnSolid} onClick={() => navigate('/orders')}>My Account</button>

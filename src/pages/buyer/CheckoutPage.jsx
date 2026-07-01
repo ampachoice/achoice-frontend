@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { createOrder } from "../../services/orderService";
 import api from "../../services/api";
 import NotificationBell from "../../components/buyer/NotificationBell";
+import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
 const NIGERIAN_STATES_FALLBACK = [
   "Abia",
@@ -401,6 +402,7 @@ export default function CheckoutPage() {
           ← Return to Cart
         </span>
         <NotificationBell />
+        <MobileNavDrawer cartCount={cartCount} />
       </nav>
 
       <div className="ckp-container">
