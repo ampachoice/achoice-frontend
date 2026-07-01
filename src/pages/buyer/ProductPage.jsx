@@ -495,16 +495,17 @@ export default function ProductPage() {
           </div>
         )}
 
-       <div className="pp-nav-right">
-  <div className="pp-cart-btn" onClick={() => navigate("/cart")}>
-    🛒
-    {cartCount > 0 && (
-      <span className="pp-cart-badge">{cartCount}</span>
-    )}
-  </div>
-  <NotificationBell />
-  <BuyerDropdown cartCount={cartCount} />
-</div>
+        <div className="pp-nav-right">
+          <div className="pp-cart-btn" onClick={() => navigate("/cart")}>
+            🛒
+            {cartCount > 0 && (
+              <span className="pp-cart-badge">{cartCount}</span>
+            )}
+          </div>
+          <NotificationBell />
+          <BuyerDropdown cartCount={cartCount} />
+        </div>
+      </nav>
 
       {/* ✅ Mobile search bar — always visible below nav on listing page */}
       {!id && (
