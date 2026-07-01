@@ -58,10 +58,11 @@ export default function ProductPage() {
   const [categories, setCategories] = useState(["All"]);
 
   useEffect(() => {
-    if (false) { // styles now inline in Navbar component
-    const el = document.createElement("style");
-    el.id = "pp-style-v2";
-    el.textContent = `
+    if (false) {
+      // styles now inline in Navbar component
+      const el = document.createElement("style");
+      el.id = "pp-style-v2";
+      el.textContent = `
       body { margin:0; }
       .pp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
 
@@ -76,7 +77,16 @@ export default function ProductPage() {
       .pp-search-group input  { flex:1; padding:9px 14px; border:none; outline:none; font-size:14px; min-width:0; }
       .pp-nav-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
       .pp-cart-btn  { font-size:22px; cursor:pointer; position:relative; color:#fff; }
-      .pp-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; }
+      .pp-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; 
+      @media (max-width: 768px) {
+  .pp-nav { padding: 10px 16px !important; }
+  .pp-search-group { display: none !important; }
+  .pp-nav-right { 
+    display: flex !important; 
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
       
 
       /* ── MOBILE SEARCH BAR — always visible below nav on mobile ── */
@@ -211,7 +221,7 @@ export default function ProductPage() {
         .pp-mobile-searchbar-inner select { display:none; }
       }
     `;
-    document.head.appendChild(el);
+      document.head.appendChild(el);
     }
   }, []);
 
@@ -485,19 +495,16 @@ export default function ProductPage() {
           </div>
         )}
 
-        <div className="pp-nav-right">
-          <div className="pp-cart-btn" onClick={() => navigate("/cart")}>
-            🛒
-            {cartCount > 0 && (
-              <span className="pp-cart-badge">{cartCount}</span>
-            )}
-          </div>
-          <div className="pp-desktop-only">
-            <NotificationBell />
-            <BuyerDropdown cartCount={cartCount} />
-          </div>
-        </div>
-      </nav>
+       <div className="pp-nav-right">
+  <div className="pp-cart-btn" onClick={() => navigate("/cart")}>
+    🛒
+    {cartCount > 0 && (
+      <span className="pp-cart-badge">{cartCount}</span>
+    )}
+  </div>
+  <NotificationBell />
+  <BuyerDropdown cartCount={cartCount} />
+</div>
 
       {/* ✅ Mobile search bar — always visible below nav on listing page */}
       {!id && (
@@ -1053,7 +1060,3 @@ export default function ProductPage() {
     </div>
   );
 }
-
-
-
-
