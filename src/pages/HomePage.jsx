@@ -4,7 +4,6 @@ import { getAllProducts } from '../services/productService';
 import api from '../services/api';
 import farmerImg from '../assets/farmer.jpg';
 import NotificationBell from '../components/buyer/NotificationBell';
-import MobileNavDrawer from '../components/buyer/MobileNavDrawer';
 
 const LOGO_PATH = '/achoice logo.png';
 const PRODUCTS_PER_PAGE = 8;
@@ -151,7 +150,7 @@ const injectCSS = () => {
     @media (max-width: 768px) {
       .hp-hamburger { display: block !important; }
       .hp-nav-links { display: none !important; }
-      .hp-nav-actions-desktop { display: none !important; }
+      .hp-nav-actions-desktop { display: flex !important; gap: 8px; }
       .hp-topbar-small { display: none !important; }
       .hp-carousel-slide { height: 420px; }
       .hp-carousel-content { padding: 0 20px; }
@@ -373,7 +372,6 @@ export default function HomePage() {
             🛒 {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
           </div>
           {token && <NotificationBell />}
-          <MobileNavDrawer cartCount={cartCount} />
           <div className="hp-nav-actions-desktop" style={{ display: 'flex', gap: 8 }}>
             {token ? (
               <button style={s.btnSolid} onClick={() => navigate('/orders')}>My Account</button>
@@ -761,3 +759,4 @@ const s = {
   loanBtn: { padding: '12px 24px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 7, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' },
   testGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 },
 };
+
