@@ -59,6 +59,7 @@ export default function ProductPage() {
   const [categories, setCategories] = useState(["All"]);
 
   useEffect(() => {
+    const old = document.getElementById("pp-style"); if (old) old.remove();
     if (document.getElementById("pp-style-v2")) return;
     const el = document.createElement("style");
     el.id = "pp-style-v2";
@@ -928,4 +929,5 @@ export default function ProductPage() {
     </div>
   );
 }
+
 
