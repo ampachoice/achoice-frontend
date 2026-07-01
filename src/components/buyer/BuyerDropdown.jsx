@@ -48,7 +48,12 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 
   const menuItems = [
     { icon: "👤", label: "My Profile", path: "/profile" },
-    { icon: "🛒", label: "Cart", path: "/cart", badge: cartCount > 0 ? cartCount : null },
+    {
+      icon: "🛒",
+      label: "Cart",
+      path: "/cart",
+      badge: cartCount > 0 ? cartCount : null,
+    },
     { icon: "📦", label: "My Orders", path: "/orders" },
     { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
     { icon: "📋", label: "My Loans", path: "/loans/repay" },
@@ -77,7 +82,9 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
         <div style={s.triggerInfo}>
           <div style={s.triggerName}>{user.name?.split(" ")[0]}</div>
         </div>
-        <span style={{ ...s.chevron, transform: open ? "rotate(180deg)" : "none" }}>
+        <span
+          style={{ ...s.chevron, transform: open ? "rotate(180deg)" : "none" }}
+        >
           ▾
         </span>
       </div>
@@ -101,8 +108,12 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
               key={item.path}
               style={s.menuItem}
               onClick={() => go(item.path)}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f7f5f0")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "#f7f5f0")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "transparent")
+              }
             >
               <span style={s.menuIcon}>{item.icon}</span>
               <span style={s.menuLabel}>{item.label}</span>
@@ -117,7 +128,9 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
             style={s.menuItem}
             onClick={handleLogout}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
           >
             <span style={s.menuIcon}>🚪</span>
             <span style={{ ...s.menuLabel, color: "#cc0000" }}>Logout</span>
@@ -155,8 +168,18 @@ const s = {
     flexShrink: 0,
   },
   triggerInfo: { display: "flex", flexDirection: "column", gap: 1 },
-  triggerName: { fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.2 },
-  chevron: { fontSize: 12, color: "#fff", transition: "transform 0.2s", marginLeft: 2 },
+  triggerName: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#fff",
+    lineHeight: 1.2,
+  },
+  chevron: {
+    fontSize: 12,
+    color: "#fff",
+    transition: "transform 0.2s",
+    marginLeft: 2,
+  },
   menu: {
     position: "absolute",
     top: "calc(100% + 10px)",
