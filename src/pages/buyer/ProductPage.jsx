@@ -59,8 +59,7 @@ export default function ProductPage() {
   const [categories, setCategories] = useState(["All"]);
 
   useEffect(() => {
-    const old = document.getElementById("pp-style"); if (old) old.remove();
-    if (document.getElementById("pp-style-v2")) return;
+    if (false) { // styles now inline in Navbar component
     const el = document.createElement("style");
     el.id = "pp-style-v2";
     el.textContent = `
@@ -218,6 +217,7 @@ export default function ProductPage() {
       }
     `;
     document.head.appendChild(el);
+    }
   }, []);
 
   useEffect(() => {
@@ -327,6 +327,138 @@ export default function ProductPage() {
   // ── NAV ──────────────────────────────────────────────────────────────────
   const Navbar = () => (
     <>
+      <style>{`
+      body { margin:0; }
+      .pp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
+      .pp-nav { background:#1f4d1f; padding:10px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:200; gap:12px; }
+      .pp-nav-left { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
+      .pp-nav-logo { width:36px; height:36px; border-radius:6px; }
+      .pp-nav-name { font-weight:700; font-size:17px; color:#fff; }
+      .pp-nav-name span { color:#f0c050; }
+      .pp-search-group { flex:1; max-width:500px; margin:0 20px; display:flex; background:#fff; border-radius:25px; overflow:hidden; border:2px solid #f0c050; }
+      .pp-search-group select { padding:8px 12px; border:none; border-right:1px solid #eee; background:#f9f9f9; font-size:13px; outline:none; cursor:pointer; min-width:80px; flex-shrink:0; }
+      .pp-search-group input { flex:1; padding:9px 14px; border:none; outline:none; font-size:14px; min-width:0; }
+      .pp-nav-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
+      .pp-cart-btn { font-size:22px; cursor:pointer; position:relative; color:#fff; }
+      .pp-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; }
+      .pp-hamburger { display:none; }
+      .pp-desktop-only { display:flex; align-items:center; gap:14px; }
+      @media (max-width:640px) { .pp-desktop-only { display:none; } }
+      .pp-mobile-searchbar { display:none; }
+      .pp-mobile-searchbar-inner { padding:10px 12px; display:flex; gap:8px; background:#1a3d1a; border-bottom:3px solid #f0c050; }
+      .pp-mobile-searchbar-inner select { padding:10px 8px; border:none; border-radius:8px; font-size:13px; outline:none; font-family:inherit; background:#fff; color:#333; flex-shrink:0; max-width:110px; cursor:pointer; min-width:80px; }
+      .pp-mobile-searchbar-inner input { flex:1; padding:10px 14px; border:none; border-radius:8px; font-size:15px; outline:none; font-family:inherit; min-width:0; }
+      .pp-mobile-searchbar-count { padding:5px 14px 8px; background:#1a3d1a; font-size:12px; color:#a8d5a8; }
+      .pp-container { padding:28px 40px; max-width:1200px; margin:0 auto; }
+      .pp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:22px; }
+      .pp-card { background:#fff; border-radius:12px; border:1px solid #e8e4dc; overflow:hidden; transition:box-shadow .2s; }
+      .pp-card:hover { box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+      .pp-card-img-box { height:168px; background:#f5f5f5; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; overflow:hidden; }
+      .pp-card-img-box img { width:100%; height:100%; object-fit:cover; }
+      .pp-sale-badge { position:absolute; top:8px; right:8px; background:#cc0000; color:#fff; font-size:9px; font-weight:700; padding:3px 8px; border-radius:4px; }
+      .pp-cat-badge { position:absolute; top:8px; left:8px; background:#1f4d1f; color:#fff; font-size:9px; font-weight:700; padding:3px 8px; border-radius:4px; text-transform:capitalize; }
+      .pp-card-body { padding:14px; }
+      .pp-card-name { font-weight:700; font-size:14px; color:#111; margin-bottom:4px; }
+      .pp-card-seller { font-size:11px; color:#888; margin-bottom:5px; }
+      .pp-card-price { color:#1f4d1f; font-weight:900; font-size:19px; }
+      .pp-card-orig { color:#bbb; font-size:11px; text-decoration:line-through; margin-bottom:8px; }
+      .pp-card-btn { width:100%; padding:10px; background:#1f4d1f; color:#fff; border:none; border-radius:7px; cursor:pointer; font-weight:700; font-size:13px; font-family:inherit; }
+      .pp-back-btn { background:none; border:none; color:#1f4d1f; font-weight:700; cursor:pointer; font-size:14px; margin-bottom:18px; display:flex; align-items:center; gap:6px; padding:0; }
+      .pp-detail-card { display:grid; grid-template-columns:1fr 1.1fr; gap:36px; background:#fff; padding:32px; border-radius:14px; margin-bottom:28px; border:1px solid #e8e4dc; }
+      .pp-main-img-box { position:relative; height:360px; background:#f5f5f5; border-radius:10px; overflow:hidden; margin-bottom:12px; }
+      .pp-main-img-box img { width:100%; height:100%; object-fit:cover; }
+      .pp-img-placeholder { display:flex; align-items:center; justify-content:center; height:100%; font-size:72px; }
+      .pp-detail-sale { position:absolute; top:12px; right:12px; background:#cc0000; color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:4px; }
+      .pp-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
+      .pp-thumb { width:62px; height:62px; object-fit:cover; border-radius:7px; cursor:pointer; transition:border .2s; }
+      .pp-detail-cat { font-size:11px; font-weight:700; color:#c8860a; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+      .pp-detail-name { font-size:26px; font-weight:700; color:#111; margin:0 0 12px; line-height:1.2; }
+      .pp-rating-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; font-size:13px; color:#666; }
+      .pp-price-row { display:flex; align-items:baseline; gap:12px; margin-bottom:16px; }
+      .pp-price { font-size:34px; font-weight:900; color:#1f4d1f; }
+      .pp-orig-price { font-size:16px; color:#bbb; text-decoration:line-through; }
+      .pp-desc { color:#555; line-height:1.75; font-size:14px; margin-bottom:18px; }
+      .pp-info-tag { display:inline-block; background:#f0fff4; color:#1f4d1f; font-size:12px; padding:5px 12px; border-radius:6px; margin-bottom:16px; border:1px solid #a8d5a8; }
+      .pp-whatsapp-btn { display:block; text-align:center; background:#25D366; color:#fff; text-decoration:none; padding:12px 20px; border-radius:8px; font-weight:700; font-size:14px; margin-bottom:12px; }
+      .pp-add-btn { width:100%; padding:14px; background:#1f4d1f; color:#fff; border:none; border-radius:9px; font-weight:700; font-size:15px; cursor:pointer; margin-bottom:20px; font-family:inherit; }
+      .pp-seller-card { background:#f7f5f0; border-radius:10px; padding:16px; border:1px solid #e8e4dc; }
+      .pp-seller-label { font-size:10px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; }
+      .pp-seller-name { font-size:15px; font-weight:700; color:#111; margin-bottom:6px; }
+      .pp-seller-meta { font-size:13px; color:#555; display:flex; flex-direction:column; gap:4px; margin:8px 0 10px; }
+      .pp-seller-wa { display:inline-block; background:#25D366; color:#fff; text-decoration:none; padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; }
+      .pp-reviews { background:#fff; border-radius:14px; padding:28px; border:1px solid #e8e4dc; }
+      .pp-reviews-title { font-size:20px; font-weight:700; color:#111; margin-bottom:24px; }
+      .pp-rating-breakdown { display:flex; gap:36px; margin-bottom:28px; padding:20px; background:#f7f5f0; border-radius:10px; align-items:center; flex-wrap:wrap; }
+      .pp-rating-big { text-align:center; min-width:90px; }
+      .pp-rating-big-num { font-size:52px; font-weight:700; color:#1f4d1f; line-height:1; }
+      .pp-rating-big-count { font-size:12px; color:#888; margin-top:6px; }
+      .pp-rating-bars { flex:1; min-width:160px; display:flex; flex-direction:column; gap:8px; }
+      .pp-bar-row { display:flex; align-items:center; gap:8px; }
+      .pp-bar-label { font-size:12px; color:#666; width:22px; text-align:right; }
+      .pp-bar-bg { flex:1; height:8px; background:#e8e4dc; border-radius:99px; overflow:hidden; }
+      .pp-bar-fill { height:100%; background:#f0c050; border-radius:99px; }
+      .pp-bar-count { font-size:12px; color:#888; width:20px; }
+      .pp-review-list { display:flex; flex-direction:column; gap:20px; margin-bottom:28px; }
+      .pp-review-item { border-bottom:1px solid #f0ece4; padding-bottom:18px; }
+      .pp-review-header { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+      .pp-review-avatar { width:36px; height:36px; background:#1f4d1f; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#f0c050; font-weight:700; font-size:14px; flex-shrink:0; }
+      .pp-review-user { font-size:14px; font-weight:600; color:#111; margin-bottom:3px; }
+      .pp-review-date { margin-left:auto; font-size:12px; color:#bbb; }
+      .pp-review-comment { font-size:14px; color:#555; line-height:1.7; margin:0; }
+      .pp-no-reviews { color:#888; font-size:14px; text-align:center; padding:24px 0; }
+      .pp-review-form { background:#f7f5f0; border-radius:10px; padding:22px; margin-top:16px; }
+      .pp-review-form h3 { font-size:16px; font-weight:700; color:#111; margin:0 0 16px; }
+      .pp-review-field { margin-bottom:16px; }
+      .pp-review-label { display:block; font-size:13px; color:#333; font-weight:600; margin-bottom:6px; }
+      .pp-review-select, .pp-review-input, .pp-review-textarea { width:100%; padding:11px 14px; border:1.5px solid #ddd; border-radius:8px; font-size:14px; outline:none; font-family:inherit; box-sizing:border-box; transition:border .2s; }
+      .pp-review-select:focus, .pp-review-input:focus, .pp-review-textarea:focus { border-color:#1f4d1f; }
+      .pp-review-textarea { resize:vertical; }
+      .pp-review-submit { padding:12px 28px; background:#1f4d1f; color:#fff; border:none; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }
+      .pp-review-submit-dis { padding:12px 28px; background:#ccc; color:#fff; border:none; border-radius:7px; font-size:14px; cursor:not-allowed; }
+      .pp-review-ok { background:#f0fff4; color:#1f4d1f; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:14px; border:1px solid #a8d5a8; }
+      .pp-review-err { background:#fff0f0; color:#cc0000; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:14px; border:1px solid #ffb3b3; }
+      .pp-empty { text-align:center; color:#888; padding:60px 0; font-size:16px; }
+      @media (max-width:900px) {
+        .pp-nav { padding:10px 20px; }
+        .pp-search-group { display:none; }
+        .pp-mobile-searchbar { display:block; position:sticky; top:56px; z-index:190; }
+        .pp-container { padding:20px; }
+        .pp-detail-card { grid-template-columns:1fr; gap:24px; padding:20px; }
+        .pp-main-img-box { height:280px; }
+        .pp-detail-name { font-size:22px; }
+        .pp-price { font-size:28px; }
+      }
+      @media (max-width:600px) {
+        .pp-nav { padding:8px 14px; }
+        .pp-nav-name { font-size:15px; }
+        .pp-nav-logo { width:32px; height:32px; }
+        .pp-mobile-searchbar { display:block; position:sticky; top:50px; z-index:190; }
+        .pp-mobile-searchbar-inner { padding:8px 12px; gap:7px; }
+        .pp-mobile-searchbar-inner select { font-size:13px; padding:10px 7px; max-width:100px; }
+        .pp-mobile-searchbar-inner input { font-size:15px; padding:10px 12px; }
+        .pp-container { padding:12px; }
+        .pp-grid { grid-template-columns:1fr 1fr; gap:12px; }
+        .pp-card-img-box { height:140px; }
+        .pp-card-name { font-size:13px; }
+        .pp-card-price { font-size:16px; }
+        .pp-card-btn { font-size:12px; padding:9px; }
+        .pp-detail-card { padding:16px; gap:16px; border-radius:10px; }
+        .pp-main-img-box { height:240px; }
+        .pp-detail-name { font-size:19px; }
+        .pp-price { font-size:26px; }
+        .pp-desc { font-size:13px; }
+        .pp-reviews { padding:16px; border-radius:10px; }
+        .pp-reviews-title { font-size:17px; }
+        .pp-rating-breakdown { flex-direction:column; gap:16px; padding:14px; }
+        .pp-rating-big-num { font-size:44px; }
+        .pp-review-form { padding:16px; }
+        .pp-thumb { width:50px; height:50px; }
+      }
+      @media (max-width:380px) {
+        .pp-grid { grid-template-columns:1fr; }
+        .pp-mobile-searchbar-inner select { display:none; }
+      }
+      `}</style>
       <nav className="pp-nav">
         <div className="pp-nav-left" onClick={() => navigate("/products")}>
           <img
