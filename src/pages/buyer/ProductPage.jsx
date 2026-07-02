@@ -81,7 +81,7 @@ export default function ProductPage() {
       .pp-hamburger { display:none; }
       .pp-desktop-only { display:flex; align-items:center; gap:14px; }
       @media (max-width:640px) {
-        .pp-desktop-only { display:none; }
+        /* pp-desktop-only always visible */
       }
 
       /* ── MOBILE SEARCH BAR — always visible below nav on mobile ── */
@@ -343,7 +343,7 @@ export default function ProductPage() {
       .pp-cart-badge { position:absolute; top:-8px; right:-10px; background:#f0c050; color:#1f4d1f; font-size:10px; font-weight:700; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #1f4d1f; }
       .pp-hamburger { display:none; }
       .pp-desktop-only { display:flex; align-items:center; gap:14px; }
-      @media (max-width:640px) { .pp-desktop-only { display:none; } }
+      @media (max-width:640px) { /* pp-desktop-only always visible */ }
       .pp-mobile-searchbar { display:none; }
       .pp-mobile-searchbar-inner { padding:10px 12px; display:flex; gap:8px; background:#1a3d1a; border-bottom:3px solid #f0c050; }
       .pp-mobile-searchbar-inner select { padding:10px 8px; border:none; border-radius:8px; font-size:13px; outline:none; font-family:inherit; background:#fff; color:#333; flex-shrink:0; max-width:110px; cursor:pointer; min-width:80px; }
