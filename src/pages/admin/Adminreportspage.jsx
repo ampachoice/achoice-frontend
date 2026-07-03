@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
 
-const LOGO_PATH = "/achoice logo.png";
 
 export default function AdminReportsPage() {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("sales");
   const [days, setDays] = useState(30);
   const [salesData, setSalesData] = useState(null);
@@ -472,73 +470,14 @@ export default function AdminReportsPage() {
     );
   };
 
-  const sidebarItems = [
-    { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
-    { icon: "👤", label: "Buyers", path: "/admin/buyers" },
-    { icon: "📋", label: "Complaints", path: "/admin/complaints" },
-    { icon: "💳", label: "Payments", path: "/admin/payments" },
-    { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
-    { icon: "🌾", label: "Products", path: "/admin/products" },
-    { icon: "📦", label: "Orders", path: "/admin/orders" },
-    { icon: "💰", label: "Loans", path: "/admin/loans" },
-    { icon: "👥", label: "Staff", path: "/admin/staff" },
-    { icon: "⚙️", label: "Loan Settings", path: "/admin/loan-settings" },
-    { icon: "🚚", label: "Delivery Zones", path: "/admin/delivery-zones" },
-    { icon: "📈", label: "Reports", path: "/admin/reports", active: true },
-    { icon: "⚙️", label: "Settings", path: "/admin/settings" },
-    //import AdminSettingsPage  from './pages/admin/AdminSettingsPage'; //
-  ];
-
   return (
-    <div style={s.page}>
+    <>
       {toast && <div style={s.toast}>{toast}</div>}
 
-      {/* Sidebar */}
-      <div style={s.sidebar}>
-        <div style={s.sidebarLogo}>
-          <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
-          <div>
-            <div style={s.sidebarLogoName}>ACHOICE</div>
-            <div style={s.sidebarLogoSub}>Admin Panel</div>
-          </div>
-        </div>
-        <nav style={s.sidebarNav}>
-          {sidebarItems.map((item) => (
-            <div
-              key={item.label}
-              style={{
-                ...s.sidebarItem,
-                ...(item.active ? s.sidebarItemActive : {}),
-              }}
-              onClick={() => navigate(item.path)}
-            >
-              <span>{item.icon}</span> {item.label}
-            </div>
-          ))}
-        </nav>
-        <div style={s.sidebarFooter}>
-          <button
-            style={s.logoutBtn}
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
-              navigate("/admin");
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div style={s.main}>
-        <div style={s.header}>
-          <div>
-            <h1 style={s.headerTitle}>Reports & Analytics</h1>
-            <p style={s.headerSub}>
-              Download and analyze platform performance data
-            </p>
-          </div>
+      <AdminLayout
+        title="Reports & Analytics"
+        subtitle="Download and analyze platform performance data"
+        headerActions={
           <div style={s.periodRow}>
             {[7, 30, 90, 365].map((d) => (
               <button
@@ -556,8 +495,8 @@ export default function AdminReportsPage() {
               </button>
             ))}
           </div>
-        </div>
-
+        }
+      >
         {/* Tabs */}
         <div style={s.tabNav}>
           {[
@@ -1150,8 +1089,8 @@ export default function AdminReportsPage() {
             )}
           </div>
         )}
-      </div>
-    </div>
+      </AdminLayout>
+    </>
   );
 }
 

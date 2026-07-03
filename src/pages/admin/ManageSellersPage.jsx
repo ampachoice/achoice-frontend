@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
 
-const LOGO_PATH = "/achoice logo.png";
 const MONTHS = [
   "Jan",
   "Feb",
@@ -916,7 +915,6 @@ function getStatusStyle(status) {
 }
 
 export default function ManageSellersPage() {
-  const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1094,70 +1092,18 @@ export default function ManageSellersPage() {
   if (loading) return <div style={s.loader}>Loading Sellers...</div>;
 
   return (
-    <div style={s.page}>
+    <>
       {toast && <div style={s.toast}>{toast}</div>}
 
-      <div style={s.sidebar}>
-        <div style={s.sidebarLogo}>
-          <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
-          <div>
-            <div style={s.sidebarLogoName}>ACHOICE</div>
-            <div style={s.sidebarLogoSub}>Admin Panel</div>
-          </div>
-        </div>
-        <nav style={s.sidebarNav}>
-          {[
-            { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
-            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
-            { icon: "📋", label: "Complaints", path: "/admin/complaints" },
-            { icon: "💳", label: "Payments", path: "/admin/payments" },
-            {
-              icon: "🏪",
-              label: "Sellers",
-              path: "/admin/sellers",
-              active: true,
-            },
-            { icon: "🌾", label: "Products", path: "/admin/products" },
-            { icon: "📦", label: "Orders", path: "/admin/orders" },
-            { icon: "💰", label: "Loans", path: "/admin/loans" },
-            {
-              icon: "⚙️",
-              label: "Loan Settings",
-              path: "/admin/loan-settings",
-            },
-            {
-              icon: "🚚",
-              label: "Delivery Zones",
-              path: "/admin/delivery-zones",
-            },
-            { icon: "👥", label: "Staff", path: "/admin/staff" },
-            { icon: "📈", label: "Reports", path: "/admin/reports" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                ...s.sidebarItem,
-                ...(item.active ? s.sidebarItemActive : {}),
-              }}
-              onClick={() => navigate(item.path)}
-            >
-              <span>{item.icon}</span> {item.label}
-            </div>
-          ))}
-        </nav>
-      </div>
-
-      <div style={s.main}>
-        <div style={s.header}>
-          <div>
-            <h1 style={s.headerTitle}>Sellers</h1>
-            <p style={s.headerSub}>{sellers.length} registered sellers</p>
-          </div>
+      <AdminLayout
+        title="Sellers"
+        subtitle={`${sellers.length} registered sellers`}
+        headerActions={
           <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
             {showForm ? "Cancel" : "+ Add Seller"}
           </button>
-        </div>
-
+        }
+      >
         {showForm && (
           <div style={s.formCard}>
             <h3 style={s.formTitle}>Register New Seller</h3>
@@ -1628,7 +1574,7 @@ export default function ManageSellersPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminLayout>
 
       {/* ════ REMIT CONFIRMATION MODAL ════ */}
       {remitModalOpen && (
@@ -1721,7 +1667,7 @@ export default function ManageSellersPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 

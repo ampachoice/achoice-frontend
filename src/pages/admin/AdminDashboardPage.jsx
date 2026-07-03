@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
 
-const LOGO_PATH = "/achoice logo.png";
 
 // ── Tiny bar chart (pure CSS) ─────────────────────────────────────────────────
 function BarChart({ data, color = "#1f4d1f" }) {
@@ -148,12 +148,6 @@ export default function AdminDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/admin");
-  };
-
   const getStatusStyle = (status) =>
     ({
       pending: { background: "#fff8e7", color: "#b36b00" },
@@ -178,93 +172,12 @@ export default function AdminDashboardPage() {
   const chartData = buildChartData(revenueStats?.monthly_revenue);
 
   return (
-    <div style={s.page}>
-      {/* Sidebar */}
-      <div style={s.sidebar}>
-        <div style={s.sidebarLogo}>
-          <img src={LOGO_PATH} alt="Logo" style={s.sidebarLogoImg} />
-          <div>
-            <div style={s.sidebarLogoName}>ACHOICE</div>
-            <div style={s.sidebarLogoSub}>Admin Panel</div>
-          </div>
-        </div>
-        <nav style={s.sidebarNav}>
-          {[
-            {
-              icon: "📊",
-              label: "Dashboard",
-              path: "/admin/dashboard",
-              active: true,
-            },
-            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
-            { icon: "📋", label: "Complaints", path: "/admin/complaints" },
-            { icon: "💳", label: "Payments", path: "/admin/payments" },
-            { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
-            { icon: "🌾", label: "Products", path: "/admin/products" },
-            { icon: "📦", label: "Orders", path: "/admin/orders" },
-            { icon: "💰", label: "Loans", path: "/admin/loans" },
-            {
-              icon: "⚙️",
-              label: "Loan Settings",
-              path: "/admin/loan-settings",
-            },
-            {
-              icon: "🚚",
-              label: "Delivery Zones",
-              path: "/admin/delivery-zones",
-            },
-            { icon: "👥", label: "Staff", path: "/admin/staff" },
-            { icon: "📈", label: "Reports", path: "/admin/reports" },
-            { icon: "⚙️", label: "Site Settings", path: "/admin/settings" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                ...s.sidebarItem,
-                ...(item.active ? s.sidebarItemActive : {}),
-              }}
-              onClick={() => navigate(item.path)}
-            >
-              <span style={s.sidebarIcon}>{item.icon}</span> {item.label}
-              {item.label === "Loans" && loans?.pending_applications > 0 && (
-                <span style={s.badge}>{loans.pending_applications}</span>
-              )}
-            </div>
-          ))}
-        </nav>
-        <div style={s.sidebarFooter}>
-          <div style={s.sidebarUser}>
-            <div style={s.sidebarAvatar}>
-              <img src={LOGO_PATH} alt="Admin" style={s.avatarImg} />
-            </div>
-            <div>
-              <div style={s.sidebarUserName}>{user.name || "Admin"}</div>
-              <div style={s.sidebarUserRole}>Administrator</div>
-            </div>
-          </div>
-          <button style={s.logoutBtn} onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div style={s.main}>
-        <div style={s.header}>
-          <div>
-            <h1 style={s.headerTitle}>Dashboard</h1>
-            <p style={s.headerSub}>Welcome back, {user.name || "Admin"}</p>
-          </div>
-          <div style={s.headerDate}>
-            {new Date().toLocaleDateString("en-NG", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </div>
-        </div>
-
+    <AdminLayout
+      title="Dashboard"
+      subtitle={`Welcome back, ${user.name || "Admin"}`}
+      showDate
+      badges={{ "/admin/loans": loans?.pending_applications }}
+    >
         {loading ? (
           <p style={s.loading}>Loading dashboard...</p>
         ) : (
@@ -550,8 +463,7 @@ export default function AdminDashboardPage() {
             </div>
           </>
         )}
-      </div>
-    </div>
+    </AdminLayout>
   );
 }
 

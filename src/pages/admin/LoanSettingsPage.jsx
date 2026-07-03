@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
 
 export default function LoanSettingsPage() {
-  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     interest_rate: "",
     min_amount: "",
@@ -117,92 +116,13 @@ export default function LoanSettingsPage() {
   };
 
   return (
-    <div style={s.page}>
+    <>
       {toast && <div style={s.toast}>{toast}</div>}
 
-      {/* Sidebar */}
-      <div style={s.sidebar}>
-        <div style={s.sidebarLogo}>
-          <div style={s.sidebarLogoIcon}>A</div>
-          <div>
-            <div style={s.sidebarLogoName}>ACHOICE</div>
-            <div style={s.sidebarLogoSub}>Admin Panel</div>
-          </div>
-        </div>
-        <nav style={s.sidebarNav}>
-          <div
-            style={s.sidebarItem}
-            onClick={() => navigate("/admin/dashboard")}
-          >
-            <span style={s.sidebarIcon}>📊</span> Dashboard
-          </div>
-          <div style={s.sidebarItem} onClick={() => navigate("/admin/buyers")}>
-            <span style={s.sidebarIcon}>👤</span> Buyers
-          </div>
-          <div
-            style={s.sidebarItem}
-            onClick={() => navigate("/admin/complaints")}
-          >
-            <span style={s.sidebarIcon}>📋</span> Complaints
-          </div>
-          <div
-            style={s.sidebarItem}
-            onClick={() => navigate("/admin/payments")}
-          >
-            <span style={s.sidebarIcon}>💳</span> Payments
-          </div>
-          <div style={s.sidebarItem} onClick={() => navigate("/admin/sellers")}>
-            <span style={s.sidebarIcon}>🏪</span> Sellers
-          </div>
-          <div
-            style={s.sidebarItem}
-            onClick={() => navigate("/admin/products")}
-          >
-            <span style={s.sidebarIcon}>🌾</span> Products
-          </div>
-          <div style={s.sidebarItem} onClick={() => navigate("/admin/orders")}>
-            <span style={s.sidebarIcon}>📦</span> Orders
-          </div>
-          <div style={s.sidebarItem} onClick={() => navigate("/admin/loans")}>
-            <span style={s.sidebarIcon}>💰</span> Loans
-          </div>
-          <div style={{ ...s.sidebarItem, ...s.sidebarItemActive }}>
-            <span style={s.sidebarIcon}>⚙️</span> Loan Settings
-          </div>
-          <div
-            style={s.sidebarItem}
-            onClick={() => navigate("/admin/delivery-zones")}
-          >
-            <span style={s.sidebarIcon}>🚚</span> Delivery zones
-          </div>
-          <div style={s.sidebarItem} onClick={() => navigate("/admin/staff")}>
-            <span style={s.sidebarIcon}>👥</span> Staff
-          </div>
-        </nav>
-        <div style={s.sidebarFooter}>
-          <button
-            style={s.logoutBtn}
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
-              navigate("/admin");
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div style={s.main}>
-        <div style={s.header}>
-          <h1 style={s.headerTitle}>Loan Settings</h1>
-          <p style={s.headerSub}>
-            Configure loan terms — changes reflect immediately on the buyer loan
-            form
-          </p>
-        </div>
-
+      <AdminLayout
+        title="Loan Settings"
+        subtitle="Configure loan terms — changes reflect immediately on the buyer loan form"
+      >
         {error && <div style={s.error}>{error}</div>}
         {loading && <p style={s.message}>Loading settings...</p>}
 
@@ -459,8 +379,8 @@ export default function LoanSettingsPage() {
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </AdminLayout>
+    </>
   );
 }
 

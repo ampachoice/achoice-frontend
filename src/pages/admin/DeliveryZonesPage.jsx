@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
 
-const LOGO_PATH = "/achoice logo.png";
 
 export default function DeliveryZonesPage() {
-  const navigate = useNavigate();
   const [zones, setZones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -138,90 +136,24 @@ export default function DeliveryZonesPage() {
   };
 
   return (
-    <div style={s.page}>
-      {toast && <div style={s.toast}>{toast}</div>}
-
-      {/* Sidebar */}
-      <div style={s.sidebar}>
-        <div style={s.sidebarLogo}>
-          <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
-          <div>
-            <div style={s.sidebarLogoName}>ACHOICE</div>
-            <div style={s.sidebarLogoSub}>Admin Panel</div>
-          </div>
-        </div>
-        <nav style={s.sidebarNav}>
-          {[
-            { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
-            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
-            { icon: "📋", label: "Complaints", path: "/admin/complaints" },
-            { icon: "💳", label: "Payments", path: "/admin/payments" },
-            { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
-            { icon: "🌾", label: "Products", path: "/admin/products" },
-            { icon: "📦", label: "Orders", path: "/admin/orders" },
-            { icon: "💰", label: "Loans", path: "/admin/loans" },
-            {
-              icon: "⚙️",
-              label: "Loan Settings",
-              path: "/admin/loan-settings",
-            },
-            {
-              icon: "🚚",
-              label: "Delivery Zones",
-              path: "/admin/delivery-zones",
-              active: true,
-            },
-            { icon: "👥", label: "Staff", path: "/admin/staff" },
-            { icon: "📈", label: "Reports", path: "/admin/reports" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                ...s.sidebarItem,
-                ...(item.active ? s.sidebarItemActive : {}),
-              }}
-              onClick={() => navigate(item.path)}
-            >
-              <span>{item.icon}</span> {item.label}
-            </div>
-          ))}
-        </nav>
-        <div style={s.sidebarFooter}>
+    <AdminLayout
+      title="Delivery Zone Settings"
+      subtitle="Edit delivery fees and estimated days per state. Changes apply immediately to checkout."
+      headerActions={
+        pendingChanges > 0 && (
           <button
-            style={s.logoutBtn}
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
-              navigate("/admin");
-            }}
+            style={saving === "all" ? s.saveAllBtnDisabled : s.saveAllBtn}
+            onClick={handleSaveAll}
+            disabled={saving === "all"}
           >
-            Logout
+            {saving === "all"
+              ? "Saving..."
+              : `Save All Changes (${pendingChanges})`}
           </button>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div style={s.main}>
-        <div style={s.header}>
-          <div>
-            <h1 style={s.headerTitle}>Delivery Zone Settings</h1>
-            <p style={s.headerSub}>
-              Edit delivery fees and estimated days per state. Changes apply
-              immediately to checkout.
-            </p>
-          </div>
-          {pendingChanges > 0 && (
-            <button
-              style={saving === "all" ? s.saveAllBtnDisabled : s.saveAllBtn}
-              onClick={handleSaveAll}
-              disabled={saving === "all"}
-            >
-              {saving === "all"
-                ? "Saving..."
-                : `Save All Changes (${pendingChanges})`}
-            </button>
-          )}
-        </div>
+        )
+      }
+    >
+      {toast && <div style={s.toast}>{toast}</div>}
 
         {/* Stats */}
         <div style={s.statsGrid}>
@@ -395,8 +327,7 @@ export default function DeliveryZonesPage() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </AdminLayout>
   );
 }
 

@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
 
-const LOGO_PATH = "/achoice logo.png";
 
 export default function ManageLoansPage() {
-  const navigate = useNavigate();
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
@@ -307,7 +305,7 @@ export default function ManageLoansPage() {
   );
 
   return (
-    <div style={s.page}>
+    <>
       {toast && <div style={s.toast}>{toast}</div>}
 
       {/* Approval Modal */}
@@ -414,74 +412,12 @@ export default function ManageLoansPage() {
       )}
 
       {/* Sidebar */}
-      <div style={s.sidebar}>
-        <div style={s.sidebarLogo}>
-          <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
-          <div>
-            <div style={s.sidebarLogoName}>ACHOICE</div>
-            <div style={s.sidebarLogoSub}>Admin Panel</div>
-          </div>
-        </div>
-        <nav style={s.sidebarNav}>
-          {[
-            { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
-            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
-            { icon: "📋", label: "Complaints", path: "/admin/complaints" },
-            { icon: "💳", label: "Payments", path: "/admin/payments" },
-            { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
-            { icon: "🌾", label: "Products", path: "/admin/products" },
-            { icon: "📦", label: "Orders", path: "/admin/orders" },
-            { icon: "💰", label: "Loans", path: "/admin/loans", active: true },
-            {
-              icon: "⚙️",
-              label: "Loan Settings",
-              path: "/admin/loan-settings",
-            },
-            {
-              icon: "🚚",
-              label: "Delivery Zones",
-              path: "/admin/delivery-zones",
-            },
-            { icon: "👥", label: "Staff", path: "/admin/staff" },
-            { icon: "📈", label: "Reports", path: "/admin/reports" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              style={{
-                ...s.sidebarItem,
-                ...(item.active ? s.sidebarItemActive : {}),
-              }}
-              onClick={() => navigate(item.path)}
-            >
-              <span>{item.icon}</span> {item.label}
-              {item.label === "Loans" && statusCounts.pending > 0 && (
-                <span style={s.sidebarBadge}>{statusCounts.pending}</span>
-              )}
-            </div>
-          ))}
-        </nav>
-        <div style={s.sidebarFooter}>
-          <button
-            style={s.logoutBtn}
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
-              navigate("/admin");
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div style={s.main}>
-        <div style={s.header}>
-          <div>
-            <h1 style={s.headerTitle}>Loan Applications</h1>
-            <p style={s.headerSub}>{loans.length} total applications</p>
-          </div>
-          <div style={s.headerRight}>
+      <AdminLayout
+        title="Loan Applications"
+        subtitle={`${loans.length} total applications`}
+        badges={{ "/admin/loans": statusCounts.pending }}
+        headerActions={
+          <>
             <button
               style={s.refreshBtn}
               onClick={fetchLoans}
@@ -511,9 +447,9 @@ export default function ManageLoansPage() {
                 ),
               )}
             </div>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div style={s.filterRow}>
           <div style={s.filterTabs}>
             {[
@@ -1155,8 +1091,8 @@ export default function ManageLoansPage() {
             </div>
           );
         })}
-      </div>
-    </div>
+      </AdminLayout>
+    </>
   );
 }
 

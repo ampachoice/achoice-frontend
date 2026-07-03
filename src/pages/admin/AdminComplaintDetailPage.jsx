@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import NotificationBell from "../../components/buyer/NotificationBell";
+import AdminLayout from "../../components/admin/AdminLayout";
 
-const LOGO_PATH = "/achoice logo.png";
 
 export default function AdminComplaintDetailPage() {
   const navigate = useNavigate();
@@ -134,74 +134,10 @@ export default function AdminComplaintDetailPage() {
         @media(max-width:800px) { .acd-layout { grid-template-columns:1fr; } .acd-main { padding:16px; margin-left:0; } .acd-sidebar { display:none; } }
       `}</style>
 
-      <div className="acd-shell">
-        <div className="acd-sidebar">
-          <div className="acd-sidebar-logo">
-            <img src={LOGO_PATH} alt="Achoice" />
-            <div>
-              <div className="acd-sidebar-name">ACHOICE</div>
-              <div className="acd-sidebar-sub">Admin Panel</div>
-            </div>
-          </div>
-          <nav className="acd-sidebar-nav">
-            {[
-              { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
-              { icon: "👤", label: "Buyers", path: "/admin/buyers" },
-              { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
-              { icon: "🌾", label: "Products", path: "/admin/products" },
-              { icon: "📦", label: "Orders", path: "/admin/orders" },
-              { icon: "💰", label: "Loans", path: "/admin/loans" },
-              {
-                icon: "⚙️",
-                label: "Loan Settings",
-                path: "/admin/loan-settings",
-              },
-              {
-                icon: "🚚",
-                label: "Delivery Zones",
-                path: "/admin/delivery-zones",
-              },
-              {
-                icon: "📋",
-                label: "Complaints",
-                path: "/admin/complaints",
-                active: true,
-              },
-              { icon: "👥", label: "Staff", path: "/admin/staff" },
-              { icon: "💳", label: "Payments", path: "/admin/payments" },
-              { icon: "📈", label: "Reports", path: "/admin/reports" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className={
-                  "acd-sidebar-item" +
-                  (item.active ? " acd-sidebar-item-active" : "")
-                }
-                onClick={() => navigate(item.path)}
-              >
-                <span>{item.icon}</span> {item.label}
-              </div>
-            ))}
-          </nav>
-          <div className="acd-sidebar-footer">
-            <button
-              className="acd-logout-btn"
-              onClick={() => {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
-                navigate("/admin");
-              }}
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        <div className="acd-main">
-          <div className="acd-topbar">
-            <NotificationBell />
-          </div>
-
+      <AdminLayout
+        title="Complaint Details"
+        headerActions={<NotificationBell />}
+      >
           <div
             className="acd-back"
             onClick={() => navigate("/admin/complaints")}
@@ -440,8 +376,7 @@ export default function AdminComplaintDetailPage() {
               </div>
             </div>
           )}
-        </div>
-      </div>
+      </AdminLayout>
       {toast && <div className="acd-toast">{toast}</div>}
     </>
   );

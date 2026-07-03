@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 import NotificationBell from "../../components/buyer/NotificationBell";
+import AdminLayout from "../../components/admin/AdminLayout";
 
-const LOGO_PATH = "/achoice logo.png";
 
 export default function AdminComplaintsPage() {
   const navigate = useNavigate();
@@ -80,77 +80,12 @@ export default function AdminComplaintsPage() {
         @media(max-width:700px) { .ac-main { padding:16px; margin-left:0; } .ac-sidebar { display:none; } .ac-table { overflow-x:auto; } }
       `}</style>
 
-      <div className="ac-shell">
-        <div className="ac-sidebar">
-          <div className="ac-sidebar-logo">
-            <img src={LOGO_PATH} alt="Achoice" />
-            <div>
-              <div className="ac-sidebar-name">ACHOICE</div>
-              <div className="ac-sidebar-sub">Admin Panel</div>
-            </div>
-          </div>
-          <nav className="ac-sidebar-nav">
-            {[
-              { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
-              { icon: "👤", label: "Buyers", path: "/admin/buyers" },
-              { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
-              { icon: "🌾", label: "Products", path: "/admin/products" },
-              { icon: "📦", label: "Orders", path: "/admin/orders" },
-              { icon: "💰", label: "Loans", path: "/admin/loans" },
-              {
-                icon: "⚙️",
-                label: "Loan Settings",
-                path: "/admin/loan-settings",
-              },
-              {
-                icon: "🚚",
-                label: "Delivery Zones",
-                path: "/admin/delivery-zones",
-              },
-              {
-                icon: "📋",
-                label: "Complaints",
-                path: "/admin/complaints",
-                active: true,
-              },
-              { icon: "👥", label: "Staff", path: "/admin/staff" },
-              { icon: "💳", label: "Payments", path: "/admin/payments" },
-              { icon: "📈", label: "Reports", path: "/admin/reports" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className={
-                  "ac-sidebar-item" +
-                  (item.active ? " ac-sidebar-item-active" : "")
-                }
-                onClick={() => navigate(item.path)}
-              >
-                <span>{item.icon}</span> {item.label}
-              </div>
-            ))}
-          </nav>
-          <div className="ac-sidebar-footer">
-            <button
-              className="ac-logout-btn"
-              onClick={() => {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
-                navigate("/admin");
-              }}
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-
-        <div className="ac-main">
-          <div className="ac-topbar">
-            <NotificationBell />
-          </div>
-
-          <div className="ac-header">
-            <div className="ac-title">Complaints Management</div>
-            <div className="ac-filters">
+      <AdminLayout
+            title="Complaints Management"
+            headerActions={
+              <>
+                <NotificationBell />
+                <div className="ac-filters">
               {userFilter && complaints.length > 0 && (
                 <div
                   style={{
@@ -194,8 +129,10 @@ export default function AdminComplaintsPage() {
                 <option value="orders">Orders</option>
                 <option value="loan">Loan</option>
               </select>
-            </div>
-          </div>
+                </div>
+              </>
+            }
+          >
 
           {loading ? (
             <div className="ac-loading">Loading complaints...</div>
@@ -262,8 +199,7 @@ export default function AdminComplaintsPage() {
               </table>
             </div>
           )}
-        </div>
-      </div>
+      </AdminLayout>
       {toast && <div className="ac-toast">{toast}</div>}
     </>
   );
