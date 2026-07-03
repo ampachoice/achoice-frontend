@@ -940,6 +940,13 @@ export default function ManageSellersPage() {
   const [sellerStats, setSellerStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // Remit confirmation modal
+  const [remitModalOpen, setRemitModalOpen] = useState(false);
+  const [remitPreview, setRemitPreview] = useState(null);
+  const [remitPreviewLoading, setRemitPreviewLoading] = useState(false);
+  const [remitting, setRemitting] = useState(false);
+
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 4000);
@@ -1016,16 +1023,55 @@ export default function ManageSellersPage() {
       .finally(() => setStatsLoading(false));
   };
 
-  const handleRemit = async (sellerId) => {
-    if (!window.confirm("Confirm remittance for this seller?")) return;
+  // Opens the remit confirmation modal and loads the commission-adjusted preview
+  const handleRemit = async () => {
+    setRemitModalOpen(true);
+    setRemitPreviewLoading(true);
+    setRemitPreview(null);
     try {
-      const res = await api.patch(`/admin/sellers/${sellerId}/remit`);
+      // Live commission rate, same source as Admin Settings → Commission tab
+      const rateRes = await api.get("/admin/settings/commission");
+      const rate = Number(rateRes.data.commission_rate) || 0;
+      const gross = Number(sellerStats?.earnings?.current_balance) || 0;
+      const commission = Math.round(gross * (rate / 100) * 100) / 100;
+      const net = Math.round((gross - commission) * 100) / 100;
+
+      setRemitPreview({
+        gross_amount: gross,
+        commission_amount: commission,
+        commission_rate: rate,
+        net_to_remit: net,
+      });
+    } catch (err) {
+      showToast("Failed to load commission rate for preview");
+      setRemitModalOpen(false);
+    } finally {
+      setRemitPreviewLoading(false);
+    }
+  };
+
+  const closeRemitModal = () => {
+    if (remitting) return;
+    setRemitModalOpen(false);
+    setRemitPreview(null);
+  };
+
+  const confirmRemit = async () => {
+    if (!selectedSeller) return;
+    setRemitting(true);
+    try {
+      const res = await api.patch(`/admin/sellers/${selectedSeller.id}/remit`);
       showToast(
-        `Remitted ₦${Number(res.data.net_to_remit).toLocaleString()} to ${res.data.seller}`,
+        `Remitted ₦${Number(res.data.net_to_remit).toLocaleString()} to ${res.data.seller} ` +
+          `(Gross ₦${Number(res.data.gross_amount).toLocaleString()} − Commission ₦${Number(res.data.commission_2pct).toLocaleString()})`,
       );
+      setRemitModalOpen(false);
+      setRemitPreview(null);
       handleSelectSeller(selectedSeller);
     } catch (err) {
       showToast(err.response?.data?.message || "Remittance failed");
+    } finally {
+      setRemitting(false);
     }
   };
 
@@ -1460,30 +1506,30 @@ export default function ManageSellersPage() {
                         <div style={s.earningLabel}>Total Revenue</div>
                       </div>
                       <div style={s.earningItem}>
-                        <div style={{ ...s.earningValue, color: "#cc0000" }}>
-                          ₦
-                          {Number(
-                            sellerStats.earnings.current_balance,
-                          ).toLocaleString()}
-                        </div>
-                        <div style={s.earningLabel}>Current Balance</div>
-                      </div>
-                      <div style={s.earningItem}>
                         <div style={{ ...s.earningValue, color: "#1a7a3a" }}>
                           ₦
                           {Number(
                             sellerStats.earnings.total_remitted,
                           ).toLocaleString()}
                         </div>
-                        <div style={s.earningLabel}>Total Remitted</div>
+                        <div style={s.earningLabel}>Amount Remitted</div>
+                      </div>
+                      <div style={s.earningItem}>
+                        <div style={{ ...s.earningValue, color: "#cc0000" }}>
+                          ₦
+                          {Number(
+                            sellerStats.earnings.current_balance,
+                          ).toLocaleString()}
+                        </div>
+                        <div style={s.earningLabel}>Pending Balance</div>
                       </div>
                     </div>
                     {sellerStats.earnings.can_remit && (
                       <button
                         style={s.remitBtn}
-                        onClick={() => handleRemit(selectedSeller.id)}
+                        onClick={handleRemit}
                       >
-                        Mark as Remitted — ₦
+                        Remit — ₦
                         {Number(
                           sellerStats.earnings.current_balance,
                         ).toLocaleString()}
@@ -1583,6 +1629,98 @@ export default function ManageSellersPage() {
           )}
         </div>
       </div>
+
+      {/* ════ REMIT CONFIRMATION MODAL ════ */}
+      {remitModalOpen && (
+        <div style={s.modalOverlay} onClick={closeRemitModal}>
+          <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <div style={s.modalTitle}>Confirm Remittance</div>
+              <button style={s.modalCloseBtn} onClick={closeRemitModal}>
+                ✕
+              </button>
+            </div>
+
+            {remitPreviewLoading || !remitPreview ? (
+              <div style={{ padding: "32px 0", textAlign: "center", color: "#888", fontSize: 13 }}>
+                Loading breakdown...
+              </div>
+            ) : (
+              <>
+                <div style={s.modalSellerName}>
+                  {selectedSeller?.business_name}
+                </div>
+
+                <div style={s.remitBreakdown}>
+                  <div style={s.remitRow}>
+                    <span style={s.remitLabel}>Gross amount</span>
+                    <span style={s.remitValue}>
+                      ₦{remitPreview.gross_amount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={s.remitRow}>
+                    <span style={s.remitLabel}>
+                      Platform commission ({remitPreview.commission_rate}%)
+                    </span>
+                    <span style={s.remitValueNegative}>
+                      −₦{remitPreview.commission_amount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ ...s.remitRow, ...s.remitRowTotal }}>
+                    <span style={s.remitLabelTotal}>Net amount to pay seller</span>
+                    <span style={s.remitValueTotal}>
+                      ₦{remitPreview.net_to_remit.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={s.bankBox}>
+                  <div style={s.sectionTitle}>Bank Details</div>
+                  <div style={s.bankGrid}>
+                    <div>
+                      <span style={s.bankLabel}>Bank</span>
+                      <div style={s.bankValue}>
+                        {sellerStats?.seller?.bank_name || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <span style={s.bankLabel}>Account</span>
+                      <div style={s.bankValue}>
+                        {sellerStats?.seller?.account_number || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <span style={s.bankLabel}>Name</span>
+                      <div style={s.bankValue}>
+                        {sellerStats?.seller?.account_name || "—"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={s.modalActions}>
+                  <button
+                    style={s.modalCancelBtn}
+                    onClick={closeRemitModal}
+                    disabled={remitting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    style={remitting ? s.modalConfirmBtnDisabled : s.modalConfirmBtn}
+                    onClick={confirmRemit}
+                    disabled={remitting}
+                  >
+                    {remitting
+                      ? "⏳ Processing..."
+                      : `Remit ₦${remitPreview.net_to_remit.toLocaleString()}`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1948,6 +2086,116 @@ const s = {
     color: "#1f4d1f",
     marginBottom: 4,
   },
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(0,0,0,0.5)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10000,
+    padding: 20,
+  },
+  modalBox: {
+    background: "#fff",
+    borderRadius: 14,
+    padding: 28,
+    width: "100%",
+    maxWidth: 440,
+    maxHeight: "90vh",
+    overflowY: "auto",
+  },
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: { fontSize: 18, fontWeight: 700, color: "#111" },
+  modalCloseBtn: {
+    background: "#f0f2f5",
+    border: "none",
+    borderRadius: "50%",
+    width: 30,
+    height: 30,
+    fontSize: 14,
+    color: "#555",
+    cursor: "pointer",
+  },
+  modalSellerName: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: "#1f4d1f",
+    marginBottom: 16,
+  },
+  remitBreakdown: {
+    background: "#f7f5f0",
+    borderRadius: 10,
+    padding: "16px 18px",
+    marginBottom: 20,
+  },
+  remitRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "8px 0",
+    borderBottom: "1px solid #e8e4dc",
+  },
+  remitRowTotal: {
+    borderBottom: "none",
+    marginTop: 4,
+    paddingTop: 12,
+  },
+  remitLabel: { fontSize: 13, color: "#555" },
+  remitLabelTotal: { fontSize: 14, fontWeight: 700, color: "#111" },
+  remitValue: { fontSize: 14, fontWeight: 600, color: "#333" },
+  remitValueNegative: { fontSize: 14, fontWeight: 600, color: "#cc0000" },
+  remitValueTotal: { fontSize: 18, fontWeight: 800, color: "#1a7a3a" },
+  modalActions: {
+    display: "flex",
+    gap: 10,
+    marginTop: 24,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    padding: "13px 20px",
+    background: "#f0f2f5",
+    color: "#555",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  modalConfirmBtn: {
+    flex: 2,
+    padding: "13px 20px",
+    background: "#1f4d1f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  modalConfirmBtnDisabled: {
+    flex: 2,
+    padding: "13px 20px",
+    background: "#ccc",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: "not-allowed",
+    fontFamily: "inherit",
+  },
 };
+
 
 
