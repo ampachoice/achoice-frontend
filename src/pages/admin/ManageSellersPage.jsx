@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
@@ -887,7 +887,7 @@ function MiniBar({ data, color = "#1f4d1f" }) {
           }}
         >
           <div style={{ fontSize: 8, color: "#888" }}>
-            {d.value > 0 ? `â‚¦${(d.value / 1000).toFixed(0)}k` : ""}
+            {d.value > 0 ? `₦${(d.value / 1000).toFixed(0)}k` : ""}
           </div>
           <div
             style={{
@@ -1021,7 +1021,7 @@ export default function ManageSellersPage() {
     try {
       const res = await api.patch(`/admin/sellers/${sellerId}/remit`);
       showToast(
-        `Remitted â‚¦${Number(res.data.net_to_remit).toLocaleString()} to ${res.data.seller}`,
+        `Remitted ₦${Number(res.data.net_to_remit).toLocaleString()} to ${res.data.seller}`,
       );
       handleSelectSeller(selectedSeller);
     } catch (err) {
@@ -1061,31 +1061,31 @@ export default function ManageSellersPage() {
         </div>
         <nav style={s.sidebarNav}>
           {[
-            { icon: "ðŸ“Š", label: "Dashboard", path: "/admin/dashboard" },
-            { icon: "ðŸ‘¤", label: "Buyers", path: "/admin/buyers" },
-            { icon: "ðŸ“‹", label: "Complaints", path: "/admin/complaints" },
-            { icon: "ðŸ’³", label: "Payments", path: "/admin/payments" },
+            { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
+            { icon: "👤", label: "Buyers", path: "/admin/buyers" },
+            { icon: "📋", label: "Complaints", path: "/admin/complaints" },
+            { icon: "💳", label: "Payments", path: "/admin/payments" },
             {
-              icon: "ðŸª",
+              icon: "🏪",
               label: "Sellers",
               path: "/admin/sellers",
               active: true,
             },
-            { icon: "ðŸŒ¾", label: "Products", path: "/admin/products" },
-            { icon: "ðŸ“¦", label: "Orders", path: "/admin/orders" },
-            { icon: "ðŸ’°", label: "Loans", path: "/admin/loans" },
+            { icon: "🌾", label: "Products", path: "/admin/products" },
+            { icon: "📦", label: "Orders", path: "/admin/orders" },
+            { icon: "💰", label: "Loans", path: "/admin/loans" },
             {
-              icon: "âš™ï¸",
+              icon: "⚙️",
               label: "Loan Settings",
               path: "/admin/loan-settings",
             },
             {
-              icon: "ðŸšš",
+              icon: "🚚",
               label: "Delivery Zones",
               path: "/admin/delivery-zones",
             },
-            { icon: "ðŸ‘¥", label: "Staff", path: "/admin/staff" },
-            { icon: "ðŸ“ˆ", label: "Reports", path: "/admin/reports" },
+            { icon: "👥", label: "Staff", path: "/admin/staff" },
+            { icon: "📈", label: "Reports", path: "/admin/reports" },
           ].map((item) => (
             <div
               key={item.label}
@@ -1270,25 +1270,25 @@ export default function ManageSellersPage() {
               {
                 label: "Total Sellers",
                 value: summary.total_sellers,
-                icon: "ðŸª",
+                icon: "🏪",
                 color: "#1f4d1f",
               },
               {
                 label: "Active Sellers",
                 value: summary.active_sellers,
-                icon: "âœ…",
+                icon: "✅",
                 color: "#1a7a3a",
               },
               {
                 label: "Platform Revenue",
-                value: `â‚¦${Number(summary.total_platform_revenue).toLocaleString()}`,
-                icon: "ðŸ’µ",
+                value: `₦${Number(summary.total_platform_revenue).toLocaleString()}`,
+                icon: "💵",
                 color: "#c8860a",
               },
               {
                 label: "Pending Remittance",
-                value: `â‚¦${Number(summary.total_pending_remittance).toLocaleString()}`,
-                icon: "â³",
+                value: `₦${Number(summary.total_pending_remittance).toLocaleString()}`,
+                icon: "⏳",
                 color: "#cc0000",
               },
             ].map((stat) => (
@@ -1346,7 +1346,7 @@ export default function ManageSellersPage() {
                       <td style={s.td}>{seller.total_products}</td>
                       <td style={s.td}>{seller.items_sold}</td>
                       <td style={s.td}>
-                        â‚¦{Number(seller.total_revenue).toLocaleString()}
+                        ₦{Number(seller.total_revenue).toLocaleString()}
                       </td>
                       <td style={s.td}>
                         <span
@@ -1356,7 +1356,7 @@ export default function ManageSellersPage() {
                             fontWeight: 600,
                           }}
                         >
-                          â‚¦{Number(seller.current_balance).toLocaleString()}
+                          ₦{Number(seller.current_balance).toLocaleString()}
                         </span>
                       </td>
                       <td style={s.td}>
@@ -1395,7 +1395,7 @@ export default function ManageSellersPage() {
                     {selectedSeller.business_name}
                   </div>
                   <div style={s.statsPanelSub}>
-                    {selectedSeller.owner} Â· {selectedSeller.state}
+                    {selectedSeller.owner} · {selectedSeller.state}
                   </div>
                 </div>
                 <button
@@ -1405,7 +1405,7 @@ export default function ManageSellersPage() {
                     setSellerStats(null);
                   }}
                 >
-                  âœ•
+                  ✕
                 </button>
               </div>
 
@@ -1452,7 +1452,7 @@ export default function ManageSellersPage() {
                     <div style={s.earningsGrid}>
                       <div style={s.earningItem}>
                         <div style={s.earningValue}>
-                          â‚¦
+                          ₦
                           {Number(
                             sellerStats.earnings.total_revenue,
                           ).toLocaleString()}
@@ -1461,7 +1461,7 @@ export default function ManageSellersPage() {
                       </div>
                       <div style={s.earningItem}>
                         <div style={{ ...s.earningValue, color: "#cc0000" }}>
-                          â‚¦
+                          ₦
                           {Number(
                             sellerStats.earnings.current_balance,
                           ).toLocaleString()}
@@ -1470,7 +1470,7 @@ export default function ManageSellersPage() {
                       </div>
                       <div style={s.earningItem}>
                         <div style={{ ...s.earningValue, color: "#1a7a3a" }}>
-                          â‚¦
+                          ₦
                           {Number(
                             sellerStats.earnings.total_remitted,
                           ).toLocaleString()}
@@ -1483,7 +1483,7 @@ export default function ManageSellersPage() {
                         style={s.remitBtn}
                         onClick={() => handleRemit(selectedSeller.id)}
                       >
-                        Mark as Remitted â€” â‚¦
+                        Mark as Remitted — ₦
                         {Number(
                           sellerStats.earnings.current_balance,
                         ).toLocaleString()}
@@ -1497,19 +1497,19 @@ export default function ManageSellersPage() {
                       <div>
                         <span style={s.bankLabel}>Bank</span>
                         <div style={s.bankValue}>
-                          {sellerStats.seller.bank_name || "â€”"}
+                          {sellerStats.seller.bank_name || "—"}
                         </div>
                       </div>
                       <div>
                         <span style={s.bankLabel}>Account</span>
                         <div style={s.bankValue}>
-                          {sellerStats.seller.account_number || "â€”"}
+                          {sellerStats.seller.account_number || "—"}
                         </div>
                       </div>
                       <div>
                         <span style={s.bankLabel}>Name</span>
                         <div style={s.bankValue}>
-                          {sellerStats.seller.account_name || "â€”"}
+                          {sellerStats.seller.account_name || "—"}
                         </div>
                       </div>
                     </div>
@@ -1536,12 +1536,12 @@ export default function ManageSellersPage() {
                           <div style={s.topProductInfo}>
                             <div style={s.topProductName}>{p.name}</div>
                             <div style={s.topProductMeta}>
-                              {p.items_sold} sold Â· {p.rating} ({p.reviews}{" "}
-                              reviews) Â· Stock: {p.stock}
+                              {p.items_sold} sold · {p.rating} ({p.reviews}{" "}
+                              reviews) · Stock: {p.stock}
                             </div>
                           </div>
                           <div style={s.topProductPrice}>
-                            â‚¦{Number(p.price).toLocaleString()}
+                            ₦{Number(p.price).toLocaleString()}
                           </div>
                         </div>
                       ))}
@@ -1556,12 +1556,12 @@ export default function ManageSellersPage() {
                           <div>
                             <div style={s.recentOrderNum}>{o.order_number}</div>
                             <div style={s.recentOrderMeta}>
-                              {o.product} Â· {o.buyer}
+                              {o.product} · {o.buyer}
                             </div>
                           </div>
                           <div style={{ textAlign: "right" }}>
                             <div style={s.recentOrderAmount}>
-                              â‚¦{Number(o.subtotal).toLocaleString()}
+                              ₦{Number(o.subtotal).toLocaleString()}
                             </div>
                             <span
                               style={{
