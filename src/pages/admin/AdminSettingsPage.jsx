@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import axios from "axios";
@@ -50,6 +50,13 @@ export default function AdminSettingsPage() {
   });
   const [savingSite, setSavingSite] = useState(false);
 
+  // Commission state
+  const [commissionRate, setCommissionRate] = useState(1);
+  const [commissionDisplay, setCommissionDisplay] = useState("1%");
+  const [loadingCommission, setLoadingCommission] = useState(true);
+  const [savingCommission, setSavingCommission] = useState(false);
+
+
   const [profile, setProfile] = useState({ name: "", email: "" });
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
@@ -97,9 +104,20 @@ export default function AdminSettingsPage() {
           setProfile({ name: r.data.name || "", email: r.data.email || "" });
       })
       .catch(() => {});
+
+    api
+      .get("/admin/settings/commission")
+      .then((r) => {
+        if (r.data) {
+          setCommissionRate(r.data.commission_rate);
+          setCommissionDisplay(r.data.commission_display);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCommission(false));
   }, []);
 
-  // â”€â”€ Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Banner ────────────────────────────────────────────────────────────────
   const handleBannerImageSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -130,7 +148,7 @@ export default function AdminSettingsPage() {
       });
       setBannerSettings((prev) => ({ ...prev, image_url: imageUrl }));
       setBannerFile(null);
-      showToast("âœ… Banner settings saved!");
+      showToast("✅ Banner settings saved!");
     } catch (err) {
       showToast(
         err.response?.data?.message || "Failed to save banner settings.",
@@ -140,7 +158,7 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // â”€â”€ Video â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Video ─────────────────────────────────────────────────────────────────
   const handleVideoFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -171,7 +189,7 @@ export default function AdminSettingsPage() {
       const videoUrl = res.data.secure_url;
       setVideoSettings((prev) => ({ ...prev, type: "upload", url: videoUrl }));
       setVideoFile(null);
-      showToast("âœ… Video uploaded! Click Save to apply.");
+      showToast("✅ Video uploaded! Click Save to apply.");
     } catch {
       showToast(
         "Video upload failed. Max size 100MB. MP4, MOV, AVI supported.",
@@ -186,7 +204,7 @@ export default function AdminSettingsPage() {
     setSavingVideo(true);
     try {
       await api.post("/admin/settings/video", videoSettings);
-      showToast("âœ… Video settings saved! Landing page updated.");
+      showToast("✅ Video settings saved! Landing page updated.");
     } catch (err) {
       showToast(
         err.response?.data?.message || "Failed to save video settings.",
@@ -196,16 +214,39 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // â”€â”€ Site â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Site ──────────────────────────────────────────────────────────────────
   const handleSaveSite = async () => {
     setSavingSite(true);
     try {
       await api.post("/admin/settings/site", siteSettings);
-      showToast("âœ… Site settings saved!");
+      showToast("✅ Site settings saved!");
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to save site settings.");
     } finally {
       setSavingSite(false);
+    }
+  };
+
+  // ── Commission ────────────────────────────────────────────────────────────
+  const handleSaveCommission = async () => {
+    const rate = parseFloat(commissionRate);
+    if (isNaN(rate) || rate < 0 || rate > 20) {
+      return showToast("Commission rate must be between 0% and 20%.");
+    }
+    setSavingCommission(true);
+    try {
+      const res = await api.post("/admin/settings/commission", {
+        commission_rate: rate,
+      });
+      setCommissionRate(res.data.commission_rate);
+      setCommissionDisplay(res.data.commission_display);
+      showToast("✅ Commission rate updated!");
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || "Failed to update commission rate.",
+      );
+    } finally {
+      setSavingCommission(false);
     }
   };
 
@@ -215,20 +256,20 @@ export default function AdminSettingsPage() {
   };
 
   const sidebarItems = [
-    { icon: "ðŸ“Š", label: "Dashboard", path: "/admin/dashboard" },
-    { icon: "ðŸ‘¤", label: "Buyers", path: "/admin/buyers" },
-    { icon: "ðŸ“‹", label: "Complaints", path: "/admin/complaints" },
-    { icon: "ðŸ’³", label: "Payments", path: "/admin/payments" },
-    { icon: "ðŸª", label: "Sellers", path: "/admin/sellers" },
-    { icon: "ðŸŒ¾", label: "Products", path: "/admin/products" },
-    { icon: "ðŸ“¦", label: "Orders", path: "/admin/orders" },
-    { icon: "ðŸ’°", label: "Loans", path: "/admin/loans" },
-    { icon: "ðŸ‘¥", label: "Staff", path: "/admin/staff" },
-    { icon: "ðŸ“ˆ", label: "Reports", path: "/admin/reports" },
-    { icon: "âš™ï¸", label: "Loan Settings", path: "/admin/loan-settings" },
-    { icon: "ðŸšš", label: "Delivery Zones", path: "/admin/delivery-zones" },
+    { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
+    { icon: "👤", label: "Buyers", path: "/admin/buyers" },
+    { icon: "📋", label: "Complaints", path: "/admin/complaints" },
+    { icon: "💳", label: "Payments", path: "/admin/payments" },
+    { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
+    { icon: "🌾", label: "Products", path: "/admin/products" },
+    { icon: "📦", label: "Orders", path: "/admin/orders" },
+    { icon: "💰", label: "Loans", path: "/admin/loans" },
+    { icon: "👥", label: "Staff", path: "/admin/staff" },
+    { icon: "📈", label: "Reports", path: "/admin/reports" },
+    { icon: "⚙️", label: "Loan Settings", path: "/admin/loan-settings" },
+    { icon: "🚚", label: "Delivery Zones", path: "/admin/delivery-zones" },
     {
-      icon: "ðŸ–¼ï¸",
+      icon: "🖼️",
       label: "Site Settings",
       path: "/admin/settings",
       active: true,
@@ -290,11 +331,11 @@ export default function AdminSettingsPage() {
         {/* Tab Nav */}
         <div style={s.tabNav}>
           {[
-            { key: "banner", label: "ðŸ–¼ï¸ Banner / Advert" },
-            { key: "video", label: "ðŸŽ¬ Video Advert" },
-            { key: "site", label: "âš™ï¸ Site Information" },
-            { key: "profile", label: "ðŸ‘¤ My Profile" },
+            { key: "banner", label: "🖼️ Banner / Advert" },
+            { key: "video", label: "🎬 Video Advert" },
+            { key: "site", label: "⚙️ Site Information" },
             { key: "commission", label: "💰 Commission" },
+            { key: "profile", label: "👤 My Profile" },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -306,13 +347,13 @@ export default function AdminSettingsPage() {
           ))}
         </div>
 
-        {/* â•â•â•â• BANNER TAB â•â•â•â• */}
+        {/* ════ BANNER TAB ════ */}
         {activeTab === "banner" && (
           <div style={s.card}>
-            <div style={s.cardTitle}>ðŸ–¼ï¸ Homepage Banner / Advert Image</div>
+            <div style={s.cardTitle}>🖼️ Homepage Banner / Advert Image</div>
             <p style={s.cardDesc}>
               This image appears as the main hero/banner on the landing page.
-              Recommended size: 1200Ã—600px. JPG or PNG.
+              Recommended size: 1200×600px. JPG or PNG.
             </p>
 
             {/* Current Preview */}
@@ -337,7 +378,7 @@ export default function AdminSettingsPage() {
                   onChange={handleBannerImageSelect}
                 />
                 {bannerFile && (
-                  <div style={s.fileSelected}>ðŸ“Ž {bannerFile.name}</div>
+                  <div style={s.fileSelected}>📎 {bannerFile.name}</div>
                 )}
                 <div style={s.hint}>Or paste an image URL below</div>
               </div>
@@ -422,15 +463,15 @@ export default function AdminSettingsPage() {
               onClick={handleSaveBanner}
               disabled={savingBanner}
             >
-              {savingBanner ? "â³ Saving..." : "ðŸ’¾ Save Banner Settings"}
+              {savingBanner ? "⏳ Saving..." : "💾 Save Banner Settings"}
             </button>
           </div>
         )}
 
-        {/* â•â•â•â• VIDEO TAB â•â•â•â• */}
+        {/* ════ VIDEO TAB ════ */}
         {activeTab === "video" && (
           <div style={s.card}>
-            <div style={s.cardTitle}>ðŸŽ¬ Video Advert Settings</div>
+            <div style={s.cardTitle}>🎬 Video Advert Settings</div>
             <p style={s.cardDesc}>
               This video appears in the "Our Story" section on the landing page.
               Use YouTube link (recommended) or upload an MP4 file.
@@ -448,7 +489,7 @@ export default function AdminSettingsPage() {
                   setVideoSettings((p) => ({ ...p, type: "youtube" }))
                 }
               >
-                ðŸ“º YouTube Link
+                📺 YouTube Link
               </button>
               <button
                 style={
@@ -460,7 +501,7 @@ export default function AdminSettingsPage() {
                   setVideoSettings((p) => ({ ...p, type: "upload" }))
                 }
               >
-                ðŸ“ Upload Video File
+                📁 Upload Video File
               </button>
             </div>
 
@@ -520,8 +561,8 @@ export default function AdminSettingsPage() {
                     disabled={uploadingVideo || !videoFile}
                   >
                     {uploadingVideo
-                      ? `â³ Uploading ${uploadProgress}%...`
-                      : "â¬† Upload to Cloudinary"}
+                      ? `⏳ Uploading ${uploadProgress}%...`
+                      : "⬆ Upload to Cloudinary"}
                   </button>
                 </div>
 
@@ -571,7 +612,7 @@ export default function AdminSettingsPage() {
               <input
                 style={s.input}
                 type="text"
-                placeholder="e.g. ACHOICE â€” Farm to Table"
+                placeholder="e.g. ACHOICE — Farm to Table"
                 value={videoSettings.title}
                 onChange={(e) =>
                   setVideoSettings((p) => ({ ...p, title: e.target.value }))
@@ -584,20 +625,20 @@ export default function AdminSettingsPage() {
               onClick={handleSaveVideo}
               disabled={savingVideo}
             >
-              {savingVideo ? "â³ Saving..." : "ðŸ’¾ Save Video Settings"}
+              {savingVideo ? "⏳ Saving..." : "💾 Save Video Settings"}
             </button>
 
             <div style={s.infoBox}>
-              ðŸ’¡ <strong>Tip:</strong> YouTube link is recommended â€” no file
+              💡 <strong>Tip:</strong> YouTube link is recommended — no file
               size limit, loads faster for all users worldwide.
             </div>
           </div>
         )}
 
-        {/* â•â•â•â• SITE INFO TAB â•â•â•â• */}
+        {/* ════ SITE INFO TAB ════ */}
         {activeTab === "site" && (
           <div style={s.card}>
-            <div style={s.cardTitle}>âš™ï¸ Site Information</div>
+            <div style={s.cardTitle}>⚙️ Site Information</div>
             <p style={s.cardDesc}>
               This information appears in the navigation, footer and contact
               sections of the landing page.
@@ -753,11 +794,11 @@ export default function AdminSettingsPage() {
               onClick={handleSaveSite}
               disabled={savingSite}
             >
-              {savingSite ? "â³ Saving..." : "ðŸ’¾ Save Site Settings"}
+              {savingSite ? "⏳ Saving..." : "💾 Save Site Settings"}
             </button>
 
             <div style={s.infoBox}>
-              ðŸ’¡ <strong>Note:</strong> After saving, these settings will appear
+              💡 <strong>Note:</strong> After saving, these settings will appear
               on the landing page automatically. Ask Sherif to add the GET/POST
               endpoints for <code>/api/settings/banner</code>,{" "}
               <code>/api/settings/video</code>, and{" "}
@@ -765,12 +806,93 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         )}
+
+        {/* ════ COMMISSION TAB ════ */}
+        {activeTab === "commission" && (
+          <div style={s.card}>
+            <div style={s.cardTitle}>💰 Platform Commission</div>
+            <p style={s.cardDesc}>
+              This is the percentage ACHOICE deducts from every seller's
+              earnings before payout. It applies platform-wide — across all
+              sellers, all products, and every completed order.
+            </p>
+
+            {loadingCommission ? (
+              <p style={{ fontSize: 13, color: "#888" }}>Loading current rate...</p>
+            ) : (
+              <>
+                <div style={s.formGrid}>
+                  <div style={s.field}>
+                    <label style={s.label}>Commission Rate (%)</label>
+                    <input
+                      style={s.input}
+                      type="number"
+                      min="0"
+                      max="20"
+                      step="0.1"
+                      value={commissionRate}
+                      onChange={(e) => setCommissionRate(e.target.value)}
+                    />
+                    <span style={s.hint}>
+                      Current live rate: {commissionDisplay} · Allowed range: 0%–20%
+                    </span>
+                  </div>
+                </div>
+
+                <div style={s.sectionDivider}>Live Preview (₦100,000 in sales)</div>
+                <div style={s.commissionPreview}>
+                  <div style={s.commissionRow}>
+                    <span style={s.commissionLabel}>Gross Earnings</span>
+                    <span style={s.commissionValue}>₦100,000.00</span>
+                  </div>
+                  <div style={s.commissionRow}>
+                    <span style={s.commissionLabel}>
+                      Platform Commission ({parseFloat(commissionRate) || 0}%)
+                    </span>
+                    <span style={s.commissionValue}>
+                      ₦
+                      {(
+                        100000 *
+                        ((parseFloat(commissionRate) || 0) / 100)
+                      ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div style={{ ...s.commissionRow, ...s.commissionRowHighlight }}>
+                    <span style={s.commissionLabel}>Seller Receives</span>
+                    <span style={s.commissionValueHighlight}>
+                      ₦
+                      {(
+                        100000 *
+                        (1 - (parseFloat(commissionRate) || 0) / 100)
+                      ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  style={savingCommission ? s.saveBtnDisabled : s.saveBtn}
+                  onClick={handleSaveCommission}
+                  disabled={savingCommission}
+                >
+                  {savingCommission ? "⏳ Saving..." : "💾 Save Commission Rate"}
+                </button>
+
+                <div style={s.infoBox}>
+                  💡 <strong>Note:</strong> Changing this rate takes effect
+                  immediately for all future order settlements. It does not
+                  retroactively change commission already calculated on past
+                  orders.
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* â•â•â•â• MY PROFILE TAB â•â•â•â• */}
+      {/* ════ MY PROFILE TAB ════ */}
       {activeTab === "profile" && (
         <div style={s.card}>
-          <div style={s.cardTitle}>ðŸ‘¤ My Profile</div>
+          <div style={s.cardTitle}>👤 My Profile</div>
           <p style={s.cardDesc}>
             Update your name, email and change your password.
           </p>
@@ -808,7 +930,7 @@ export default function AdminSettingsPage() {
               setSavingProfile(true);
               try {
                 await api.put("/admin/profile", profile);
-                showToast("âœ… Profile updated successfully!");
+                showToast("✅ Profile updated successfully!");
               } catch (err) {
                 showToast(
                   err.response?.data?.message || "Failed to update profile.",
@@ -818,7 +940,7 @@ export default function AdminSettingsPage() {
               }
             }}
           >
-            {savingProfile ? "â³ Saving..." : "ðŸ’¾ Save Profile"}
+            {savingProfile ? "⏳ Saving..." : "💾 Save Profile"}
           </button>
 
           {/* Change Password */}
@@ -888,7 +1010,7 @@ export default function AdminSettingsPage() {
                   new_password_confirmation:
                     passwordForm.new_password_confirmation,
                 });
-                showToast("âœ… Password changed successfully!");
+                showToast("✅ Password changed successfully!");
                 setPasswordForm({
                   current_password: "",
                   new_password: "",
@@ -903,7 +1025,7 @@ export default function AdminSettingsPage() {
               }
             }}
           >
-            {savingPassword ? "â³ Saving..." : "ðŸ”’ Change Password"}
+            {savingPassword ? "⏳ Saving..." : "🔒 Change Password"}
           </button>
         </div>
       )}
@@ -1231,4 +1353,24 @@ const s = {
     borderBottom: "1px solid #eee",
     marginTop: 8,
   },
+  commissionPreview: {
+    background: "#f7f5f0",
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 24,
+  },
+  commissionRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px 0",
+    borderBottom: "1px solid #e8e4dc",
+  },
+  commissionRowHighlight: {
+    borderBottom: "none",
+    marginTop: 4,
+  },
+  commissionLabel: { fontSize: 13, color: "#555" },
+  commissionValue: { fontSize: 14, fontWeight: 600, color: "#333" },
+  commissionValueHighlight: { fontSize: 16, fontWeight: 800, color: "#1f4d1f" },
 };
