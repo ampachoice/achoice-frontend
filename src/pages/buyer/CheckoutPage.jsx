@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { createOrder } from "../../services/orderService";
 import api from "../../services/api";
 import NotificationBell from "../../components/buyer/NotificationBell";
-import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
 const NIGERIAN_STATES_FALLBACK = [
   "Abia",
@@ -80,7 +79,7 @@ export default function CheckoutPage() {
       .ckp-nav-name  { font-weight:700; font-size:17px; color:#fff; line-height:1.2; }
       .ckp-nav-name span { color:#f0c050; }
       .ckp-nav-motto { font-size:9px; color:#a8d5a8; }
-      .ckp-nav-back  { color:#f0c050; font-size:14px; cursor:pointer; font-weight:700; }
+      .ckp-nav-back  { color:#f0c050; font-size:14px; cursor:pointer; font-weight:700; white-space:nowrap; flex-shrink:0; }
 
       /* ── CONTAINER ── */
       .ckp-container { max-width:1100px; margin:0 auto; padding:36px 40px; }
@@ -402,7 +401,6 @@ export default function CheckoutPage() {
           ← Return to Cart
         </span>
         <NotificationBell />
-        <MobileNavDrawer cartCount={cartCount} />
       </nav>
 
       <div className="ckp-container">
@@ -569,6 +567,8 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+
 
 
 
