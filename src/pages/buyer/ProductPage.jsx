@@ -355,30 +355,41 @@ export default function ProductPage() {
   const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "";
 
-  // ── Nav component ────────────────────────────────────────────────────────
-  // Renders <style>{CSS}</style> so styles are always present, synced with
-  // the component lifecycle, and never leak into other pages.
+  // ── Nav — uses same pattern as HomePage for reliable rendering ─────────────
+  const token = localStorage.getItem("token");
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const Nav = () => (
     <>
       <style>{CSS}</style>
-      <nav className="pp-nav">
-        <div className="pp-nav-left" onClick={() => navigate("/products")}>
-          <img
-            src="/android-chrome-192x192.png"
-            alt="Achoice"
-            className="pp-nav-logo"
-            onError={(e) => { e.target.style.display = "none"; }}
-          />
-          <div className="pp-nav-name">ACHOICE <span>MARKET</span></div>
+
+      {/* Top bar */}
+      <div style={{ background:"#1f4d1f", color:"#fff", fontSize:12, padding:"6px 40px", display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:4 }}>
+        <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
+          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
+          <span>✉ support@achoice.ng</span>
+        </div>
+        <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
+          <span>📞 09067794991</span>
+          <span>Mon - Sat: 07:00am to 06:00pm</span>
+        </div>
+      </div>
+
+      {/* Main nav */}
+      <nav style={{ background:"#1f4d1f", padding:"10px 40px", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, zIndex:200, gap:12, flexWrap:"nowrap" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", flexShrink:0 }} onClick={() => navigate("/products")}>
+          <img src="/android-chrome-192x192.png" alt="Achoice"
+            style={{ width:36, height:36, borderRadius:6, objectFit:"contain" }}
+            onError={(e) => { e.target.style.display = "none"; }} />
+          <div style={{ fontWeight:700, fontSize:17, color:"#fff", whiteSpace:"nowrap" }}>
+            ACHOICE <span style={{ color:"#f0c050" }}>MARKET</span>
+          </div>
         </div>
 
-        {/* Desktop search — hidden on tablet/mobile via CSS */}
+        {/* Desktop search — hidden on mobile via CSS */}
         {!id && (
           <div className="pp-search-group">
-            <select
-              value={selectedCat}
-              onChange={(e) => setSelectedCat(e.target.value)}
-            >
+            <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <input
@@ -390,24 +401,91 @@ export default function ProductPage() {
           </div>
         )}
 
-        <div className="pp-nav-right">
-          <div className="pp-cart-btn" onClick={() => navigate("/cart")}>
+        {/* Right side actions */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+          <div style={{ fontSize:22, cursor:"pointer", position:"relative", color:"#fff", display:"flex", alignItems:"center" }}
+            onClick={() => navigate("/cart")}>
             🛒
-            {cartCount > 0 && <span className="pp-cart-badge">{cartCount}</span>}
+            {cartCount > 0 && (
+              <span style={{ position:"absolute", top:-8, right:-10, background:"#f0c050", color:"#1f4d1f", fontSize:10, fontWeight:700, width:18, height:18, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #1f4d1f" }}>
+                {cartCount}
+              </span>
+            )}
           </div>
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
+          {token && <NotificationBell />}
+          {token ? (
+            <BuyerDropdown cartCount={cartCount} />
+          ) : (
+            <div style={{ display:"flex", gap:8 }}>
+              <button style={{ padding:"8px 14px", border:"1px solid #fff", color:"#fff", borderRadius:6, fontSize:13, background:"transparent", cursor:"pointer", fontFamily:"inherit" }}
+                onClick={() => navigate("/login")}>Sign In</button>
+              <button style={{ padding:"8px 14px", background:"#f0c050", color:"#1a3d1a", border:"none", borderRadius:6, fontSize:13, cursor:"pointer", fontFamily:"inherit", fontWeight:700 }}
+                onClick={() => navigate("/register")}>Get Started</button>
+            </div>
+          )}
+          {/* Mobile hamburger */}
+          <button
+            className="pp-hamburger-btn"
+            style={{ background:"none", border:"none", fontSize:24, cursor:"pointer", color:"#fff", padding:4, display:"none" }}
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
         </div>
       </nav>
 
-      {/* Mobile search bar — shown on tablet/mobile via CSS */}
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:999, background:"rgba(0,0,0,0.5)" }} onClick={() => setMenuOpen(false)}>
+          <div style={{ position:"absolute", top:0, right:0, bottom:0, width:"75%", maxWidth:300, background:"#fff", display:"flex", flexDirection:"column", boxShadow:"-4px 0 20px rgba(0,0,0,0.2)" }}
+            onClick={(e) => e.stopPropagation()}>
+            <div style={{ background:"#1f4d1f", padding:"20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>Menu</span>
+              <button style={{ background:"none", border:"none", color:"#fff", fontSize:22, cursor:"pointer" }} onClick={() => setMenuOpen(false)}>✕</button>
+            </div>
+            <div style={{ flex:1, overflowY:"auto", padding:"8px 0" }}>
+              {[
+                { label:"🏠 Home", path:"/" },
+                { label:"🛍️ Shop Products", path:"/products" },
+                { label:"👤 My Profile", path:"/profile" },
+                { label:"🛒 Cart", path:"/cart" },
+                { label:"📦 My Orders", path:"/orders" },
+                { label:"💰 Apply for Loan", path:"/loans/apply" },
+                { label:"📋 My Loans", path:"/loans/repay" },
+                { label:"📝 Complaints & Refunds", path:"/complaints" },
+                { label:"🔔 Notifications", path:"/notifications" },
+              ].map((item) => (
+                <div key={item.path}
+                  style={{ padding:"14px 20px", cursor:"pointer", fontSize:15, color:"#222", borderBottom:"1px solid #f5f5f5" }}
+                  onClick={() => { navigate(item.path); setMenuOpen(false); }}>
+                  {item.label}
+                </div>
+              ))}
+            </div>
+            <div style={{ padding:"16px 20px", borderTop:"1px solid #eee" }}>
+              {token ? (
+                <button style={{ width:"100%", padding:"12px", background:"#fff0f0", color:"#cc0000", border:"none", borderRadius:8, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+                  onClick={() => { localStorage.clear(); navigate("/login"); }}>
+                  🚪 Logout
+                </button>
+              ) : (
+                <div style={{ display:"flex", gap:8 }}>
+                  <button style={{ flex:1, padding:"12px", background:"#fff", color:"#1f4d1f", border:"1px solid #1f4d1f", borderRadius:8, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+                    onClick={() => { navigate("/login"); setMenuOpen(false); }}>Sign In</button>
+                  <button style={{ flex:1, padding:"12px", background:"#1f4d1f", color:"#fff", border:"none", borderRadius:8, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+                    onClick={() => { navigate("/register"); setMenuOpen(false); }}>Get Started</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile search bar */}
       {!id && (
         <div className="pp-mobile-bar">
           <div className="pp-mobile-bar-inner">
-            <select
-              value={selectedCat}
-              onChange={(e) => setSelectedCat(e.target.value)}
-            >
+            <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             <input
@@ -418,10 +496,7 @@ export default function ProductPage() {
               autoComplete="off"
             />
             {searchTerm && (
-              <button
-                className="pp-mobile-bar-clear"
-                onClick={() => setSearchTerm("")}
-              >✕</button>
+              <button className="pp-mobile-bar-clear" onClick={() => setSearchTerm("")}>✕</button>
             )}
           </div>
           {searchTerm && (
