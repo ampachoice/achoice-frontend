@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 // ──────────────────────────────────────────────────────────────────────────
 // MobileNavDrawer — hamburger icon + slide-out menu for small screens.
@@ -16,14 +16,16 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef(null);
 
-  const userRaw = localStorage.getItem('user');
+  const userRaw = localStorage.getItem("user");
   const user = userRaw ? JSON.parse(userRaw) : null;
-  const initial = user?.name ? user.name.charAt(0).toUpperCase() : '?';
+  const initial = user?.name ? user.name.charAt(0).toUpperCase() : "?";
 
   // Lock body scroll while drawer is open
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   // Close on outside click (inside the overlay, not the panel)
@@ -37,40 +39,38 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
       onLogout();
     } else {
       localStorage.clear();
-      navigate('/login');
+      navigate("/login");
     }
   };
 
-  const go = (path) => { setOpen(false); navigate(path); };
+  const go = (path) => {
+    setOpen(false);
+    navigate(path);
+  };
 
   const menuItems = [
-    { icon: '🏠', label: 'Home',                 path: '/' },
-    { icon: '🛍️', label: 'Shop Products',        path: '/products' },
-    { icon: '👤', label: 'My Profile',           path: '/profile' },
-    { icon: '🛒', label: 'Cart',                 path: '/cart', badge: cartCount > 0 ? cartCount : null },
-    { icon: '📦', label: 'My Orders',            path: '/orders' },
-    { icon: '💰', label: 'Apply for Loan',       path: '/loans/apply' },
-    { icon: '📋', label: 'My Loans',             path: '/loans/repay' },
-    { icon: '📝', label: 'Complaints & Refunds', path: '/complaints' },
-    { icon: '🔔', label: 'Notifications',        path: '/notifications' },
+    { icon: "🏠", label: "Home", path: "/" },
+    { icon: "🛍️", label: "Shop Products", path: "/products" },
+    { icon: "👤", label: "My Profile", path: "/profile" },
+    {
+      icon: "🛒",
+      label: "Cart",
+      path: "/cart",
+      badge: cartCount > 0 ? cartCount : null,
+    },
+    { icon: "📦", label: "My Orders", path: "/orders" },
+    { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
+    { icon: "📋", label: "My Loans", path: "/loans/repay" },
+    { icon: "📝", label: "Complaints & Refunds", path: "/complaints" },
+    { icon: "🔔", label: "Notifications", path: "/notifications" },
   ];
 
   return (
     <>
       <style>{`
-        .mnd-trigger {
-          display: none;
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: #fff;
-          padding: 4px 6px;
-          line-height: 1;
-        }
-        @media (max-width: 640px) {
-          .mnd-trigger { display: inline-flex; align-items: center; }
-        }
+      
+        .mnd-trigger { display: none; background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 4px 6px; line-height: 1; }
+        @media (max-width: 640px) { .mnd-trigger { display: flex; align-items: center; justify-content: center; } }
         .mnd-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.5);
           z-index: 999; display: flex; justify-content: flex-end;
@@ -104,7 +104,7 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
           display: flex; align-items: center; gap: 14px; padding: 14px 20px;
           cursor: pointer; font-size: 14px; color: #333; border-bottom: 1px solid #f5f5f5;
         }
-        .mnd-item:active { background: #f7f5f0; }
+        .mnd-item:active { background: #7a7a78; }
         .mnd-item-icon { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
         .mnd-item-label { flex: 1; }
         .mnd-item-badge {
@@ -127,7 +127,11 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
         .mnd-auth-register { background: #1f4d1f; color: #fff; border: none; }
       `}</style>
 
-      <button className="mnd-trigger" onClick={() => setOpen(true)} aria-label="Open menu">
+      <button
+        className="mnd-trigger"
+        onClick={() => setOpen(true)}
+        aria-label="Open menu"
+      >
         ☰
       </button>
 
@@ -146,17 +150,29 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
               ) : (
                 <div className="mnd-name">ACHOICE MARKET</div>
               )}
-              <button className="mnd-close" onClick={() => setOpen(false)} aria-label="Close menu">✕</button>
+              <button
+                className="mnd-close"
+                onClick={() => setOpen(false)}
+                aria-label="Close menu"
+              >
+                ✕
+              </button>
             </div>
 
             {user ? (
               <>
                 <div className="mnd-items">
                   {menuItems.map((item) => (
-                    <div key={item.path} className="mnd-item" onClick={() => go(item.path)}>
+                    <div
+                      key={item.path}
+                      className="mnd-item"
+                      onClick={() => go(item.path)}
+                    >
                       <span className="mnd-item-icon">{item.icon}</span>
                       <span className="mnd-item-label">{item.label}</span>
-                      {item.badge && <span className="mnd-item-badge">{item.badge}</span>}
+                      {item.badge && (
+                        <span className="mnd-item-badge">{item.badge}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -168,8 +184,18 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
               </>
             ) : (
               <div className="mnd-auth">
-                <button className="mnd-auth-btn mnd-auth-signin" onClick={() => go('/login')}>Sign In</button>
-                <button className="mnd-auth-btn mnd-auth-register" onClick={() => go('/register')}>Get Started</button>
+                <button
+                  className="mnd-auth-btn mnd-auth-signin"
+                  onClick={() => go("/login")}
+                >
+                  Sign In
+                </button>
+                <button
+                  className="mnd-auth-btn mnd-auth-register"
+                  onClick={() => go("/register")}
+                >
+                  Get Started
+                </button>
               </div>
             )}
           </div>
