@@ -483,8 +483,14 @@ const s = {
     fontSize: 13,
   },
   message: { textAlign: "center", color: "#666", padding: 40 },
-  layout: { display: "grid", gridTemplateColumns: "1fr 300px", gap: 24 },
-  leftCol: { display: "flex", flexDirection: "column", gap: 20 },
+  layout: { display: "flex", gap: 24, flexWrap: "wrap" },
+  leftCol: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 20,
+    flex: "3 1 420px",
+    minWidth: 280,
+  },
   card: {
     background: "#fff",
     borderRadius: 10,
@@ -573,7 +579,13 @@ const s = {
     textAlign: "center",
     padding: "16px 0",
   },
-  rightCol: { display: "flex", flexDirection: "column", gap: 16 },
+  rightCol: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+    flex: "1 1 300px",
+    minWidth: 260,
+  },
   previewCard: {
     background: "#fff",
     borderRadius: 10,

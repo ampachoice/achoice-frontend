@@ -730,6 +730,7 @@ export default function ManageLoansPage() {
                   </div>
                   {expandedLoan === loan.id &&
                     successfulRepayments.length > 0 && (
+                      <div style={{ overflowX: "auto" }}>
                       <div style={s.repaymentsTable}>
                         <div style={s.repaymentsHead}>
                           <span>#</span>
@@ -780,6 +781,7 @@ export default function ManageLoansPage() {
                             </span>
                           </div>
                         ))}
+                      </div>
                       </div>
                     )}
                 </div>
@@ -1327,7 +1329,7 @@ const s = {
   },
   loanDetails: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
     gap: 14,
     padding: "16px 0",
     borderTop: "1px solid #eee",
@@ -1516,7 +1518,8 @@ const s = {
   },
   repaymentsHead: {
     display: "grid",
-    gridTemplateColumns: "30px 1fr 1fr 1.5fr 1fr 80px",
+    gridTemplateColumns:
+      "30px minmax(80px,1fr) minmax(80px,1fr) minmax(110px,1.5fr) minmax(80px,1fr) 80px",
     padding: "8px 14px",
     background: "#f7f5f0",
     fontSize: 11,
@@ -1525,15 +1528,19 @@ const s = {
     textTransform: "uppercase",
     letterSpacing: 0.5,
     gap: 8,
+    minWidth: 520,
+    whiteSpace: "nowrap",
   },
   repaymentsRow: {
     display: "grid",
-    gridTemplateColumns: "30px 1fr 1fr 1.5fr 1fr 80px",
+    gridTemplateColumns:
+      "30px minmax(80px,1fr) minmax(80px,1fr) minmax(110px,1.5fr) minmax(80px,1fr) 80px",
     padding: "10px 14px",
     borderTop: "1px solid #f0f0f0",
     fontSize: 12,
     alignItems: "center",
     gap: 8,
+    minWidth: 520,
   },
   rejectedNote: {
     background: "#fff0f0",
@@ -1597,7 +1604,7 @@ const s = {
   noDocsBox: { textAlign: "center", padding: "24px 0" },
   docsCardGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: 12,
     marginBottom: 16,
   },
@@ -1855,7 +1862,11 @@ const s = {
     letterSpacing: 1,
     marginBottom: 12,
   },
-  previewGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
+  previewGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: 10,
+  },
   previewItem: {},
   previewLabel: { fontSize: 11, color: "#888", marginBottom: 2 },
   previewVal: { fontSize: 14, fontWeight: 600, color: "#111" },

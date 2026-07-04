@@ -216,7 +216,7 @@ const s = {
   buyerText: { textAlign: 'center', marginTop: 20, fontSize: 13, color: '#666' },
   buyerLink: { color: '#1f4d1f', fontWeight: 600, cursor: 'pointer' },
   footer: { background: '#1f4d1f', color: '#fff', padding: '48px 60px 0' },
-  footerGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 40, marginBottom: 40 },
+  footerGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 40, marginBottom: 40 },
   footerBrand: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 },
   footerLogoImg: { width: 40, height: 40, objectFit: 'contain' },
   footerName: { fontSize: 15, fontWeight: 700, color: '#fff' },

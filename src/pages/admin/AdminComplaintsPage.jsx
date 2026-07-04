@@ -139,16 +139,16 @@ export default function AdminComplaintsPage() {
           ) : complaints.length === 0 ? (
             <div className="ac-empty">No complaints found.</div>
           ) : (
-            <div className="ac-table">
-              <table>
+            <div className="ac-table" style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
-                    <th>Subject</th>
-                    <th>Buyer</th>
-                    <th>Category</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Date</th>
+                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Subject</th>
+                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Buyer</th>
+                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Category</th>
+                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Type</th>
+                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Status</th>
+                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Date</th>
                   </tr>
                 </thead>
                 <tbody>

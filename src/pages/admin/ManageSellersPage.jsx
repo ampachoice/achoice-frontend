@@ -1297,7 +1297,14 @@ export default function ManageSellersPage() {
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 20,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+          }}
+        >
           <div style={s.tableSection}>
             <input
               style={s.searchInput}
@@ -1307,7 +1314,8 @@ export default function ManageSellersPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
             <div style={s.tableCard}>
-              <table style={s.table}>
+              <div style={{ overflowX: "auto" }}>
+                <table style={s.table}>
                 <thead>
                   <tr style={s.tableHead}>
                     <th style={s.th}>Seller</th>
@@ -1373,6 +1381,7 @@ export default function ManageSellersPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
               {filtered.length === 0 && (
                 <div style={s.empty}>No sellers found.</div>
               )}
@@ -1765,7 +1774,7 @@ const s = {
   },
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: 24,
     marginBottom: 20,
   },
@@ -1813,7 +1822,7 @@ const s = {
   },
   summaryGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: 14,
     marginBottom: 24,
   },
@@ -1832,7 +1841,7 @@ const s = {
   statLabel: { fontSize: 12, color: "#888" },
   statIcon: { fontSize: 20 },
   statValue: { fontSize: 22, fontWeight: 700 },
-  tableSection: { flex: 1, minWidth: 0 },
+  tableSection: { flex: 1, minWidth: 280 },
   searchInput: {
     width: "100%",
     maxWidth: 400,
@@ -1847,7 +1856,7 @@ const s = {
     outline: "none",
   },
   tableCard: { background: "#fff", borderRadius: 12, overflow: "hidden" },
-  table: { width: "100%", borderCollapse: "collapse" },
+  table: { width: "100%", borderCollapse: "collapse", minWidth: 640 },
   tableHead: { background: "#f8f9fa", borderBottom: "2px solid #eee" },
   th: {
     padding: "14px 16px",
@@ -1856,6 +1865,7 @@ const s = {
     color: "#666",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    whiteSpace: "nowrap",
   },
   tableRow: { transition: "0.15s" },
   td: {
@@ -1886,7 +1896,10 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
   statsPanel: {
-    width: 380,
+    width: "100%",
+    maxWidth: 380,
+    minWidth: 280,
+    flex: "1 1 320px",
     flexShrink: 0,
     background: "#fff",
     borderRadius: 12,
@@ -1935,7 +1948,7 @@ const s = {
   },
   miniStatsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))",
     gap: 10,
   },
   miniStat: {
@@ -1960,7 +1973,7 @@ const s = {
   },
   earningsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))",
     gap: 10,
     marginBottom: 12,
   },
@@ -1982,7 +1995,7 @@ const s = {
   bankBox: { background: "#f7f5f0", borderRadius: 10, padding: 14 },
   bankGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(90px, 1fr))",
     gap: 10,
     marginTop: 10,
   },

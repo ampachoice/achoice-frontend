@@ -6,9 +6,7 @@
    ────────────────────────────────────────────────────────────────────────── */
 
 /* ── 1. Reset & box model ── */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
@@ -21,9 +19,9 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f7f5f0;
@@ -34,8 +32,8 @@ body {
 }
 
 code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
 /* ── 2. Root app container ── */
@@ -46,11 +44,7 @@ code {
 }
 
 /* ── 3. Media never overflows its container (the #1 cause of mobile breakage) ── */
-img,
-video,
-svg,
-canvas,
-iframe {
+img, video, svg, canvas, iframe {
   max-width: 100%;
   height: auto;
   display: block;
@@ -69,17 +63,12 @@ table {
 }
 
 /* ── 5. Forms render consistently across browsers/devices ── */
-input,
-select,
-textarea,
-button {
+input, select, textarea, button {
   font-family: inherit;
   -webkit-appearance: none;
   appearance: none;
 }
-input,
-select,
-textarea {
+input, select, textarea {
   border-radius: 8px;
 }
 button {
@@ -91,20 +80,14 @@ button:disabled {
 
 /* Prevent iOS Safari auto-zoom on input focus (inputs under 16px trigger zoom) */
 @media (max-width: 600px) {
-  input,
-  select,
-  textarea {
+  input, select, textarea {
     font-size: 16px !important;
   }
 }
 
 /* ── 6. Touch-friendly tap targets on mobile ── */
 @media (max-width: 600px) {
-  button,
-  a,
-  [role="button"],
-  select,
-  .clickable {
+  button, a, [role="button"], select, .clickable {
     min-height: 40px;
   }
 }
@@ -129,20 +112,12 @@ button:disabled {
   gap: 12px;
 }
 
-.hide-mobile {
-  display: initial;
-}
-.hide-desktop {
-  display: none;
-}
+.hide-mobile { display: initial; }
+.hide-desktop { display: none; }
 
 @media (max-width: 768px) {
-  .hide-mobile {
-    display: none !important;
-  }
-  .hide-desktop {
-    display: initial !important;
-  }
+  .hide-mobile { display: none !important; }
+  .hide-desktop { display: initial !important; }
 }
 
 /* ── 8. Standard breakpoint scaling for base font-size (matches Jumia-style fluid type) ──
@@ -150,33 +125,23 @@ button:disabled {
    rem-based sizing elsewhere in the app will scale automatically. Pages using
    px-based inline styles (most of this codebase) are unaffected — this only
    helps any new component built with rem units. */
-html {
-  font-size: 16px;
-}
+html { font-size: 16px; }
 @media (max-width: 900px) {
-  html {
-    font-size: 15px;
-  }
+  html { font-size: 15px; }
 }
 @media (max-width: 480px) {
-  html {
-    font-size: 14px;
-  }
+  html { font-size: 14px; }
 }
 
-/* ── 9. Long text never breaks layout (product names, emails, addresses) ── */
+/* ── 9. Long text never breaks layout (product names, emails, addresses) ──
+   overflow-wrap alone only breaks a word as a last resort, when it truly
+   can't fit on its own line. (word-break: break-word was removed here -
+   it broke text at arbitrary characters even when a container had room,
+   which was the cause of "Tot-al Sel-lers" style letter-by-letter wrapping
+   across the admin panel on mobile.) */
 .text-wrap-safe,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-span,
-div {
+h1, h2, h3, h4, h5, h6, p, span, div {
   overflow-wrap: break-word;
-  word-break: break-word;
 }
 
 /* ── 10. Scrollbar styling (desktop, subtle, on-brand) ── */
@@ -202,35 +167,22 @@ div {
 }
 
 /* ── 12. Disable pull-to-refresh bounce / overscroll glow on mobile ── */
-html,
-body {
+html, body {
   overscroll-behavior-y: none;
 }
 
 /* ── 13. Sticky navbars: ensure they never get squeezed off-screen ── */
-nav,
-.navbar,
-[class*="-nav"] {
+nav, .navbar, [class*="-nav"] {
   width: 100%;
 }
 
 /* ── 14. Responsive spacing scale (utility classes, optional use) ── */
-.p-sm {
-  padding: 8px;
-}
-.p-md {
-  padding: 16px;
-}
-.p-lg {
-  padding: 24px;
-}
+.p-sm { padding: 8px; }
+.p-md { padding: 16px; }
+.p-lg { padding: 24px; }
 @media (max-width: 600px) {
-  .p-lg {
-    padding: 16px;
-  }
-  .p-md {
-    padding: 12px;
-  }
+  .p-lg { padding: 16px; }
+  .p-md { padding: 12px; }
 }
 
 /* ── 15. Safe-area padding for notched phones (iPhone X+ etc.) ── */
@@ -241,14 +193,5 @@ body {
 
 /* ── 16. Print: hide nav/footer chrome, keep content readable ── */
 @media print {
-  nav,
-  footer,
-  button {
-    display: none !important;
-  }
-}
-/* ── 17. Global select fix — prevent flex-container collapse ── */
-select {
-  min-width: 80px;
-  flex-shrink: 0;
+  nav, footer, button { display: none !important; }
 }

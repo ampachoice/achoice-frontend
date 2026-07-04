@@ -277,7 +277,7 @@ const s = {
     padding: "10px 20px", background: "#ccc", color: "#fff", border: "none",
     borderRadius: 7, fontSize: 13, cursor: "not-allowed", fontFamily: "inherit",
   },
-  summaryGrid: { display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 14, marginBottom: 24 },
+  summaryGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 14, marginBottom: 24 },
   summaryCard: { background: "#fff", borderRadius: 10, border: "1px solid #e8e4dc", padding: "16px 18px" },
   summaryLabel: { fontSize: 11, color: "#888", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
   summaryValue: { fontSize: 20, fontWeight: 700 },
@@ -299,7 +299,7 @@ const s = {
   emptyBox: { textAlign: "center", padding: "60px 0", background: "#fff", borderRadius: 10, border: "1px solid #e8e4dc" },
   emptyText: { fontSize: 15, color: "#888" },
   tableWrap: { background: "#fff", borderRadius: 10, border: "1px solid #e8e4dc", overflow: "auto" },
-  table: { width: "100%", borderCollapse: "collapse" },
+  table: { width: "100%", borderCollapse: "collapse", minWidth: 700 },
   th: {
     background: "#1f4d1f", color: "#fff", padding: "12px 16px", textAlign: "left",
     fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",

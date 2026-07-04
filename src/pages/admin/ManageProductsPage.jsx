@@ -1037,7 +1037,7 @@ const s = {
   },
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
     gap: 14,
     marginBottom: 24,
   },
@@ -1064,7 +1064,7 @@ const s = {
   },
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: 20,
     marginBottom: 20,
   },
@@ -1142,7 +1142,7 @@ const s = {
     overflow: "hidden",
     border: "1px solid #e8e4dc",
   },
-  table: { width: "100%", borderCollapse: "collapse" },
+  table: { width: "100%", borderCollapse: "collapse", minWidth: 720 },
   tableHead: { background: "#f7f5f0", borderBottom: "2px solid #eee" },
   th: {
     padding: "12px 16px",
@@ -1151,6 +1151,7 @@ const s = {
     color: "#666",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    whiteSpace: "nowrap",
   },
   tableRow: { borderTop: "1px solid #f5f5f5" },
   td: { padding: "14px 16px", verticalAlign: "middle", fontSize: 13 },

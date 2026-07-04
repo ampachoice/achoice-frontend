@@ -232,6 +232,7 @@ export default function DeliveryZonesPage() {
         {/* Zones Table */}
         {!loading && (
           <div style={s.tableCard}>
+            <div style={{ overflowX: "auto" }}>
             <table style={s.table}>
               <thead>
                 <tr style={s.tableHead}>
@@ -322,6 +323,7 @@ export default function DeliveryZonesPage() {
                 })}
               </tbody>
             </table>
+            </div>
             {filtered.length === 0 && (
               <div style={s.empty}>No zones found matching "{search}"</div>
             )}
@@ -437,7 +439,7 @@ const s = {
   },
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
     gap: 14,
     marginBottom: 20,
   },
@@ -545,7 +547,7 @@ const s = {
     border: "1px solid #e8e4dc",
     overflow: "hidden",
   },
-  table: { width: "100%", borderCollapse: "collapse" },
+  table: { width: "100%", borderCollapse: "collapse", minWidth: 560 },
   tableHead: { background: "#f7f5f0" },
   th: {
     padding: "12px 16px",
@@ -555,6 +557,7 @@ const s = {
     color: "#888",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    whiteSpace: "nowrap",
   },
   tableRow: { borderTop: "1px solid #f0f0f0", transition: "background 0.1s" },
   td: { padding: "12px 16px", verticalAlign: "middle" },

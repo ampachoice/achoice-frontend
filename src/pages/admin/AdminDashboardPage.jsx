@@ -568,7 +568,7 @@ const s = {
 
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: 14,
     marginBottom: 24,
   },
@@ -591,7 +591,7 @@ const s = {
   // Charts
   chartsRow: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: 16,
     marginBottom: 24,
   },
@@ -621,7 +621,7 @@ const s = {
   // Top products/sellers
   topRow: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
     gap: 16,
     marginBottom: 24,
   },
@@ -652,7 +652,7 @@ const s = {
   // Loan summary
   loanSummaryRow: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
     gap: 14,
     marginBottom: 24,
   },
@@ -664,7 +664,11 @@ const s = {
   loanStatValue: { fontSize: 22, fontWeight: 700, marginBottom: 4 },
   loanStatLabel: { fontSize: 12, color: "#666" },
 
-  activityGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
+  activityGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: 16,
+  },
   activityCard: {
     background: "#fff",
     borderRadius: 10,

@@ -810,7 +810,12 @@ const s = {
     marginBottom: 10,
   },
   detailEmpty: { fontSize: 13, color: "#888", padding: "8px 0" },
-  detailTable: { display: "flex", flexDirection: "column", gap: 6 },
+  detailTable: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    overflowX: "auto",
+  },
   detailRow: {
     display: "grid",
     gridTemplateColumns: "1.5fr 1fr 1fr 1fr",
@@ -820,6 +825,8 @@ const s = {
     padding: "8px 12px",
     borderRadius: 6,
     border: "1px solid #e8e4dc",
+    minWidth: 380,
+    whiteSpace: "nowrap",
   },
   modalOverlay: {
     position: "fixed",

@@ -1277,7 +1277,7 @@ const s = {
   kpiValue: { fontSize: 20, fontWeight: 700 },
   chartsRow: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: 16,
     marginBottom: 20,
   },
