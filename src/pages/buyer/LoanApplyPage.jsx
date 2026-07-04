@@ -32,6 +32,9 @@ export default function LoanApplyPage() {
   const [identityForm, setIdentityForm] = useState({
     nin_number: "",
     bvn_number: "",
+    bank_name: "",
+    account_number: "",
+    account_name: "",
   });
 
   // Step 3 — Documents
@@ -48,6 +51,12 @@ export default function LoanApplyPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
 
+  // Live calculator
+  const [tiers, setTiers] = useState([]);
+  const [calcBreakdown, setCalcBreakdown] = useState(null);
+  const [calcLoading, setCalcLoading] = useState(false);
+  const [calcError, setCalcError] = useState(null);
+
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem("cart") || "[]");
     setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 1), 0));
@@ -57,22 +66,71 @@ export default function LoanApplyPage() {
       .then((res) => setLoanConfig(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    api
+      .get("/settings/loan-tiers")
+      .then((res) => setTiers(res.data?.tiers || []))
+      .catch(() => {});
   }, []);
 
-  const interestRate = parseFloat(loanConfig?.default_interest || 10);
+  // Live, debounced call to the real backend calculator — fires on every
+  // amount/duration change, matching how the buyer sees the actual quote
+  // they'll get (tier + duration adjustment + loyalty discounts applied).
+  useEffect(() => {
+    const amt = Number(loanForm.amount);
+    const dur = Number(loanForm.duration_months);
+
+    if (!amt || amt < 1000 || !dur) {
+      setCalcBreakdown(null);
+      setCalcError(null);
+      setCalcLoading(false);
+      return;
+    }
+
+    setCalcLoading(true);
+    const handle = setTimeout(() => {
+      api
+        .get("/loans/calculate", {
+          params: { amount: amt, duration_months: dur },
+        })
+        .then((res) => {
+          setCalcBreakdown(res.data.breakdown);
+          setCalcError(null);
+        })
+        .catch((err) => {
+          setCalcBreakdown(null);
+          setCalcError(
+            err.response?.data?.message || "Could not calculate loan cost.",
+          );
+        })
+        .finally(() => setCalcLoading(false));
+    }, 400);
+
+    return () => clearTimeout(handle);
+  }, [loanForm.amount, loanForm.duration_months]);
+
   const minAmount = parseInt(loanConfig?.min_amount || 50000);
   const maxAmount = parseInt(loanConfig?.max_amount || 5000000);
   const purposes = loanConfig?.purposes || [];
   const durations = loanConfig?.durations || [];
 
-  const calcInterest = (Number(loanForm.amount) * interestRate) / 100;
-  const calcTotal = Number(loanForm.amount) + calcInterest;
-  const calcMonthly = loanForm.duration_months
-    ? Math.ceil(calcTotal / Number(loanForm.duration_months))
-    : 0;
-  const calcWeekly = loanForm.duration_months
-    ? Math.ceil(calcTotal / (Number(loanForm.duration_months) * 4))
-    : 0;
+  const minTierRate = tiers.length
+    ? Math.min(...tiers.map((t) => t.rate))
+    : null;
+  const maxTierRate = tiers.length
+    ? Math.max(...tiers.map((t) => t.rate))
+    : null;
+
+  // Derived from the real backend breakdown — 0 / empty until it resolves
+  const calcInterest = calcBreakdown?.total_interest ?? 0;
+  const calcTotal = calcBreakdown?.total_repayable ?? 0;
+  const calcMonthly = calcBreakdown?.monthly_instalment ?? 0;
+  const calcWeekly =
+    calcBreakdown && loanForm.duration_months
+      ? Math.ceil(
+          calcBreakdown.total_repayable / (Number(loanForm.duration_months) * 4),
+        )
+      : 0;
 
   // ── Step validation ───────────────────────────────────────────────────────
   const validateStep1 = () => {
@@ -102,6 +160,18 @@ export default function LoanApplyPage() {
     }
     if (!identityForm.bvn_number || identityForm.bvn_number.length !== 11) {
       setError("Please enter a valid 11-digit BVN number.");
+      return false;
+    }
+    if (!identityForm.bank_name.trim()) {
+      setError("Please enter your bank name.");
+      return false;
+    }
+    if (!identityForm.account_number || identityForm.account_number.length !== 10) {
+      setError("Please enter a valid 10-digit account number.");
+      return false;
+    }
+    if (!identityForm.account_name.trim()) {
+      setError("Please enter the account name.");
       return false;
     }
     setError(null);
@@ -156,6 +226,9 @@ export default function LoanApplyPage() {
         repayment_preference: loanForm.repayment_preference,
         nin_number: identityForm.nin_number,
         bvn_number: identityForm.bvn_number,
+        bank_name: identityForm.bank_name,
+        account_number: identityForm.account_number,
+        account_name: identityForm.account_name,
       });
 
       const loanId = res.data?.loan?.id || res.data?.data?.id || res.data?.id;
@@ -309,7 +382,7 @@ export default function LoanApplyPage() {
             },
             {
               title: "2. Interest Rate",
-              text: `The current interest rate is ${interestRate}% flat on the principal amount. This rate is set by ACHOICE LIMITED and may be subject to change for future applications.`,
+              text: `Interest is calculated dynamically based on your loan amount, duration, and repayment history — currently ranging from ${minTierRate ?? "2.0"}% to ${maxTierRate ?? "5.0"}% per month. Your exact rate is shown before you submit. Rates are set by ACHOICE LIMITED and may be subject to change for future applications.`,
             },
             {
               title: "3. Repayment Obligation",
@@ -413,7 +486,10 @@ export default function LoanApplyPage() {
                 label: "Max Loan",
               },
               { val: "24hrs", label: "Decision Time" },
-              { val: `${interestRate}%`, label: "Flat Rate" },
+              {
+                val: minTierRate ? `${minTierRate}%–${maxTierRate}%` : "—",
+                label: "Monthly Rate",
+              },
               { val: "Paystack", label: "Repay Method" },
             ].map((stat, i, arr) => (
               <div key={stat.label} style={s.heroStatGroup}>
@@ -609,34 +685,85 @@ export default function LoanApplyPage() {
                 {loanForm.amount > 0 && (
                   <div style={s.summaryBox}>
                     <div style={s.summaryTitle}>📊 Loan Summary Preview</div>
-                    {[
-                      [
-                        "Principal",
-                        `₦${Number(loanForm.amount).toLocaleString()}`,
-                      ],
-                      [
-                        `Interest (${interestRate}%)`,
-                        `₦${calcInterest.toLocaleString()}`,
-                      ],
-                      ["Total Repayable", `₦${calcTotal.toLocaleString()}`],
-                      ...(loanForm.duration_months
-                        ? [
-                            [
-                              "Monthly Instalment",
-                              `₦${calcMonthly.toLocaleString()}`,
-                            ],
-                            [
-                              "Weekly Instalment",
-                              `₦${calcWeekly.toLocaleString()}`,
-                            ],
-                          ]
-                        : []),
-                    ].map(([label, val]) => (
-                      <div key={label} style={s.summaryRow}>
-                        <span style={s.summaryLabel}>{label}</span>
-                        <span style={s.summaryVal}>{val}</span>
+
+                    {calcLoading && !calcBreakdown && (
+                      <div style={{ fontSize: 13, color: "#888", padding: "8px 0" }}>
+                        Calculating your rate...
                       </div>
-                    ))}
+                    )}
+
+                    {calcError && (
+                      <div style={{ fontSize: 13, color: "#cc0000", padding: "8px 0" }}>
+                        ⚠️ {calcError}
+                      </div>
+                    )}
+
+                    {calcBreakdown && (
+                      <>
+                        <div style={s.tierBadgeRow}>
+                          <span style={s.tierBadge}>
+                            {calcBreakdown.tier} Tier
+                          </span>
+                          {calcLoading && (
+                            <span style={{ fontSize: 11, color: "#aaa" }}>
+                              updating...
+                            </span>
+                          )}
+                        </div>
+
+                        {calcBreakdown.loyalty_reasons?.length > 0 && (
+                          <div style={s.loyaltyBox}>
+                            {calcBreakdown.loyalty_reasons.map((r) => (
+                              <div key={r} style={s.loyaltyItem}>
+                                🎉 {r}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {[
+                          [
+                            "Principal",
+                            `₦${Number(loanForm.amount).toLocaleString()}`,
+                          ],
+                          [
+                            "Monthly Rate",
+                            `${calcBreakdown.final_monthly_rate}% per month`,
+                          ],
+                          [
+                            "Total Interest",
+                            `₦${Number(calcInterest).toLocaleString()}`,
+                          ],
+                          [
+                            "Total Repayable",
+                            `₦${Number(calcTotal).toLocaleString()}`,
+                          ],
+                          [
+                            "Monthly Instalment",
+                            `₦${Number(calcMonthly).toLocaleString()}`,
+                          ],
+                          [
+                            "Weekly Instalment",
+                            `₦${Number(calcWeekly).toLocaleString()}`,
+                          ],
+                          [
+                            "Cost per ₦1,000",
+                            `₦${calcBreakdown.cost_per_1000}`,
+                          ],
+                        ].map(([label, val]) => (
+                          <div key={label} style={s.summaryRow}>
+                            <span style={s.summaryLabel}>{label}</span>
+                            <span style={s.summaryVal}>{val}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {!calcBreakdown && !calcLoading && !calcError && (
+                      <div style={{ fontSize: 13, color: "#888", padding: "8px 0" }}>
+                        Select a duration to see your rate and repayment plan.
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -718,6 +845,65 @@ export default function LoanApplyPage() {
                   <div style={s.hint}>
                     To get your BVN, dial <strong>*565*0#</strong> on any bank's
                     line.
+                  </div>
+                </div>
+
+                <div style={s.field}>
+                  <label style={s.label}>
+                    Bank Name <span style={s.req}>*</span>
+                  </label>
+                  <input
+                    style={s.input}
+                    type="text"
+                    value={identityForm.bank_name}
+                    onChange={(e) =>
+                      setIdentityForm((p) => ({
+                        ...p,
+                        bank_name: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g. First Bank"
+                  />
+                </div>
+
+                <div style={s.field}>
+                  <label style={s.label}>
+                    Account Number <span style={s.req}>*</span>
+                  </label>
+                  <input
+                    style={s.input}
+                    type="text"
+                    value={identityForm.account_number}
+                    onChange={(e) =>
+                      setIdentityForm((p) => ({
+                        ...p,
+                        account_number: e.target.value.replace(/\D/g, ""),
+                      }))
+                    }
+                    placeholder="10-digit account number"
+                    maxLength={10}
+                  />
+                </div>
+
+                <div style={s.field}>
+                  <label style={s.label}>
+                    Account Name <span style={s.req}>*</span>
+                  </label>
+                  <input
+                    style={s.input}
+                    type="text"
+                    value={identityForm.account_name}
+                    onChange={(e) =>
+                      setIdentityForm((p) => ({
+                        ...p,
+                        account_name: e.target.value,
+                      }))
+                    }
+                    placeholder="Name on the account — should match your ID"
+                  />
+                  <div style={s.hint}>
+                    Loan disbursement will be sent to this account once
+                    approved.
                   </div>
                 </div>
 
@@ -864,9 +1050,14 @@ export default function LoanApplyPage() {
                       ],
                       ["Purpose", loanForm.purpose],
                       ["Duration", `${loanForm.duration_months} months`],
-                      ["Interest", `${interestRate}% flat`],
-                      ["Total", `₦${calcTotal.toLocaleString()}`],
-                      ["Monthly", `₦${calcMonthly.toLocaleString()}`],
+                      [
+                        "Interest",
+                        calcBreakdown
+                          ? `${calcBreakdown.final_monthly_rate}% per month (${calcBreakdown.tier} tier)`
+                          : "—",
+                      ],
+                      ["Total", `₦${Number(calcTotal).toLocaleString()}`],
+                      ["Monthly", `₦${Number(calcMonthly).toLocaleString()}`],
                       ["Repayment", loanForm.repayment_preference],
                     ].map(([label, val]) => (
                       <div key={label} style={s.reviewItem}>
@@ -985,7 +1176,9 @@ export default function LoanApplyPage() {
                 `Loans up to ₦${Number(maxAmount).toLocaleString()}`,
                 "Decision within 24 hours",
                 "Flexible weekly or monthly repayment",
-                `${interestRate}% flat rate — no hidden charges`,
+                minTierRate
+                  ? `From ${minTierRate}% monthly — better rates for bigger, longer loans`
+                  : "Competitive tiered rates — no hidden charges",
                 "Repay securely via Paystack",
                 "Dedicated loan officer support",
               ].map((item) => (
@@ -999,7 +1192,10 @@ export default function LoanApplyPage() {
             <div style={s.termsCard}>
               <div style={s.termsCardTitle}>Current Loan Terms</div>
               {[
-                ["Interest Rate", `${interestRate}% flat`],
+                [
+                  "Interest Rate",
+                  minTierRate ? `${minTierRate}% – ${maxTierRate}% /month` : "—",
+                ],
                 ["Min Amount", `₦${minAmount.toLocaleString()}`],
                 ["Max Amount", `₦${maxAmount.toLocaleString()}`],
                 ["Durations", durations.map((d) => d.label).join(", ")],
@@ -1268,6 +1464,34 @@ const s = {
   },
   summaryLabel: { color: "#555" },
   summaryVal: { fontWeight: 600, color: "#111" },
+  tierBadgeRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  tierBadge: {
+    display: "inline-block",
+    background: "#1f4d1f",
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "4px 12px",
+    borderRadius: 99,
+  },
+  loyaltyBox: {
+    background: "#eafaf0",
+    border: "1px solid #b8ddc5",
+    borderRadius: 8,
+    padding: "10px 12px",
+    marginBottom: 12,
+  },
+  loyaltyItem: {
+    fontSize: 12,
+    color: "#1a7a3a",
+    fontWeight: 600,
+    padding: "2px 0",
+  },
 
   // Info notice
   infoNotice: {
