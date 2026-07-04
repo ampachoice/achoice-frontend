@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
+
 
 export default function ManageStaffPage() {
   const navigate = useNavigate();
@@ -165,15 +166,7 @@ export default function ManageStaffPage() {
   if (loading) return <div style={s.loader}>Loading Staff...</div>;
 
   return (
-    <AdminLayout
-      title="Staff Management"
-      subtitle={`${staff.length} staff members`}
-      headerActions={
-        <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "+ Add Staff"}
-        </button>
-      }
-    >
+    <>
       {toast && <div style={s.toast}>{toast}</div>}
 
       {/* Edit Modal */}
@@ -230,44 +223,64 @@ export default function ManageStaffPage() {
                 <div style={s.permissionsBox}>
                   <div style={s.permissionsTitle}>Permissions</div>
                   <div style={s.permissionsGrid}>
-                    <label style={s.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        style={s.checkbox}
-                        checked={editingStaff.can_manage_agro}
-                        onChange={(e) =>
-                          setEditingStaff({
-                            ...editingStaff,
-                            can_manage_agro: e.target.checked,
-                          })
+                    <div
+                      style={
+                        editingStaff.can_manage_agro
+                          ? s.permCardSelected
+                          : s.permCard
+                      }
+                      onClick={() =>
+                        setEditingStaff({
+                          ...editingStaff,
+                          can_manage_agro: !editingStaff.can_manage_agro,
+                        })
+                      }
+                    >
+                      <div
+                        style={
+                          editingStaff.can_manage_agro
+                            ? s.permCheckOn
+                            : s.permCheckOff
                         }
-                      />
+                      >
+                        {editingStaff.can_manage_agro && "✓"}
+                      </div>
                       <div>
                         <div style={s.checkboxTitle}>Agro/Sales Dashboard</div>
                         <div style={s.checkboxSub}>
                           Manage orders, inventory, reports
                         </div>
                       </div>
-                    </label>
-                    <label style={s.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        style={s.checkbox}
-                        checked={editingStaff.can_manage_loans}
-                        onChange={(e) =>
-                          setEditingStaff({
-                            ...editingStaff,
-                            can_manage_loans: e.target.checked,
-                          })
+                    </div>
+                    <div
+                      style={
+                        editingStaff.can_manage_loans
+                          ? s.permCardSelected
+                          : s.permCard
+                      }
+                      onClick={() =>
+                        setEditingStaff({
+                          ...editingStaff,
+                          can_manage_loans: !editingStaff.can_manage_loans,
+                        })
+                      }
+                    >
+                      <div
+                        style={
+                          editingStaff.can_manage_loans
+                            ? s.permCheckOn
+                            : s.permCheckOff
                         }
-                      />
+                      >
+                        {editingStaff.can_manage_loans && "✓"}
+                      </div>
                       <div>
                         <div style={s.checkboxTitle}>Loan Dashboard</div>
                         <div style={s.checkboxSub}>
                           Review applications, documents
                         </div>
                       </div>
-                    </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -292,7 +305,17 @@ export default function ManageStaffPage() {
         </div>
       )}
 
-      {/* Add Staff Form */}
+      {/* Sidebar */}
+      <AdminLayout
+        title="Staff Management"
+        subtitle={`${staff.length} staff members`}
+        headerActions={
+          <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
+            {showForm ? "Cancel" : "+ Add Staff"}
+          </button>
+        }
+      >
+        {/* Add Staff Form */}
         {showForm && (
           <div style={s.formCard}>
             <h3 style={s.formTitle}>Create Staff Account</h3>
@@ -343,36 +366,64 @@ export default function ManageStaffPage() {
                   Dashboard Access Permissions
                 </div>
                 <div style={s.permissionsGrid}>
-                  <label style={s.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      name="can_manage_agro"
-                      checked={formData.can_manage_agro}
-                      onChange={handleFormChange}
-                      style={s.checkbox}
-                    />
+                  <div
+                    style={
+                      formData.can_manage_agro
+                        ? s.permCardSelected
+                        : s.permCard
+                    }
+                    onClick={() =>
+                      setFormData((p) => ({
+                        ...p,
+                        can_manage_agro: !p.can_manage_agro,
+                      }))
+                    }
+                  >
+                    <div
+                      style={
+                        formData.can_manage_agro
+                          ? s.permCheckOn
+                          : s.permCheckOff
+                      }
+                    >
+                      {formData.can_manage_agro && "✓"}
+                    </div>
                     <div>
                       <div style={s.checkboxTitle}>Agro/Sales Dashboard</div>
                       <div style={s.checkboxSub}>
                         Manage orders, inventory, stock levels, sales reports
                       </div>
                     </div>
-                  </label>
-                  <label style={s.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      name="can_manage_loans"
-                      checked={formData.can_manage_loans}
-                      onChange={handleFormChange}
-                      style={s.checkbox}
-                    />
+                  </div>
+                  <div
+                    style={
+                      formData.can_manage_loans
+                        ? s.permCardSelected
+                        : s.permCard
+                    }
+                    onClick={() =>
+                      setFormData((p) => ({
+                        ...p,
+                        can_manage_loans: !p.can_manage_loans,
+                      }))
+                    }
+                  >
+                    <div
+                      style={
+                        formData.can_manage_loans
+                          ? s.permCheckOn
+                          : s.permCheckOff
+                      }
+                    >
+                      {formData.can_manage_loans && "✓"}
+                    </div>
                     <div>
                       <div style={s.checkboxTitle}>Loan Dashboard</div>
                       <div style={s.checkboxSub}>
                         Review applications, verify documents, manage repayments
                       </div>
                     </div>
-                  </label>
+                  </div>
                 </div>
               </div>
 
@@ -544,7 +595,8 @@ export default function ManageStaffPage() {
             })}
           </div>
         )}
-    </AdminLayout>
+      </AdminLayout>
+    </>
   );
 }
 
@@ -716,7 +768,7 @@ const s = {
   formSub: { fontSize: 13, color: "#888", marginBottom: 24, lineHeight: 1.6 },
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gridTemplateColumns: "repeat(3,1fr)",
     gap: 16,
     marginBottom: 20,
   },
@@ -742,11 +794,7 @@ const s = {
     color: "#333",
     marginBottom: 14,
   },
-  permissionsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: 14,
-  },
+  permissionsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
   checkboxLabel: {
     display: "flex",
     alignItems: "flex-start",
@@ -758,6 +806,52 @@ const s = {
     cursor: "pointer",
   },
   checkbox: { marginTop: 2, width: 16, height: 16, flexShrink: 0 },
+  permCard: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 12,
+    padding: 14,
+    background: "#fff",
+    borderRadius: 8,
+    border: "2px solid #e8e4dc",
+    cursor: "pointer",
+    userSelect: "none",
+  },
+  permCardSelected: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 12,
+    padding: 14,
+    background: "#f0f7ec",
+    borderRadius: 8,
+    border: "2px solid #1f4d1f",
+    cursor: "pointer",
+    userSelect: "none",
+  },
+  permCheckOff: {
+    marginTop: 2,
+    width: 20,
+    height: 20,
+    flexShrink: 0,
+    borderRadius: 5,
+    border: "2px solid #ccc",
+    background: "#fff",
+  },
+  permCheckOn: {
+    marginTop: 2,
+    width: 20,
+    height: 20,
+    flexShrink: 0,
+    borderRadius: 5,
+    border: "2px solid #1f4d1f",
+    background: "#1f4d1f",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 13,
+    fontWeight: 800,
+  },
   checkboxTitle: {
     fontSize: 13,
     fontWeight: 600,
@@ -798,11 +892,7 @@ const s = {
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: 18, fontWeight: 700, color: "#111", marginBottom: 8 },
   emptyText: { fontSize: 14, color: "#666" },
-  staffGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: 20,
-  },
+  staffGrid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 },
   staffCard: {
     background: "#fff",
     borderRadius: 12,
