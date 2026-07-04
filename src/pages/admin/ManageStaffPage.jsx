@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
-
+import api from "../../services/api";
 
 export default function ManageStaffPage() {
   const navigate = useNavigate();
@@ -166,7 +165,15 @@ export default function ManageStaffPage() {
   if (loading) return <div style={s.loader}>Loading Staff...</div>;
 
   return (
-    <>
+    <AdminLayout
+      title="Staff Management"
+      subtitle={`${staff.length} staff members`}
+      headerActions={
+        <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
+          {showForm ? "Cancel" : "+ Add Staff"}
+        </button>
+      }
+    >
       {toast && <div style={s.toast}>{toast}</div>}
 
       {/* Edit Modal */}
@@ -285,17 +292,7 @@ export default function ManageStaffPage() {
         </div>
       )}
 
-      {/* Sidebar */}
-      <AdminLayout
-        title="Staff Management"
-        subtitle={`${staff.length} staff members`}
-        headerActions={
-          <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
-            {showForm ? "Cancel" : "+ Add Staff"}
-          </button>
-        }
-      >
-        {/* Add Staff Form */}
+      {/* Add Staff Form */}
         {showForm && (
           <div style={s.formCard}>
             <h3 style={s.formTitle}>Create Staff Account</h3>
@@ -547,8 +544,7 @@ export default function ManageStaffPage() {
             })}
           </div>
         )}
-      </AdminLayout>
-    </>
+    </AdminLayout>
   );
 }
 

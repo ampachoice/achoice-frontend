@@ -36,6 +36,8 @@ const SETTINGS_ITEMS = [
  *  - badges                optional map of { "/admin/loans": 2, ... } for sidebar count badges
  *  - children               page content
  */
+const MOBILE_BREAKPOINT = 900;
+
 export default function AdminLayout({
   title,
   subtitle,
@@ -49,6 +51,27 @@ export default function AdminLayout({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
   const [autoBadges, setAutoBadges] = useState({});
+  const [isMobile, setIsMobile] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.innerWidth <= MOBILE_BREAKPOINT,
+  );
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
+      setIsMobile(mobile);
+      if (!mobile) setMobileNavOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Close the mobile drawer whenever the route changes (e.g. after nav click)
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -103,14 +126,34 @@ export default function AdminLayout({
 
   return (
     <div style={s.page}>
+      {/* Dimmed backdrop behind the drawer, mobile only */}
+      {isMobile && mobileNavOpen && (
+        <div style={s.backdrop} onClick={() => setMobileNavOpen(false)} />
+      )}
+
       {/* Sidebar */}
-      <div style={s.sidebar}>
+      <div
+        style={{
+          ...s.sidebar,
+          ...(isMobile ? s.sidebarMobile : {}),
+          ...(isMobile && mobileNavOpen ? s.sidebarMobileOpen : {}),
+        }}
+      >
         <div style={s.sidebarLogo}>
           <img src={LOGO_PATH} alt="Logo" style={s.sidebarLogoImg} />
           <div>
             <div style={s.sidebarLogoName}>ACHOICE</div>
             <div style={s.sidebarLogoSub}>Admin Panel</div>
           </div>
+          {isMobile && (
+            <button
+              style={s.sidebarCloseBtn}
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <nav style={s.sidebarNav}>
@@ -121,7 +164,10 @@ export default function AdminLayout({
                 ...s.sidebarItem,
                 ...(isActive(item.path) ? s.sidebarItemActive : {}),
               }}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                navigate(item.path);
+                setMobileNavOpen(false);
+              }}
             >
               <span style={s.sidebarIcon}>{item.icon}</span> {item.label}
               {mergedBadges[item.path] > 0 && (
@@ -148,11 +194,29 @@ export default function AdminLayout({
       </div>
 
       {/* Main */}
-      <div style={s.main}>
+      <div style={{ ...s.main, ...(isMobile ? s.mainMobile : {}) }}>
         <div style={s.header}>
-          <div>
-            <h1 style={s.headerTitle}>{title}</h1>
-            {subtitle && <p style={s.headerSub}>{subtitle}</p>}
+          <div style={s.headerTitleRow}>
+            {isMobile && (
+              <button
+                style={s.hamburgerBtn}
+                onClick={() => setMobileNavOpen(true)}
+                aria-label="Open menu"
+              >
+                ☰
+              </button>
+            )}
+            <div style={s.headerTitleCol}>
+              <h1
+                style={{
+                  ...s.headerTitle,
+                  ...(isMobile ? s.headerTitleMobile : {}),
+                }}
+              >
+                {title}
+              </h1>
+              {subtitle && <p style={s.headerSub}>{subtitle}</p>}
+            </div>
           </div>
 
           <div style={s.headerRight}>
@@ -231,6 +295,23 @@ const s = {
     left: 0,
     height: "100vh",
     overflowY: "auto",
+    zIndex: 600,
+  },
+  // On mobile the sidebar becomes an off-canvas drawer, hidden by default
+  sidebarMobile: {
+    width: "min(280px, 82vw)",
+    transform: "translateX(-100%)",
+    transition: "transform 0.25s ease",
+    boxShadow: "2px 0 16px rgba(0,0,0,0.25)",
+  },
+  sidebarMobileOpen: {
+    transform: "translateX(0)",
+  },
+  backdrop: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.45)",
+    zIndex: 550,
   },
   sidebarLogo: {
     display: "flex",
@@ -238,6 +319,17 @@ const s = {
     gap: 10,
     padding: 20,
     borderBottom: "1px solid rgba(255,255,255,0.1)",
+    position: "relative",
+  },
+  sidebarCloseBtn: {
+    marginLeft: "auto",
+    background: "none",
+    border: "none",
+    color: "#fff",
+    fontSize: 18,
+    cursor: "pointer",
+    padding: 4,
+    lineHeight: 1,
   },
   sidebarLogoImg: { width: 40, height: 40, objectFit: "contain" },
   sidebarLogoName: { fontSize: 14, fontWeight: 700, color: "#fff" },
@@ -299,6 +391,7 @@ const s = {
     cursor: "pointer",
   },
   main: { flex: 1, marginLeft: 240, padding: 32, minWidth: 0 },
+  mainMobile: { marginLeft: 0, padding: "16px 16px 32px", width: "100%" },
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -307,11 +400,35 @@ const s = {
     gap: 16,
     flexWrap: "wrap",
   },
+  headerTitleRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 12,
+    minWidth: 0,
+  },
+  headerTitleCol: { minWidth: 0 },
+  hamburgerBtn: {
+    width: 40,
+    height: 40,
+    flexShrink: 0,
+    borderRadius: 10,
+    border: "1px solid #e8e4dc",
+    background: "#fff",
+    fontSize: 18,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 700,
     color: "#111",
     marginBottom: 4,
+    wordBreak: "break-word",
+  },
+  headerTitleMobile: {
+    fontSize: 19,
   },
   headerSub: { fontSize: 14, color: "#888" },
   headerRight: {
