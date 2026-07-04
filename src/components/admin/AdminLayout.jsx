@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import api from "../../services/api";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -47,8 +48,37 @@ export default function AdminLayout({
   const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
+  const [autoBadges, setAutoBadges] = useState({});
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  useEffect(() => {
+    // Dashboard endpoint already returns pending orders + pending loans in one call
+    api
+      .get("/admin/dashboard")
+      .then((res) => {
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/orders": res.data?.overview?.pending_orders,
+          "/admin/loans": res.data?.loans?.pending_applications,
+        }));
+      })
+      .catch(() => {});
+
+    // No dedicated count endpoint for complaints — read the "total" from a
+    // filtered, paginated fetch instead of pulling every complaint down
+    api
+      .get("/admin/complaints", { params: { status: "pending" } })
+      .then((res) => {
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/complaints": res.data?.total,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const mergedBadges = { ...autoBadges, ...badges };
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -94,8 +124,8 @@ export default function AdminLayout({
               onClick={() => navigate(item.path)}
             >
               <span style={s.sidebarIcon}>{item.icon}</span> {item.label}
-              {badges[item.path] > 0 && (
-                <span style={s.badge}>{badges[item.path]}</span>
+              {mergedBadges[item.path] > 0 && (
+                <span style={s.badge}>{mergedBadges[item.path]}</span>
               )}
             </div>
           ))}

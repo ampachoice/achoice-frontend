@@ -176,7 +176,6 @@ export default function AdminDashboardPage() {
       title="Dashboard"
       subtitle={`Welcome back, ${user.name || "Admin"}`}
       showDate
-      badges={{ "/admin/loans": loans?.pending_applications }}
     >
         {loading ? (
           <p style={s.loading}>Loading dashboard...</p>
