@@ -442,6 +442,7 @@ export default function LoanRepayPage() {
                 {scheduleView === 'monthly' ? `₦${monthlyInstalment.toLocaleString()} / month` : `₦${weeklyInstalment.toLocaleString()} / week`}
               </div>
             </div>
+            <div style={{ overflowX: 'auto', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
             <div style={s.scheduleHeadRow}>
               <span>#</span><span>Due Date</span><span>Amount</span><span>Status</span>
             </div>
@@ -458,6 +459,7 @@ export default function LoanRepayPage() {
                   </span>
                 </div>
               ))}
+            </div>
             </div>
             <div style={s.modalSummary}>
               <span>Total: ₦{totalRepayment.toLocaleString()}</span>
@@ -504,7 +506,7 @@ const s = {
   verifyBannerSub: { fontSize: 13, color: '#555' },
   verifyBtn: { padding: '11px 24px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   verifyBtnDisabled: { padding: '11px 24px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, cursor: 'not-allowed', fontFamily: 'inherit' },
-  heroCard: { background: '#1a3d1a', borderRadius: 12, padding: 28, marginBottom: 20, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 },
+  heroCard: { background: '#1a3d1a', borderRadius: 12, padding: 28, marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 32 },
   heroLeft: {},
   heroBadge: { display: 'inline-block', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 99, marginBottom: 10, letterSpacing: 1 },
   heroAmount: { fontSize: 40, fontWeight: 900, color: '#fff', marginBottom: 4 },
@@ -522,12 +524,12 @@ const s = {
   progressBg: { background: 'rgba(255,255,255,0.15)', borderRadius: 99, height: 10, marginBottom: 6, overflow: 'hidden' },
   progressFill: { background: '#f0c050', height: 10, borderRadius: 99 },
   progressNote: { fontSize: 11, color: '#a8d5a8', marginBottom: 14 },
-  instalmentCards: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
+  instalmentCards: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 10 },
   instalmentCard: { background: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 12, textAlign: 'center' },
   instalmentIcon: { fontSize: 18, marginBottom: 4 },
   instalmentVal: { fontSize: 14, fontWeight: 700, color: '#f0c050' },
   instalmentLabel: { fontSize: 10, color: '#a8d5a8', marginTop: 2 },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 },
+  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12, marginBottom: 16 },
   statCard: { background: '#fff', borderRadius: 10, border: '1px solid #e8e4dc', padding: 16, textAlign: 'center' },
   statIcon: { fontSize: 20, marginBottom: 6 },
   statVal: { fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 2 },
@@ -572,9 +574,9 @@ const s = {
   modalTab: { padding: '7px 18px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13, color: '#555', cursor: 'pointer', background: '#fff', fontFamily: 'inherit' },
   modalTabActive: { padding: '7px 18px', border: '1px solid #1f4d1f', borderRadius: 6, fontSize: 13, color: '#fff', cursor: 'pointer', background: '#1f4d1f', fontFamily: 'inherit' },
   modalTabInfo: { marginLeft: 'auto', fontSize: 13, color: '#1f4d1f', fontWeight: 700 },
-  scheduleHeadRow: { display: 'grid', gridTemplateColumns: '40px 1fr 120px 100px', padding: '10px 24px', background: '#f7f5f0', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', flexShrink: 0 },
-  scheduleBody: { overflowY: 'auto', flex: 1 },
-  scheduleRow: { display: 'grid', gridTemplateColumns: '40px 1fr 120px 100px', padding: '11px 24px', borderBottom: '1px solid #f5f5f5', alignItems: 'center' },
+  scheduleHeadRow: { display: 'grid', gridTemplateColumns: '30px minmax(70px,1fr) minmax(80px,100px) minmax(80px,100px)', padding: '10px 16px', background: '#f7f5f0', fontSize: 11, fontWeight: 700, color: '#666', textTransform: 'uppercase', flexShrink: 0, gap: 8, minWidth: 420, whiteSpace: 'nowrap' },
+  scheduleBody: { overflowY: 'auto', overflowX: 'auto', flex: 1 },
+  scheduleRow: { display: 'grid', gridTemplateColumns: '30px minmax(70px,1fr) minmax(80px,100px) minmax(80px,100px)', padding: '11px 16px', borderBottom: '1px solid #f5f5f5', alignItems: 'center', gap: 8, minWidth: 420 },
   scheduleNum: { fontSize: 13, color: '#888' },
   scheduleDate: { fontSize: 13, color: '#333' },
   scheduleAmt: { fontSize: 13, fontWeight: 600, color: '#111' },

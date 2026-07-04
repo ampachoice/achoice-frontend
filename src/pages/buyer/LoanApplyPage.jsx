@@ -1334,14 +1334,16 @@ const s = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "28px 0",
+    padding: "28px 16px",
     gap: 0,
+    overflowX: "auto",
   },
   stepBarItem: {
     display: "flex",
     alignItems: "center",
     gap: 8,
     position: "relative",
+    flexShrink: 0,
   },
   stepCircle: {
     width: 32,
@@ -1352,19 +1354,20 @@ const s = {
     justifyContent: "center",
     fontSize: 13,
     fontWeight: 700,
+    flexShrink: 0,
   },
   stepLabel: { fontSize: 12, whiteSpace: "nowrap" },
-  stepLine: { width: 48, height: 2, margin: "0 8px" },
+  stepLine: { width: 48, height: 2, margin: "0 8px", flexShrink: 0 },
 
   // Layout
   container: { maxWidth: 1060, margin: "0 auto", padding: "0 16px 60px" },
   layout: {
-    display: "grid",
-    gridTemplateColumns: "1fr 280px",
+    display: "flex",
+    flexWrap: "wrap",
     gap: 24,
-    alignItems: "start",
+    alignItems: "flex-start",
   },
-  formCol: {},
+  formCol: { flex: "3 1 320px", minWidth: 280 },
 
   // Card
   card: {
@@ -1575,7 +1578,7 @@ const s = {
   },
   reviewGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
     gap: 10,
     marginBottom: 8,
   },
@@ -1709,6 +1712,8 @@ const s = {
     gap: 16,
     position: "sticky",
     top: 80,
+    flex: "1 1 260px",
+    minWidth: 240,
   },
   infoCard: { background: "#1f4d1f", borderRadius: 12, padding: 22 },
   infoCardTitle: {
