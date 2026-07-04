@@ -124,6 +124,53 @@ export default function AdminLayout({
     isActive(item.path),
   );
 
+  const dateNode = showDate ? (
+    <div style={s.headerDate}>
+      {new Date().toLocaleDateString("en-NG", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })}
+    </div>
+  ) : null;
+
+  const settingsMenu = (
+    <div style={s.settingsWrap} ref={settingsRef}>
+      <button
+        style={{
+          ...s.settingsBtn,
+          ...(isSettingsActive ? s.settingsBtnActive : {}),
+        }}
+        onClick={() => setSettingsOpen((v) => !v)}
+        title="Settings"
+      >
+        ⚙️
+      </button>
+
+      {settingsOpen && (
+        <div style={s.settingsDropdown}>
+          {SETTINGS_ITEMS.map((item) => (
+            <div
+              key={item.path}
+              style={{
+                ...s.settingsDropdownItem,
+                ...(isActive(item.path) ? s.settingsDropdownItemActive : {}),
+              }}
+              onClick={() => {
+                setSettingsOpen(false);
+                navigate(item.path);
+              }}
+            >
+              <span style={{ fontSize: 15 }}>{item.icon}</span>
+              {item.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div style={s.page}>
       {/* Dimmed backdrop behind the drawer, mobile only */}
@@ -195,86 +242,57 @@ export default function AdminLayout({
 
       {/* Main */}
       <div style={{ ...s.main, ...(isMobile ? s.mainMobile : {}) }}>
-        <div style={s.header}>
-          <div style={s.headerTitleRow}>
-            {isMobile && (
-              <button
-                style={s.hamburgerBtn}
-                onClick={() => setMobileNavOpen(true)}
-                aria-label="Open menu"
-              >
-                ☰
-              </button>
-            )}
-            <div style={s.headerTitleCol}>
-              <h1
-                style={{
-                  ...s.headerTitle,
-                  ...(isMobile ? s.headerTitleMobile : {}),
-                }}
-              >
-                {title}
-              </h1>
-              {subtitle && <p style={s.headerSub}>{subtitle}</p>}
-            </div>
-          </div>
-
-          <div style={s.headerRight}>
-            {showDate && (
-              <div style={s.headerDate}>
-                {new Date().toLocaleDateString("en-NG", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+        <div
+          style={{ ...s.header, ...(isMobile ? s.headerMobile : {}) }}
+        >
+          {isMobile ? (
+            <>
+              {/* Row 1: hamburger (left) + settings gear (right) */}
+              <div style={s.mobileTopRow}>
+                <button
+                  style={s.hamburgerBtn}
+                  onClick={() => setMobileNavOpen(true)}
+                  aria-label="Open menu"
+                >
+                  ☰
+                </button>
+                {settingsMenu}
               </div>
-            )}
 
-            {headerActions}
+              {/* Row 2: title + subtitle + date, left aligned */}
+              <div style={s.mobileTitleBlock}>
+                <h1 style={{ ...s.headerTitle, ...s.headerTitleMobile }}>
+                  {title}
+                </h1>
+                {subtitle && <p style={s.headerSub}>{subtitle}</p>}
+                {dateNode}
+              </div>
 
-            {/* Settings gear dropdown */}
-            <div style={s.settingsWrap} ref={settingsRef}>
-              <button
-                style={{
-                  ...s.settingsBtn,
-                  ...(isSettingsActive ? s.settingsBtnActive : {}),
-                }}
-                onClick={() => setSettingsOpen((v) => !v)}
-                title="Settings"
-              >
-                ⚙️
-              </button>
-
-              {settingsOpen && (
-                <div style={s.settingsDropdown}>
-                  {SETTINGS_ITEMS.map((item) => (
-                    <div
-                      key={item.path}
-                      style={{
-                        ...s.settingsDropdownItem,
-                        ...(isActive(item.path)
-                          ? s.settingsDropdownItemActive
-                          : {}),
-                      }}
-                      onClick={() => {
-                        setSettingsOpen(false);
-                        navigate(item.path);
-                      }}
-                    >
-                      <span style={{ fontSize: 15 }}>{item.icon}</span>
-                      {item.label}
-                    </div>
-                  ))}
-                </div>
+              {/* Row 3: page-specific action button(s), own row */}
+              {headerActions && (
+                <div style={s.mobileHeaderActions}>{headerActions}</div>
               )}
-            </div>
-          </div>
+            </>
+          ) : (
+            <>
+              <div style={s.headerTitleCol}>
+                <h1 style={s.headerTitle}>{title}</h1>
+                {subtitle && <p style={s.headerSub}>{subtitle}</p>}
+              </div>
+
+              <div style={s.headerRight}>
+                {dateNode}
+                {headerActions}
+                {settingsMenu}
+              </div>
+            </>
+          )}
         </div>
 
         {children}
       </div>
     </div>
+
   );
 }
 
@@ -400,6 +418,28 @@ const s = {
     gap: 16,
     flexWrap: "wrap",
   },
+  headerMobile: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    marginBottom: 20,
+  },
+  mobileTopRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  mobileTitleBlock: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+  },
+  mobileHeaderActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 10,
+  },
   headerTitleRow: {
     display: "flex",
     alignItems: "flex-start",
@@ -429,6 +469,7 @@ const s = {
   },
   headerTitleMobile: {
     fontSize: 19,
+    marginBottom: 0,
   },
   headerSub: { fontSize: 14, color: "#888" },
   headerRight: {
