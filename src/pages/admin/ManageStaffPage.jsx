@@ -768,7 +768,7 @@ const s = {
   formSub: { fontSize: 13, color: "#888", marginBottom: 24, lineHeight: 1.6 },
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
     gap: 16,
     marginBottom: 20,
   },
@@ -794,7 +794,11 @@ const s = {
     color: "#333",
     marginBottom: 14,
   },
-  permissionsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 },
+  permissionsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 14,
+  },
   checkboxLabel: {
     display: "flex",
     alignItems: "flex-start",
@@ -892,7 +896,11 @@ const s = {
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: 18, fontWeight: 700, color: "#111", marginBottom: 8 },
   emptyText: { fontSize: 14, color: "#666" },
-  staffGrid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 },
+  staffGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: 20,
+  },
   staffCard: {
     background: "#fff",
     borderRadius: 12,
