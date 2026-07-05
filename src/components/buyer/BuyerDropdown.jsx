@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ──────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // BuyerDropdown — drop this into any buyer page navbar
 //
 // Usage:
@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 // Optional props:
 //   cartCount  — number shown on cart badge (default 0)
 //   onLogout   — custom logout handler (default: clears localStorage + /login)
-// ──────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function BuyerDropdown({ cartCount = 0, onLogout }) {
   const navigate = useNavigate();
@@ -58,10 +58,10 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
     { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
     { icon: "📋", label: "My Loans", path: "/loans/repay" },
     { icon: "📝", label: "Complaints & Refunds", path: "/complaints" },
-    { icon: "🔔", label: "Notifications", path: "/notifications" },
   ];
 
   if (!user) {
+    // Not logged in — show sign in / register buttons
     return (
       <div style={s.authRow}>
         <button style={s.btnOutline} onClick={() => navigate("/login")}>
@@ -100,6 +100,7 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
               <div style={s.menuEmail}>{user.email}</div>
             </div>
           </div>
+
           <div style={s.divider} />
 
           {/* Menu items */}
@@ -125,7 +126,7 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 
           {/* Logout */}
           <div
-            style={s.menuItem}
+            style={s.logoutItem}
             onClick={handleLogout}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
             onMouseLeave={(e) =>
@@ -142,17 +143,27 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 }
 
 const s = {
-  wrapper: { position: "relative" },
+  // Fixed to the viewport corner — this is deliberate: it guarantees the
+  // account menu always renders in the same top-right spot on every page,
+  // regardless of that page's own nav layout, padding, or overflow issues.
+  wrapper: {
+    position: "fixed",
+    top: 12,
+    right: 14,
+    zIndex: 2000,
+  },
+
   trigger: {
     display: "flex",
     alignItems: "center",
     gap: 8,
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.2)",
+    background: "#1f4d1f",
+    border: "1px solid rgba(255,255,255,0.25)",
     borderRadius: 99,
     padding: "5px 12px 5px 5px",
     cursor: "pointer",
     userSelect: "none",
+    boxShadow: "0 3px 10px rgba(0,0,0,0.25)",
   },
   avatar: {
     width: 30,
@@ -167,93 +178,96 @@ const s = {
     fontSize: 13,
     flexShrink: 0,
   },
-  triggerInfo: { display: "flex", flexDirection: "column", gap: 1 },
-  triggerName: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: "#fff",
-    lineHeight: 1.2,
-  },
+  triggerInfo: {},
+  triggerName: { fontSize: 13, fontWeight: 600, color: "#fff" },
   chevron: {
-    fontSize: 12,
-    color: "#fff",
+    fontSize: 11,
+    color: "rgba(255,255,255,0.7)",
     transition: "transform 0.2s",
-    marginLeft: 2,
   },
+
   menu: {
     position: "absolute",
     top: "calc(100% + 10px)",
     right: 0,
-    width: 240,
     background: "#fff",
     borderRadius: 12,
-    boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-    zIndex: 1000,
-    overflow: "hidden",
     border: "1px solid #e8e4dc",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.24)",
+    minWidth: 230,
+    maxWidth: "calc(100vw - 28px)",
+    zIndex: 2000,
+    overflow: "hidden",
   },
   menuHeader: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     padding: "14px 16px",
-    background: "#1f4d1f",
+    background: "#f7f5f0",
   },
   menuAvatar: {
     width: 36,
     height: 36,
     borderRadius: "50%",
-    background: "#f0c050",
-    color: "#1a3d1a",
+    background: "#1f4d1f",
+    color: "#f0c050",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontWeight: 700,
-    fontSize: 14,
+    fontSize: 15,
     flexShrink: 0,
   },
-  menuName: { fontSize: 13, fontWeight: 700, color: "#fff" },
-  menuEmail: { fontSize: 11, color: "#a8d5a8", marginTop: 1 },
+  menuName: { fontSize: 14, fontWeight: 600, color: "#111" },
+  menuEmail: { fontSize: 11, color: "#888", marginTop: 2 },
   divider: { height: 1, background: "#f0ece4" },
   menuItem: {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    padding: "10px 16px",
+    padding: "11px 16px",
     cursor: "pointer",
     transition: "background 0.15s",
   },
-  menuIcon: { fontSize: 16, width: 20, textAlign: "center", flexShrink: 0 },
-  menuLabel: { fontSize: 13, color: "#333", flex: 1 },
+  menuIcon: { fontSize: 16, width: 22, textAlign: "center", flexShrink: 0 },
+  menuLabel: { fontSize: 14, color: "#333", flex: 1 },
   menuBadge: {
-    background: "#cc0000",
-    color: "#fff",
+    background: "#f0c050",
+    color: "#1a1a1a",
     fontSize: 10,
     fontWeight: 700,
+    padding: "2px 7px",
     borderRadius: 99,
-    padding: "1px 6px",
-    flexShrink: 0,
   },
-  authRow: { display: "flex", gap: 8, alignItems: "center" },
-  btnOutline: {
-    padding: "7px 14px",
-    border: "1px solid rgba(255,255,255,0.5)",
-    borderRadius: 6,
-    background: "transparent",
-    color: "#fff",
-    fontSize: 13,
+  logoutItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "11px 16px",
     cursor: "pointer",
-    fontFamily: "inherit",
+    transition: "background 0.15s",
+  },
+
+  // Not-logged-in state
+  authRow: { display: "flex", gap: 10 },
+  btnOutline: {
+    padding: "8px 16px",
+    border: "1px solid rgba(255,255,255,0.5)",
+    color: "#fff",
+    borderRadius: 6,
+    fontSize: 13,
+    background: "transparent",
+    cursor: "pointer",
   },
   btnSolid: {
-    padding: "7px 14px",
-    border: "none",
-    borderRadius: 6,
+    padding: "8px 16px",
     background: "#f0c050",
     color: "#1a3d1a",
+    border: "none",
+    borderRadius: 6,
     fontSize: 13,
     fontWeight: 600,
     cursor: "pointer",
-    fontFamily: "inherit",
   },
 };
