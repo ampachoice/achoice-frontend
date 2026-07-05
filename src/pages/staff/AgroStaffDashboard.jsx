@@ -168,10 +168,17 @@ export default function AgroStaffDashboard() {
   );
 
   return (
+    <>
+      <style>{`
+        @media (max-width: 768px) {
+          .agro-staff-sidebar { display: none; }
+          .agro-staff-main { margin-left: 0 !important; padding: 16px !important; }
+        }
+      `}</style>
     <div style={s.page}>
       {toast && <div style={s.toast}>{toast}</div>}
 
-      <div style={s.sidebar}>
+      <div className="agro-staff-sidebar" style={s.sidebar}>
         <div style={s.sidebarLogo}>
           <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
           <div>
@@ -224,7 +231,7 @@ export default function AgroStaffDashboard() {
         </div>
       </div>
 
-      <div style={s.main}>
+      <div className="agro-staff-main" style={s.main}>
         {/* Dashboard */}
         {activeTab === "dashboard" && (
           <div>
@@ -723,6 +730,7 @@ export default function AgroStaffDashboard() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
@@ -802,7 +810,7 @@ const s = {
   loading: { textAlign: "center", color: "#888", padding: 40 },
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: 14,
     marginBottom: 20,
   },
@@ -899,6 +907,8 @@ const s = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    flexWrap: "wrap",
+    gap: 8,
     marginBottom: 12,
   },
   orderId: { fontSize: 15, fontWeight: 700, color: "#111", marginBottom: 4 },
@@ -1029,7 +1039,7 @@ const s = {
   empty: { textAlign: "center", color: "#888", padding: 40 },
   lowStockGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4,1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
     gap: 10,
     marginTop: 10,
   },
@@ -1049,10 +1059,10 @@ const s = {
   tableCard: {
     background: "#fff",
     borderRadius: 12,
-    overflow: "hidden",
+    overflowX: "auto",
     border: "1px solid #e8e4dc",
   },
-  table: { width: "100%", borderCollapse: "collapse" },
+  table: { width: "100%", minWidth: 640, borderCollapse: "collapse" },
   tableHead: { background: "#f7f5f0", borderBottom: "2px solid #eee" },
   th: {
     padding: "12px 16px",
@@ -1074,7 +1084,11 @@ const s = {
     fontSize: 11,
     fontWeight: 600,
   },
-  reportsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 },
+  reportsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: 20,
+  },
   reportCard: {
     background: "#fff",
     borderRadius: 12,

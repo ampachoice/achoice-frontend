@@ -701,6 +701,13 @@ export default function LoanStaffDashboard() {
   })();
 
   return (
+    <>
+      <style>{`
+        @media (max-width: 768px) {
+          .loan-staff-sidebar { display: none; }
+          .loan-staff-main { margin-left: 0 !important; padding: 16px !important; }
+        }
+      `}</style>
     <div style={s.page}>
       {toast && <div style={s.toast}>{toast}</div>}
 
@@ -830,7 +837,7 @@ export default function LoanStaffDashboard() {
       )}
 
       {/* Sidebar */}
-      <div style={s.sidebar}>
+      <div className="loan-staff-sidebar" style={s.sidebar}>
         <div style={s.sidebarLogo}>
           <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
           <div>
@@ -886,7 +893,7 @@ export default function LoanStaffDashboard() {
       </div>
 
       {/* Main */}
-      <div style={s.main}>
+      <div className="loan-staff-main" style={s.main}>
         {/* DASHBOARD */}
         {activeTab === "dashboard" && (
           <div>
@@ -2148,6 +2155,7 @@ export default function LoanStaffDashboard() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
@@ -2286,7 +2294,11 @@ const s = {
     letterSpacing: 0.5,
     marginBottom: 14,
   },
-  previewBoxGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
+  previewBoxGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: 12,
+  },
   previewBoxItem: {},
   previewBoxLabel: { fontSize: 11, color: "#888", marginBottom: 3 },
   previewBoxVal: { fontSize: 15, fontWeight: 600, color: "#111" },
@@ -2410,7 +2422,7 @@ const s = {
   },
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: 14,
     marginBottom: 24,
   },
@@ -2634,7 +2646,7 @@ const s = {
   },
   applyGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
     gap: 16,
   },
   field: { display: "flex", flexDirection: "column", gap: 5 },
@@ -2665,7 +2677,7 @@ const s = {
   },
   previewGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
     gap: 14,
   },
   previewItem: {},
@@ -2679,7 +2691,7 @@ const s = {
   },
   docsGrid2: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
     gap: 16,
   },
   docUploadField: { display: "flex", flexDirection: "column", gap: 6 },
@@ -2800,7 +2812,7 @@ const s = {
   appDate: { fontSize: 12, color: "#aaa", marginTop: 6 },
   appDetails: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
     gap: 12,
     padding: "14px 0",
     borderTop: "1px solid #eee",
@@ -2956,7 +2968,7 @@ const s = {
   noDocsText: { fontSize: 13, color: "#888" },
   docsCardGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
     gap: 12,
     marginBottom: 16,
   },
@@ -3091,10 +3103,10 @@ const s = {
   tableCard: {
     background: "#fff",
     borderRadius: 12,
-    overflow: "hidden",
+    overflowX: "auto",
     border: "1px solid #e8e4dc",
   },
-  table: { width: "100%", borderCollapse: "collapse" },
+  table: { width: "100%", minWidth: 640, borderCollapse: "collapse" },
   tableHead: { background: "#f7f5f0", borderBottom: "2px solid #eee" },
   th: {
     padding: "12px 16px",
