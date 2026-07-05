@@ -95,15 +95,16 @@ export default function ProfilePage() {
         .pf-topbar-left, .pf-topbar-right { display:flex; gap:24px; flex-wrap:wrap; }
 
         /* ── Navbar ── */
-        .pf-nav { background:#1f4d1f; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:12px; flex-wrap:wrap; }
-        .pf-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
-        .pf-nav-logo-img { width:45px; height:45px; object-fit:contain; }
-        .pf-nav-logo-name { font-size:15px; font-weight:700; color:#fff; }
-        .pf-nav-logo-tag { font-size:10px; color:#888; }
-        .pf-nav-links { display:flex; gap:28px; align-items:center; flex-wrap:wrap; }
+        .pf-nav { background:#1f4d1f; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:12px; }
+        .pf-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; flex:1 1 auto; }
+        .pf-nav-brand > div { min-width:0; overflow:hidden; }
+        .pf-nav-logo-img { width:45px; height:45px; object-fit:contain; flex-shrink:0; }
+        .pf-nav-logo-name { font-size:15px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pf-nav-logo-tag { font-size:10px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pf-nav-links { display:flex; gap:28px; align-items:center; flex-shrink:0; }
         .pf-nav-link { color:#fff; font-size:14px; cursor:pointer; white-space:nowrap; }
         .pf-cart-badge { background:#f0c050; color:#1a1a1a; font-size:10px; font-weight:700; border-radius:50%; padding:1px 5px; margin-left:4px; }
-        .pf-nav-right { display:flex; align-items:center; gap:14px; flex-shrink:0; margin-left:auto; }
+        .pf-nav-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
 
         /* ── Container ── */
         .pf-container { max-width:900px; margin:0 auto; padding:32px 16px; flex:1; }

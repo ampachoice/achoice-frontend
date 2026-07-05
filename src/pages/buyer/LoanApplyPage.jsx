@@ -510,8 +510,8 @@ export default function LoanApplyPage() {
       <div className="la-hero">
         <div style={s.heroContent}>
           <div style={s.heroBadge}>ACHOICE Farm Finance</div>
-          <h1 style={s.heroTitle}>Apply for an Agricultural Loan</h1>
-          <p style={s.heroSubtitle}>
+          <h1 className="la-hero-title">Apply for an Agricultural Loan</h1>
+          <p className="la-hero-subtitle">
             Quick, affordable loans for farmers and agro-businesses. Apply in
             minutes.
           </p>
@@ -539,16 +539,24 @@ export default function LoanApplyPage() {
           </div>
       <style>{`
         .la-hero { background:#1a3d1a; padding:48px 60px; }
+        .la-hero-title { font-size:32px; font-weight:700; color:#fff; margin:0 0 10px; line-height:1.2; }
+        .la-hero-subtitle { font-size:15px; color:#a8d5a8; margin:0 0 28px; }
         .la-hero-stats { display:flex; flex-wrap:wrap; gap:32px 24px; align-items:center; }
         .la-hero-stat-group { position:relative; }
         .la-hero-stat-divider { position:absolute; right:-16px; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.2); }
         @media (max-width:900px) {
           .la-hero { padding:36px 24px; }
+          .la-hero-title { font-size:26px; }
         }
         @media (max-width:600px) {
-          .la-hero { padding:28px 18px; }
-          .la-hero-stats { gap:20px 24px; }
+          .la-hero { padding:24px 18px; }
+          .la-hero-title { font-size:21px; }
+          .la-hero-subtitle { font-size:13px; margin-bottom:20px; }
+          .la-hero-stats { gap:16px 24px; }
           .la-hero-stat-divider { display:none; }
+        }
+        @media (max-width:380px) {
+          .la-hero-title { font-size:19px; }
         }
       `}</style>
         </div>
