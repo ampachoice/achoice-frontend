@@ -15,6 +15,7 @@ export default function StaffComplaintDetailPage() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending]     = useState(false);
   const [toast, setToast]         = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   let user = null;
   try { user = JSON.parse(localStorage.getItem("user")); } catch {}
@@ -97,24 +98,51 @@ export default function StaffComplaintDetailPage() {
         .scd-send-btn { padding:12px 20px; background:#1f4d1f; color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
         .scd-send-btn:disabled { background:#aaa; cursor:not-allowed; }
         .scd-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1f4d1f; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; z-index:9999; }
-        @media(max-width:600px) { .scd-main { padding:16px; margin-left:0; } .scd-sidebar { display:none; } }
+        .scd-hamburger { display:none; }
+        .scd-backdrop { display:none; }
+        .scd-sidebar-close { display:none; }
+        @media(max-width:600px) {
+          .scd-main { padding:16px; margin-left:0; }
+          .scd-sidebar {
+            width:min(280px,82vw);
+            transform:translateX(-100%);
+            transition:transform 0.25s ease;
+            box-shadow:2px 0 16px rgba(0,0,0,0.25);
+            z-index:600;
+          }
+          .scd-sidebar.scd-sidebar-open { transform:translateX(0); }
+          .scd-hamburger {
+            display:flex; align-items:center; justify-content:center;
+            width:40px; height:40px; border-radius:10px; border:1px solid #e8e4dc;
+            background:#fff; font-size:18px; cursor:pointer; flex-shrink:0;
+          }
+          .scd-backdrop.scd-backdrop-open {
+            display:block; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:550;
+          }
+          .scd-sidebar-close { display:block; margin-left:auto; background:none; border:none; color:#fff; font-size:18px; cursor:pointer; }
+          .scd-topbar { justify-content:space-between; }
+        }
       `}</style>
 
       <div className="scd-shell">
-        <div className="scd-sidebar">
+        {mobileNavOpen && (
+          <div className="scd-backdrop scd-backdrop-open" onClick={() => setMobileNavOpen(false)} />
+        )}
+        <div className={"scd-sidebar" + (mobileNavOpen ? " scd-sidebar-open" : "")}>
           <div className="scd-sidebar-logo">
             <img src={LOGO_PATH} alt="Achoice" />
             <div>
               <div className="scd-sidebar-name">ACHOICE</div>
               <div className="scd-sidebar-sub">Staff Panel</div>
             </div>
+            <button className="scd-sidebar-close" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">✕</button>
           </div>
           <nav className="scd-sidebar-nav">
             {navItems.map((item) => (
               <div
                 key={item.label}
                 className={"scd-sidebar-item" + (item.active ? " scd-sidebar-item-active" : "")}
-                onClick={() => navigate(item.path)}
+                onClick={() => { navigate(item.path); setMobileNavOpen(false); }}
               >
                 <span>{item.icon}</span> {item.label}
               </div>
@@ -134,6 +162,7 @@ export default function StaffComplaintDetailPage() {
 
         <div className="scd-main">
           <div className="scd-topbar">
+            <button className="scd-hamburger" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">☰</button>
             <NotificationBell />
           </div>
 
