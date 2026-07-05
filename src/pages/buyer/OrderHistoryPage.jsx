@@ -229,10 +229,11 @@ if (reference) {
         .oh-topbar { background:#1f4d1f; color:#fff; padding:8px 60px; display:flex; justify-content:space-between; font-size:12px; gap:16px; }
         .oh-topbar-left, .oh-topbar-right { display:flex; gap:24px; flex-wrap:wrap; }
         .oh-nav { background:#1a3d1a; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:16px; }
-        .oh-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; }
+        .oh-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; flex:1 1 auto; overflow:hidden; }
+        .oh-nav-brand > div { min-width:0; overflow:hidden; }
         .oh-nav-logo-img { width:45px; height:45px; object-fit:contain; flex-shrink:0; }
-        .oh-nav-logo-name { font-size:15px; font-weight:700; color:#fff; white-space:nowrap; }
-        .oh-nav-logo-tag { font-size:10px; color:#fff; white-space:nowrap; }
+        .oh-nav-logo-name { font-size:15px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .oh-nav-logo-tag { font-size:10px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .oh-nav-links { display:flex; gap:28px; align-items:center; flex-shrink:0; }
         .oh-nav-link { color:#fff; font-size:14px; cursor:pointer; white-space:nowrap; }
         .oh-nav-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }

@@ -304,10 +304,11 @@ export default function LoanApplyPage() {
         </nav>
         <style>{`
           .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
-          .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; }
+          .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; }
+          .la-nav-brand > div { min-width:0; overflow:hidden; }
           .la-nav-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
-          .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; }
-          .la-nav-tag { font-size:10px; color:#888; white-space:nowrap; }
+          .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .la-nav-tag { font-size:10px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
           @media (max-width:420px) {
             .la-nav { padding:10px 14px; }
             .la-nav-tag { display:none; }
@@ -483,10 +484,11 @@ export default function LoanApplyPage() {
 
       <style>{`
         .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
-        .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; }
+        .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; flex:1 1 auto; }
+        .la-nav-brand > div { min-width:0; overflow:hidden; }
         .la-nav-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
-        .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; }
-        .la-nav-tag { font-size:10px; color:#888; white-space:nowrap; }
+        .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .la-nav-tag { font-size:10px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .la-nav-links { display:flex; gap:24px; flex-shrink:0; }
         .la-nav-link { color:#555; font-size:14px; cursor:pointer; white-space:nowrap; }
         .la-nav-actions { display:flex; align-items:center; gap:16px; flex-shrink:0; }

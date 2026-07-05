@@ -196,17 +196,17 @@ export default function LoanRepayPage() {
       )}
 
       {/* Navbar */}
-      <nav style={s.nav}>
-        <div style={s.navLeft} onClick={() => navigate('/products')}>
-          <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
-          <div style={s.logoText}>ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span></div>
+      <nav className="lr-nav">
+        <div className="lr-nav-brand" onClick={() => navigate('/products')}>
+          <img src="/android-chrome-192x192.png" alt="Logo" className="lr-nav-logo" />
+          <div className="lr-nav-name">ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span></div>
         </div>
-        <div style={s.navLinks}>
-          <span style={s.navLink} onClick={() => navigate('/')}>Home</span>
-          <span style={s.navLink} onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          <span style={s.navLink} onClick={() => navigate('/orders')}>My Orders</span>
+        <div className="lr-nav-links">
+          <span className="lr-nav-link" onClick={() => navigate('/')}>Home</span>
+          <span className="lr-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
+          <span className="lr-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
-        <div style={s.navRight}>
+        <div className="lr-nav-actions">
           <div style={s.cartIcon} onClick={() => navigate('/cart')}>
             🛒 {cartCount > 0 && <span style={s.badge}>{cartCount}</span>}
           </div>
@@ -214,6 +214,28 @@ export default function LoanRepayPage() {
           <BuyerDropdown cartCount={cartCount} />
         </div>
       </nav>
+
+      <style>{`
+        .lr-nav { background:#1f4d1f; padding:12px 40px; display:flex; justify-content:space-between; align-items:center; color:#fff; position:sticky; top:0; z-index:100; gap:16px; }
+        .lr-nav-brand { display:flex; align-items:center; gap:12px; cursor:pointer; min-width:0; overflow:hidden; flex:1 1 auto; }
+        .lr-nav-logo { width:35px; height:35px; border-radius:4px; flex-shrink:0; }
+        .lr-nav-name { font-weight:bold; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .lr-nav-links { display:flex; gap:24px; align-items:center; flex-shrink:0; }
+        .lr-nav-link { color:#f0c050; font-size:14px; cursor:pointer; font-weight:500; white-space:nowrap; }
+        .lr-nav-actions { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+
+        @media (max-width:900px) {
+          .lr-nav { padding:12px 20px; }
+          .lr-nav-links { gap:14px; }
+        }
+        @media (max-width:700px) {
+          .lr-nav-links { display:none; }
+        }
+        @media (max-width:420px) {
+          .lr-nav { padding:10px 14px; }
+          .lr-nav-name { font-size:15px; }
+        }
+      `}</style>
 
       <div style={s.container}>
         <div style={s.pageTitleRow}>
