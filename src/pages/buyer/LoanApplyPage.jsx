@@ -293,15 +293,26 @@ export default function LoanApplyPage() {
   if (success) {
     return (
       <div style={s.page}>
-        <nav style={s.nav}>
-          <div style={s.navBrand} onClick={() => navigate("/")}>
-            <img src={LOGO_PATH} alt="Achoice" style={s.navLogo} />
+        <nav className="la-nav">
+          <div className="la-nav-brand" onClick={() => navigate("/")}>
+            <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
             <div>
-              <div style={s.navName}>ACHOICE LIMITED</div>
-              <div style={s.navTag}>Your needs our solutions</div>
+              <div className="la-nav-name">ACHOICE LIMITED</div>
+              <div className="la-nav-tag">Your needs our solutions</div>
             </div>
           </div>
         </nav>
+        <style>{`
+          .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
+          .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; }
+          .la-nav-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
+          .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; }
+          .la-nav-tag { font-size:10px; color:#888; white-space:nowrap; }
+          @media (max-width:420px) {
+            .la-nav { padding:10px 14px; }
+            .la-nav-tag { display:none; }
+          }
+        `}</style>
         <div style={s.successContainer}>
           <div style={s.successCard}>
             <div style={s.successIconCircle}>✓</div>
@@ -442,26 +453,26 @@ export default function LoanApplyPage() {
       {showTerms && <TermsModal />}
 
       {/* Navbar */}
-      <nav style={s.nav}>
-        <div style={s.navBrand} onClick={() => navigate("/")}>
-          <img src={LOGO_PATH} alt="Achoice" style={s.navLogo} />
+      <nav className="la-nav">
+        <div className="la-nav-brand" onClick={() => navigate("/")}>
+          <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
           <div>
-            <div style={s.navName}>ACHOICE LIMITED</div>
-            <div style={s.navTag}>Your needs our solutions</div>
+            <div className="la-nav-name">ACHOICE LIMITED</div>
+            <div className="la-nav-tag">Your needs our solutions</div>
           </div>
         </div>
-        <div style={s.navLinks}>
-          <span style={s.navLink} onClick={() => navigate("/")}>
+        <div className="la-nav-links">
+          <span className="la-nav-link" onClick={() => navigate("/")}>
             Home
           </span>
-          <span style={s.navLink} onClick={() => navigate("/products")}>
+          <span className="la-nav-link" onClick={() => navigate("/products")}>
             Shop
           </span>
-          <span style={s.navLink} onClick={() => navigate("/loans/repay")}>
+          <span className="la-nav-link" onClick={() => navigate("/loans/repay")}>
             My Loans
           </span>
         </div>
-        <div style={s.navRight}>
+        <div className="la-nav-actions">
           <div style={s.cartIcon} onClick={() => navigate("/cart")}>
             🛒 {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
           </div>
@@ -470,8 +481,31 @@ export default function LoanApplyPage() {
         </div>
       </nav>
 
+      <style>{`
+        .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
+        .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; }
+        .la-nav-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
+        .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; }
+        .la-nav-tag { font-size:10px; color:#888; white-space:nowrap; }
+        .la-nav-links { display:flex; gap:24px; flex-shrink:0; }
+        .la-nav-link { color:#555; font-size:14px; cursor:pointer; white-space:nowrap; }
+        .la-nav-actions { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+
+        @media (max-width:900px) {
+          .la-nav { padding:12px 20px; }
+          .la-nav-links { gap:14px; }
+        }
+        @media (max-width:700px) {
+          .la-nav-links { display:none; }
+        }
+        @media (max-width:420px) {
+          .la-nav { padding:10px 14px; }
+          .la-nav-tag { display:none; }
+        }
+      `}</style>
+
       {/* Hero */}
-      <div style={s.heroBanner}>
+      <div className="la-hero">
         <div style={s.heroContent}>
           <div style={s.heroBadge}>ACHOICE Farm Finance</div>
           <h1 style={s.heroTitle}>Apply for an Agricultural Loan</h1>
@@ -479,7 +513,7 @@ export default function LoanApplyPage() {
             Quick, affordable loans for farmers and agro-businesses. Apply in
             minutes.
           </p>
-          <div style={s.heroStats}>
+          <div className="la-hero-stats">
             {[
               {
                 val: `₦${Number(maxAmount).toLocaleString()}`,
@@ -492,13 +526,29 @@ export default function LoanApplyPage() {
               },
               { val: "Paystack", label: "Repay Method" },
             ].map((stat, i, arr) => (
-              <div key={stat.label} style={s.heroStatGroup}>
+              <div key={stat.label} className="la-hero-stat-group">
                 <div style={s.heroStatVal}>{stat.val}</div>
                 <div style={s.heroStatLabel}>{stat.label}</div>
-                {i < arr.length - 1 && <div style={s.heroStatDivider} />}
+                {i < arr.length - 1 && (
+                  <div className="la-hero-stat-divider" />
+                )}
               </div>
             ))}
           </div>
+      <style>{`
+        .la-hero { background:#1a3d1a; padding:48px 60px; }
+        .la-hero-stats { display:flex; flex-wrap:wrap; gap:32px 24px; align-items:center; }
+        .la-hero-stat-group { position:relative; }
+        .la-hero-stat-divider { position:absolute; right:-16px; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.2); }
+        @media (max-width:900px) {
+          .la-hero { padding:36px 24px; }
+        }
+        @media (max-width:600px) {
+          .la-hero { padding:28px 18px; }
+          .la-hero-stats { gap:20px 24px; }
+          .la-hero-stat-divider { display:none; }
+        }
+      `}</style>
         </div>
       </div>
 

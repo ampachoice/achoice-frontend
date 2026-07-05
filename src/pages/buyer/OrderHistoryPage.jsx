@@ -191,37 +191,66 @@ if (reference) {
       {showCancelModal && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 460, padding: 28 }}><h3 style={{ margin: "0 0 14px", fontSize: 18, color: "#111" }}>Cancel Order?</h3><p style={{ color: "#b36b00", fontWeight: 600, fontSize: 13, marginBottom: 16 }}>Please note: If payment was made, refunds take at least 14 working days to process.</p><textarea style={{ width: "100%", minHeight: 90, padding: 12, border: "1.5px solid #ddd", borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }} placeholder="Please tell us why you want to cancel this order (minimum 10 characters)..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} /><div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}><button style={{ padding: "10px 20px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={() => setShowCancelModal(null)}>Keep My Order</button><button style={{ padding: "10px 20px", background: cancelSubmitting ? "#aaa" : "#cc0000", color: "#fff", border: "none", borderRadius: 7, cursor: cancelSubmitting ? "not-allowed" : "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={submitCancellation} disabled={cancelSubmitting}>{cancelSubmitting ? "Submitting..." : "Submit Cancellation Request"}</button></div></div></div>)}
 
       {/* Top Bar */}
-      <div style={s.topBar}>
-        <div style={s.topBarLeft}>
+      <div className="oh-topbar">
+        <div className="oh-topbar-left">
           <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
           <span>✉ support@achoice.ng</span>
         </div>
-        <div style={s.topBarRight}>
+        <div className="oh-topbar-right">
           <span>📞 09067794991</span>
           <span>Mon - Sat: 07:00am to 06:00pm</span>
         </div>
       </div>
 
       {/* Navbar */}
-      <nav style={s.nav}>
-        <div style={s.navBrand} onClick={() => navigate('/')}>
-          <img src={LOGO_PATH} alt="Achoice Logo" style={s.navLogoImg} />
+      <nav className="oh-nav">
+        <div className="oh-nav-brand" onClick={() => navigate('/')}>
+          <img src={LOGO_PATH} alt="Achoice Logo" className="oh-nav-logo-img" />
           <div>
-            <div style={s.navLogoName}>ACHOICE LIMITED</div>
-            <div style={s.navLogoTag}>Your needs our solutions</div>
+            <div className="oh-nav-logo-name">ACHOICE LIMITED</div>
+            <div className="oh-nav-logo-tag">Your needs our solutions</div>
           </div>
         </div>
-        <div style={s.navLinks}>
-          <span style={s.navLink} onClick={() => navigate('/')}>Home</span>
-          <span style={s.navLink} onClick={() => navigate('/products')}>Shop</span>
-          <span style={s.navLink} onClick={() => navigate('/loans/apply')}>Loans</span>
-          <span style={s.navLink} onClick={() => navigate('/cart')}>
+        <div className="oh-nav-links">
+          <span className="oh-nav-link" onClick={() => navigate('/')}>Home</span>
+          <span className="oh-nav-link" onClick={() => navigate('/products')}>Shop</span>
+          <span className="oh-nav-link" onClick={() => navigate('/loans/apply')}>Loans</span>
+          <span className="oh-nav-link" onClick={() => navigate('/cart')}>
             Cart {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
           </span>
         </div>
-        <NotificationBell />
-        <BuyerDropdown cartCount={cartCount} />
+        <div className="oh-nav-actions">
+          <NotificationBell />
+          <BuyerDropdown cartCount={cartCount} />
+        </div>
       </nav>
+
+      <style>{`
+        .oh-topbar { background:#1f4d1f; color:#fff; padding:8px 60px; display:flex; justify-content:space-between; font-size:12px; gap:16px; }
+        .oh-topbar-left, .oh-topbar-right { display:flex; gap:24px; flex-wrap:wrap; }
+        .oh-nav { background:#1a3d1a; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:16px; }
+        .oh-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; }
+        .oh-nav-logo-img { width:45px; height:45px; object-fit:contain; flex-shrink:0; }
+        .oh-nav-logo-name { font-size:15px; font-weight:700; color:#fff; white-space:nowrap; }
+        .oh-nav-logo-tag { font-size:10px; color:#fff; white-space:nowrap; }
+        .oh-nav-links { display:flex; gap:28px; align-items:center; flex-shrink:0; }
+        .oh-nav-link { color:#fff; font-size:14px; cursor:pointer; white-space:nowrap; }
+        .oh-nav-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+
+        @media (max-width:900px) {
+          .oh-topbar { padding:8px 20px; }
+          .oh-nav { padding:12px 20px; }
+          .oh-nav-links { gap:16px; }
+        }
+        @media (max-width:700px) {
+          .oh-topbar { display:none; }
+          .oh-nav-links { display:none; }
+        }
+        @media (max-width:420px) {
+          .oh-nav { padding:10px 14px; }
+          .oh-nav-logo-tag { display:none; }
+        }
+      `}</style>
 
       <div style={s.container}>
         <div style={s.pageHeader}>
