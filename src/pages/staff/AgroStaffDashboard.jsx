@@ -7,6 +7,7 @@ const LOGO_PATH = "/achoice logo.png";
 export default function AgroStaffDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -171,20 +172,49 @@ export default function AgroStaffDashboard() {
     <>
       <style>{`
         @media (max-width: 768px) {
-          .agro-staff-sidebar { display: none; }
+          .agro-staff-sidebar {
+            width: min(280px, 82vw) !important;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.25);
+            z-index: 600;
+          }
+          .agro-staff-sidebar.agro-sidebar-open { transform: translateX(0); }
           .agro-staff-main { margin-left: 0 !important; padding: 16px !important; }
+          .agro-staff-hamburger {
+            display: flex !important; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e8e4dc;
+            background: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0;
+          }
+          .agro-sidebar-close { display: block !important; }
+          .agro-backdrop-open {
+            display: block !important; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45); z-index: 550;
+          }
         }
       `}</style>
     <div style={s.page}>
       {toast && <div style={s.toast}>{toast}</div>}
 
-      <div className="agro-staff-sidebar" style={s.sidebar}>
+      {mobileNavOpen && (
+        <div className="agro-backdrop-open" style={{ display: "none" }} onClick={() => setMobileNavOpen(false)} />
+      )}
+
+      <div className={"agro-staff-sidebar" + (mobileNavOpen ? " agro-sidebar-open" : "")} style={s.sidebar}>
         <div style={s.sidebarLogo}>
           <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
           <div>
             <div style={s.sidebarLogoName}>ACHOICE</div>
             <div style={s.sidebarLogoSub}>Agro/Sales Staff</div>
           </div>
+          <button
+            className="agro-sidebar-close"
+            style={{ display: "none", marginLeft: "auto", background: "none", border: "none", color: "#fff", fontSize: 18, cursor: "pointer" }}
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close menu"
+          >
+            ✕
+          </button>
         </div>
         <nav style={s.sidebarNav}>
           {[
@@ -200,9 +230,10 @@ export default function AgroStaffDashboard() {
                 ...s.sidebarItem,
                 ...(activeTab === item.tab ? s.sidebarItemActive : {}),
               }}
-              onClick={() =>
-                item.path ? navigate(item.path) : setActiveTab(item.tab)
-              }
+              onClick={() => {
+                item.path ? navigate(item.path) : setActiveTab(item.tab);
+                setMobileNavOpen(false);
+              }}
             >
               <span>{item.icon}</span> {item.label}
             </div>
@@ -232,6 +263,14 @@ export default function AgroStaffDashboard() {
       </div>
 
       <div className="agro-staff-main" style={s.main}>
+        <button
+          className="agro-staff-hamburger"
+          style={{ display: "none", marginBottom: 16 }}
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open menu"
+        >
+          ☰
+        </button>
         {/* Dashboard */}
         {activeTab === "dashboard" && (
           <div>

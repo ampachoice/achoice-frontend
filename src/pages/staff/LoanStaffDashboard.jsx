@@ -7,6 +7,7 @@ const LOGO_PATH = "/achoice logo.png";
 export default function LoanStaffDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState("");
 
   // Dashboard
@@ -704,12 +705,33 @@ export default function LoanStaffDashboard() {
     <>
       <style>{`
         @media (max-width: 768px) {
-          .loan-staff-sidebar { display: none; }
+          .loan-staff-sidebar {
+            width: min(280px, 82vw) !important;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            box-shadow: 2px 0 16px rgba(0,0,0,0.25);
+            z-index: 600;
+          }
+          .loan-staff-sidebar.loan-sidebar-open { transform: translateX(0); }
           .loan-staff-main { margin-left: 0 !important; padding: 16px !important; }
+          .loan-staff-hamburger {
+            display: flex !important; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 10px; border: 1px solid #e8e4dc;
+            background: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0;
+          }
+          .loan-sidebar-close { display: block !important; }
+          .loan-backdrop-open {
+            display: block !important; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45); z-index: 550;
+          }
         }
       `}</style>
     <div style={s.page}>
       {toast && <div style={s.toast}>{toast}</div>}
+
+      {mobileNavOpen && (
+        <div className="loan-backdrop-open" style={{ display: "none" }} onClick={() => setMobileNavOpen(false)} />
+      )}
 
       {/* Approval Modal */}
       {approvalModal && (
@@ -837,13 +859,21 @@ export default function LoanStaffDashboard() {
       )}
 
       {/* Sidebar */}
-      <div className="loan-staff-sidebar" style={s.sidebar}>
+      <div className={"loan-staff-sidebar" + (mobileNavOpen ? " loan-sidebar-open" : "")} style={s.sidebar}>
         <div style={s.sidebarLogo}>
           <img src={LOGO_PATH} alt="Achoice" style={s.logoImg} />
           <div>
             <div style={s.sidebarLogoName}>ACHOICE</div>
             <div style={s.sidebarLogoSub}>Loan Staff</div>
           </div>
+          <button
+            className="loan-sidebar-close"
+            style={{ display: "none", marginLeft: "auto", background: "none", border: "none", color: "#fff", fontSize: 18, cursor: "pointer" }}
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close menu"
+          >
+            ✕
+          </button>
         </div>
         <nav style={s.sidebarNav}>
           {[
@@ -859,9 +889,10 @@ export default function LoanStaffDashboard() {
                 ...s.sidebarItem,
                 ...(activeTab === item.tab ? s.sidebarItemActive : {}),
               }}
-              onClick={() =>
-                item.path ? navigate(item.path) : setActiveTab(item.tab)
-              }
+              onClick={() => {
+                item.path ? navigate(item.path) : setActiveTab(item.tab);
+                setMobileNavOpen(false);
+              }}
             >
               <span>{item.icon}</span> {item.label}
             </div>
@@ -894,6 +925,14 @@ export default function LoanStaffDashboard() {
 
       {/* Main */}
       <div className="loan-staff-main" style={s.main}>
+        <button
+          className="loan-staff-hamburger"
+          style={{ display: "none", marginBottom: 16 }}
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open menu"
+        >
+          ☰
+        </button>
         {/* DASHBOARD */}
         {activeTab === "dashboard" && (
           <div>
