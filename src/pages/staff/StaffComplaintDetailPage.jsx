@@ -24,7 +24,7 @@ export default function StaffComplaintDetailPage() {
 
   const fetchComplaint = async () => {
     try {
-      const res = await api.get(`/admin/complaints/${id}`);
+      const res = await api.get(`/staff/complaints/${id}`);
       setComplaint(res.data.complaint || res.data);
     } catch { showToast("Failed to load complaint."); }
     finally { setLoading(false); }
