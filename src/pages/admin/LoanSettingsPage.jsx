@@ -81,6 +81,7 @@ export default function LoanSettingsPage() {
   const [calcDuration, setCalcDuration] = useState(6);
   const [calcResult, setCalcResult] = useState(null);
   const [calcLoading, setCalcLoading] = useState(false);
+  const [previewUserId, setPreviewUserId] = useState("");
 
   const showToast = (msg) => {
     setToast(msg);
@@ -184,14 +185,18 @@ export default function LoanSettingsPage() {
     const handle = setTimeout(() => {
       api
         .get("/loans/calculate", {
-          params: { amount: amt, duration_months: dur },
+          params: {
+            amount: amt,
+            duration_months: dur,
+            ...(previewUserId ? { user_id: Number(previewUserId) } : {}),
+          },
         })
         .then((res) => setCalcResult(res.data))
         .catch(() => setCalcResult(null))
         .finally(() => setCalcLoading(false));
     }, 350);
     return () => clearTimeout(handle);
-  }, [calcAmount, calcDuration, activeTab]);
+  }, [calcAmount, calcDuration, activeTab, previewUserId]);
 
   // ── Save handlers ─────────────────────────────────────────────────────────
   const handleSaveTiers = async () => {
@@ -1022,7 +1027,31 @@ export default function LoanSettingsPage() {
                   ))}
                 </select>
               </div>
+              <div style={s.field}>
+                <label style={s.label}>Preview as Buyer (User ID)</label>
+                <input
+                  style={s.input}
+                  type="number"
+                  placeholder="Leave blank to preview as guest"
+                  value={previewUserId}
+                  onChange={(e) => setPreviewUserId(e.target.value)}
+                />
+                <div style={s.hint}>
+                  Shows the exact loyalty discount that buyer would see,
+                  based on their real completed loan history.
+                </div>
+              </div>
             </div>
+
+            {previewUserId && calcResult && !calcLoading && (
+              <div style={s.infoBox}>
+                👤 Previewing as buyer #{previewUserId} —{" "}
+                {calcResult.breakdown?.completed_loans ?? 0} completed loan
+                {calcResult.breakdown?.completed_loans === 1 ? "" : "s"} on
+                record, earning a {calcResult.breakdown?.loyalty_discount ?? 0}%
+                loyalty discount.
+              </div>
+            )}
 
             {calcLoading && (
               <p style={{ fontSize: 13, color: "#888" }}>Calculating...</p>
