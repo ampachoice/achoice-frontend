@@ -533,6 +533,9 @@ export default function ManageLoansPage() {
                   >
                     {loan.status}
                   </div>
+                  {loan.auto_approved && (
+                    <div style={s.autoApprovedBadge}>⚡ Auto-Approved</div>
+                  )}
                   {successfulRepayments.length > 0 && (
                     <div style={s.repayCountBadge}>
                       {successfulRepayments.length} payment
@@ -553,6 +556,20 @@ export default function ManageLoansPage() {
                   ],
                   ["Total Repayable", toMoney(loan.total_repayable)],
                   ["Monthly Instalment", toMoney(loan.monthly_instalment)],
+                  [
+                    "Repayment Schedule",
+                    loan.repayment_preference
+                      ? loan.repayment_preference === "weekly"
+                        ? "Weekly"
+                        : "Monthly"
+                      : "—",
+                  ],
+                  [
+                    "Total Instalments",
+                    loan.total_instalments != null
+                      ? loan.total_instalments
+                      : "—",
+                  ],
                   ["Amount Paid", toMoney(loan.amount_paid)],
                   ["Balance", toMoney(loan.balance)],
                   [
@@ -1323,6 +1340,14 @@ const s = {
     fontSize: 11,
     color: "#1a4fa0",
     background: "#e7f0ff",
+    padding: "3px 10px",
+    borderRadius: 99,
+    fontWeight: 600,
+  },
+  autoApprovedBadge: {
+    fontSize: 11,
+    color: "#b36b00",
+    background: "#fff8e7",
     padding: "3px 10px",
     borderRadius: 99,
     fontWeight: 600,

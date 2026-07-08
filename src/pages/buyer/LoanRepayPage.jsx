@@ -19,7 +19,10 @@ export default function LoanRepayPage() {
   const [selectedQuick, setSelectedQuick] = useState(null);
   const [cartCount, setCartCount] = useState(0);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [scheduleView, setScheduleView] = useState('monthly');
+  const [realSchedule, setRealSchedule] = useState([]);
+  const [scheduleSummary, setScheduleSummary] = useState(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const [lastReference, setLastReference] = useState(null);
   const [autoVerified, setAutoVerified] = useState(false);
@@ -67,7 +70,6 @@ export default function LoanRepayPage() {
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 1), 0));
-
     // Detect return from Paystack
     const params = new URLSearchParams(location.search);
     const urlRef = params.get('reference') || params.get('trxref');
@@ -98,6 +100,23 @@ export default function LoanRepayPage() {
 
     fetchLoanData();
   }, []);
+
+  // Quietly fetch installment summary whenever the active loan changes, so
+  // overdue status can be shown on the hero card without requiring the
+  // buyer to open the full schedule modal first.
+  useEffect(() => {
+    if (!activeLoan?.id) {
+      setScheduleSummary(null);
+      return;
+    }
+    api
+      .get(`/loans/${activeLoan.id}/installments`)
+      .then((res) => {
+        setRealSchedule(res.data?.installments || []);
+        setScheduleSummary(res.data?.summary || null);
+      })
+      .catch(() => {});
+  }, [activeLoan?.id, activeLoan?.balance]);
 
   const handleVerifyPayment = async (customRef) => {
     const reference = customRef || lastReference;
@@ -157,6 +176,26 @@ export default function LoanRepayPage() {
     setRepayAmount(amount.toString());
   };
 
+  const openScheduleModal = (loanId) => {
+    setShowScheduleModal(true);
+    setScheduleLoading(true);
+    setScheduleError(null);
+    api
+      .get(`/loans/${loanId}/installments`)
+      .then((res) => {
+        setRealSchedule(res.data?.installments || []);
+        setScheduleSummary(res.data?.summary || null);
+      })
+      .catch((err) => {
+        setScheduleError(
+          err.response?.data?.message || 'Could not load repayment schedule.',
+        );
+        setRealSchedule([]);
+        setScheduleSummary(null);
+      })
+      .finally(() => setScheduleLoading(false));
+  };
+
   const getStatusStyle = (status) => ({
     pending:   { background: '#fff8e7', color: '#b36b00' },
     approved:  { background: '#eafaf0', color: '#1a7a3a' },
@@ -183,23 +222,6 @@ export default function LoanRepayPage() {
   const daysRemaining = dueDate ? Math.max(0, Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24))) : null;
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
-  const generateSchedule = (view) => {
-    if (!loan) return [];
-    const startDate = disbursedAt || new Date();
-    const instalments = view === 'monthly' ? durationMonths : durationMonths * 4;
-    const amount = view === 'monthly' ? monthlyInstalment : weeklyInstalment;
-    let cumPaid = amountPaid;
-    return Array.from({ length: instalments }, (_, i) => {
-      const date = new Date(startDate);
-      if (view === 'monthly') date.setMonth(date.getMonth() + i + 1);
-      else date.setDate(date.getDate() + (i + 1) * 7);
-      const paid = cumPaid >= amount;
-      if (paid) cumPaid -= amount;
-      return { num: i + 1, date, amount, paid, overdue: !paid && date < new Date() };
-    });
-  };
-
-  const schedule = generateSchedule(scheduleView);
   const quickAmounts = loan ? [
     Math.ceil(monthlyInstalment / 2),
     monthlyInstalment,
@@ -274,6 +296,15 @@ export default function LoanRepayPage() {
           </div>
         )}
 
+        {/* Overdue warning — surfaced proactively, not buried in the modal */}
+        {scheduleSummary?.overdue > 0 && (
+          <div style={s.overdueWarningBanner}>
+            ⚠ You have {scheduleSummary.overdue} overdue installment
+            {scheduleSummary.overdue > 1 ? 's' : ''}. A penalty may already be
+            applied to your balance — pay as soon as possible to avoid further charges.
+          </div>
+        )}
+
         {loan && loan.id ? (
           <>
             {/* Hero Card */}
@@ -329,15 +360,25 @@ export default function LoanRepayPage() {
                   ₦{amountPaid.toLocaleString()} paid of ₦{totalRepayment.toLocaleString()}
                 </div>
                 <div style={s.instalmentCards}>
+                  {loan.repayment_preference === 'weekly' ? (
+                    <div style={s.instalmentCard}>
+                      <div style={s.instalmentIcon}>📆</div>
+                      <div style={s.instalmentVal}>₦{weeklyInstalment.toLocaleString()}</div>
+                      <div style={s.instalmentLabel}>Weekly Instalment</div>
+                    </div>
+                  ) : (
+                    <div style={s.instalmentCard}>
+                      <div style={s.instalmentIcon}>📅</div>
+                      <div style={s.instalmentVal}>₦{monthlyInstalment.toLocaleString()}</div>
+                      <div style={s.instalmentLabel}>Monthly Instalment</div>
+                    </div>
+                  )}
                   <div style={s.instalmentCard}>
-                    <div style={s.instalmentIcon}>📅</div>
-                    <div style={s.instalmentVal}>₦{monthlyInstalment.toLocaleString()}</div>
-                    <div style={s.instalmentLabel}>Monthly</div>
-                  </div>
-                  <div style={s.instalmentCard}>
-                    <div style={s.instalmentIcon}>📆</div>
-                    <div style={s.instalmentVal}>₦{weeklyInstalment.toLocaleString()}</div>
-                    <div style={s.instalmentLabel}>Weekly</div>
+                    <div style={s.instalmentIcon}>🔢</div>
+                    <div style={s.instalmentVal}>
+                      {loan.total_instalments ?? durationMonths}
+                    </div>
+                    <div style={s.instalmentLabel}>Total Instalments</div>
                   </div>
                 </div>
               </div>
@@ -404,7 +445,7 @@ export default function LoanRepayPage() {
 
             {/* Schedule button */}
             <div style={{ textAlign: 'center', marginTop: 20, marginBottom: 8 }}>
-              <button onClick={() => setShowScheduleModal(true)} style={s.scheduleBtn}>
+              <button onClick={() => openScheduleModal(loan.id)} style={s.scheduleBtn}>
                 📋 View Full Repayment Schedule
               </button>
             </div>
@@ -462,28 +503,64 @@ export default function LoanRepayPage() {
               <button style={s.closeBtn} onClick={() => setShowScheduleModal(false)}>✕</button>
             </div>
             <div style={s.modalTabs}>
-              <button style={scheduleView === 'monthly' ? s.modalTabActive : s.modalTab} onClick={() => setScheduleView('monthly')}>Monthly</button>
-              <button style={scheduleView === 'weekly' ? s.modalTabActive : s.modalTab} onClick={() => setScheduleView('weekly')}>Weekly</button>
               <div style={s.modalTabInfo}>
-                {scheduleView === 'monthly' ? `₦${monthlyInstalment.toLocaleString()} / month` : `₦${weeklyInstalment.toLocaleString()} / week`}
+                {loan?.repayment_preference === 'weekly' ? 'Weekly' : 'Monthly'} repayment
+                {scheduleSummary && ` · ${scheduleSummary.paid}/${scheduleSummary.total} paid`}
+                {scheduleSummary?.overdue > 0 && (
+                  <span style={{ color: '#cc0000', marginLeft: 8 }}>
+                    · {scheduleSummary.overdue} overdue
+                  </span>
+                )}
               </div>
             </div>
             <div style={s.scheduleHeadRow}>
               <span>#</span><span>Due Date</span><span>Amount</span><span>Status</span>
             </div>
             <div style={s.scheduleBody}>
-              {schedule.map(row => (
-                <div key={row.num} style={{ ...s.scheduleRow, background: row.paid ? '#f0fff4' : row.overdue ? '#fff8f8' : '#fff' }}>
-                  <span style={s.scheduleNum}>{row.num}</span>
-                  <span style={s.scheduleDate}>{fmtDate(row.date)}</span>
-                  <span style={s.scheduleAmt}>₦{row.amount.toLocaleString()}</span>
-                  <span>
-                    {row.paid ? <span style={s.paidBadge}>✓ Paid</span>
-                      : row.overdue ? <span style={s.overdueBadge}>⚠ Overdue</span>
-                      : <span style={s.upcomingBadge}>Upcoming</span>}
-                  </span>
+              {scheduleLoading ? (
+                <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  Loading schedule...
                 </div>
-              ))}
+              ) : scheduleError ? (
+                <div style={{ padding: 24, textAlign: 'center', color: '#cc0000' }}>
+                  {scheduleError}
+                </div>
+              ) : realSchedule.length === 0 ? (
+                <div style={{ padding: 24, textAlign: 'center', color: '#888' }}>
+                  No installments generated yet — this shows up once your loan
+                  is disbursed.
+                </div>
+              ) : (
+                realSchedule.map(row => (
+                  <div
+                    key={row.id || row.installment_number}
+                    style={{
+                      ...s.scheduleRow,
+                      background:
+                        row.status === 'paid' ? '#f0fff4'
+                          : row.status === 'overdue' ? '#fff8f8'
+                          : '#fff',
+                    }}
+                  >
+                    <span style={s.scheduleNum}>{row.installment_number}</span>
+                    <span style={s.scheduleDate}>{fmtDate(row.due_date)}</span>
+                    <span style={s.scheduleAmt}>
+                      ₦{Number(row.amount_due).toLocaleString()}
+                      {Number(row.penalty_applied) > 0 && (
+                        <span style={{ color: '#cc0000', fontSize: 11, display: 'block' }}>
+                          +₦{Number(row.penalty_applied).toLocaleString()} penalty
+                        </span>
+                      )}
+                    </span>
+                    <span>
+                      {row.status === 'paid' ? <span style={s.paidBadge}>✓ Paid</span>
+                        : row.status === 'overdue' ? <span style={s.overdueBadge}>⚠ Overdue</span>
+                        : row.status === 'partial' ? <span style={s.upcomingBadge}>Partial</span>
+                        : <span style={s.upcomingBadge}>Upcoming</span>}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
             <div style={s.modalSummary}>
               <span>Total: ₦{totalRepayment.toLocaleString()}</span>
@@ -509,6 +586,7 @@ const s = {
   verifyingText: { fontSize: 18, fontWeight: 700, color: '#1f4d1f', marginBottom: 8 },
   verifyingSub: { fontSize: 13, color: '#888' },
   successBanner: { background: '#eafaf0', border: '2px solid #1a7a3a', borderRadius: 10, padding: '14px 20px', marginBottom: 20, fontSize: 14, fontWeight: 600, color: '#1a7a3a', textAlign: 'center' },
+  overdueWarningBanner: { background: '#fff0f0', border: '2px solid #cc0000', borderRadius: 10, padding: '14px 20px', marginBottom: 20, fontSize: 14, fontWeight: 600, color: '#cc0000', textAlign: 'center' },
   nav: { background: '#1f4d1f', padding: '12px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', position: 'sticky', top: 0, zIndex: 100 },
   navLeft: { display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
   logoImg: { width: 35, height: 35, borderRadius: 4 },

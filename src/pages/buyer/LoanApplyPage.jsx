@@ -17,6 +17,8 @@ export default function LoanApplyPage() {
   const [step, setStep] = useState(1); // 1=loan details, 2=identity, 3=documents, 4=review
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submittedLoan, setSubmittedLoan] = useState(null);
+  const [ninBvnLocked, setNinBvnLocked] = useState(false);
   const [error, setError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
 
@@ -70,6 +72,27 @@ export default function LoanApplyPage() {
     api
       .get("/settings/loan-tiers")
       .then((res) => setTiers(res.data?.tiers || []))
+      .catch(() => {});
+
+    // Prefill identity/bank details from the buyer's most recent loan, if any.
+    // NIN/BVN are locked (read-only) once set — one person only ever has one
+    // of each — but bank details stay editable since buyers can switch banks.
+    api
+      .get("/loans/prefill")
+      .then((res) => {
+        const p = res.data || {};
+        if (p.has_previous_data) {
+          setIdentityForm((prev) => ({
+            ...prev,
+            nin_number: p.nin_number || prev.nin_number,
+            bvn_number: p.bvn_number || prev.bvn_number,
+            bank_name: p.bank_name || prev.bank_name,
+            account_number: p.account_number || prev.account_number,
+            account_name: p.account_name || prev.account_name,
+          }));
+        }
+        setNinBvnLocked(!!p.nin_bvn_locked);
+      })
       .catch(() => {});
   }, []);
 
@@ -273,6 +296,7 @@ export default function LoanApplyPage() {
         }
       }
 
+      setSubmittedLoan(res.data?.loan || null);
       setSuccess(true);
     } catch (err) {
       const errors = err.response?.data?.errors;
@@ -316,12 +340,24 @@ export default function LoanApplyPage() {
         `}</style>
         <div style={s.successContainer}>
           <div style={s.successCard}>
-            <div style={s.successIconCircle}>✓</div>
-            <h2 style={s.successTitle}>Application Submitted!</h2>
+            <div
+              style={
+                submittedLoan?.status === "approved"
+                  ? { ...s.successIconCircle, ...s.successIconCircleApproved }
+                  : s.successIconCircle
+              }
+            >
+              {submittedLoan?.status === "approved" ? "⚡" : "✓"}
+            </div>
+            <h2 style={s.successTitle}>
+              {submittedLoan?.status === "approved"
+                ? "Loan Approved Instantly!"
+                : "Application Submitted!"}
+            </h2>
             <p style={s.successText}>
-              Your loan application has been submitted successfully along with
-              your documents. Our loan team will review everything and get back
-              to you within 24 hours.
+              {submittedLoan?.status === "approved"
+                ? "Great news — your loan qualified for automatic approval and has been approved right away. Funds will be disbursed shortly."
+                : "Your loan application has been submitted successfully along with your documents. Our loan team will review everything and get back to you within 24 hours."}
             </p>
 
             {/* Doc upload status */}
@@ -855,7 +891,7 @@ export default function LoanApplyPage() {
                     <span style={s.req}>*</span>
                   </label>
                   <input
-                    style={s.input}
+                    style={ninBvnLocked ? { ...s.input, ...s.inputLocked } : s.input}
                     type="text"
                     value={identityForm.nin_number}
                     onChange={(e) =>
@@ -866,7 +902,14 @@ export default function LoanApplyPage() {
                     }
                     placeholder="Enter your 11-digit NIN"
                     maxLength={11}
+                    disabled={ninBvnLocked}
                   />
+                  {ninBvnLocked && (
+                    <div style={s.hint}>
+                      🔒 Locked to your verified identity from a previous
+                      application — NIN cannot be changed.
+                    </div>
+                  )}
                   <div style={s.hint}>
                     {identityForm.nin_number.length}/11 digits
                     {identityForm.nin_number.length === 11 && (
@@ -882,7 +925,7 @@ export default function LoanApplyPage() {
                     Bank Verification Number (BVN) <span style={s.req}>*</span>
                   </label>
                   <input
-                    style={s.input}
+                    style={ninBvnLocked ? { ...s.input, ...s.inputLocked } : s.input}
                     type="text"
                     value={identityForm.bvn_number}
                     onChange={(e) =>
@@ -893,7 +936,14 @@ export default function LoanApplyPage() {
                     }
                     placeholder="Enter your 11-digit BVN"
                     maxLength={11}
+                    disabled={ninBvnLocked}
                   />
+                  {ninBvnLocked && (
+                    <div style={s.hint}>
+                      🔒 Locked to your verified identity from a previous
+                      application — BVN cannot be changed.
+                    </div>
+                  )}
                   <div style={s.hint}>
                     {identityForm.bvn_number.length}/11 digits
                     {identityForm.bvn_number.length === 11 && (
@@ -1470,6 +1520,11 @@ const s = {
     outline: "none",
     boxSizing: "border-box",
   },
+  inputLocked: {
+    background: "#f5f5f0",
+    color: "#888",
+    cursor: "not-allowed",
+  },
   hint: { fontSize: 12, color: "#888", marginTop: 5 },
 
   // Duration grid
@@ -1868,6 +1923,9 @@ const s = {
     fontSize: 32,
     color: "#fff",
     margin: "0 auto 20px",
+  },
+  successIconCircleApproved: {
+    background: "#b36b00",
   },
   successTitle: {
     fontSize: 22,

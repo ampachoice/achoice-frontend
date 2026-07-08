@@ -56,6 +56,9 @@ export default function LoanSettingsPage() {
     grace_period_days: "",
     require_documents: true,
     allow_multiple: false,
+    document_threshold: "",
+    auto_approve: false,
+    auto_approve_max_amount: "",
   });
   const [savingGeneral, setSavingGeneral] = useState(false);
   const [purposes, setPurposes] = useState([]);
@@ -69,6 +72,7 @@ export default function LoanSettingsPage() {
     "1_loan": "",
     "3_loans": "",
     "5_loans": "",
+    max_total_discount: "",
   });
   const [savingLoyalty, setSavingLoyalty] = useState(false);
 
@@ -109,6 +113,9 @@ export default function LoanSettingsPage() {
       grace_period_days: g.grace_period_days ?? "",
       require_documents: !!g.require_documents,
       allow_multiple: !!g.allow_multiple,
+      document_threshold: g.document_threshold ?? "",
+      auto_approve: !!g.auto_approve,
+      auto_approve_max_amount: g.auto_approve_max_amount ?? "",
     });
 
     const ds = data.duration_settings || [];
@@ -138,6 +145,7 @@ export default function LoanSettingsPage() {
       "1_loan": l["1_loan_discount"] ?? "",
       "3_loans": l["3_loans_discount"] ?? "",
       "5_loans": l["5_loans_discount"] ?? "",
+      max_total_discount: l.max_total_discount ?? "",
     });
   };
 
@@ -252,6 +260,9 @@ export default function LoanSettingsPage() {
           grace_period_days: Number(generalForm.grace_period_days),
           require_documents: !!generalForm.require_documents,
           allow_multiple: !!generalForm.allow_multiple,
+          document_threshold: Number(generalForm.document_threshold),
+          auto_approve: !!generalForm.auto_approve,
+          auto_approve_max_amount: Number(generalForm.auto_approve_max_amount),
         },
       });
       applySettings(res.data.settings);
@@ -275,6 +286,7 @@ export default function LoanSettingsPage() {
           "1_loan": Number(loyaltyForm["1_loan"]),
           "3_loans": Number(loyaltyForm["3_loans"]),
           "5_loans": Number(loyaltyForm["5_loans"]),
+          max_total_discount: Number(loyaltyForm.max_total_discount),
         },
       });
       applySettings(res.data.settings);
@@ -713,6 +725,44 @@ export default function LoanSettingsPage() {
                   }
                 />
               </div>
+              <div style={s.field}>
+                <label style={s.label}>Document Threshold (₦)</label>
+                <input
+                  style={s.input}
+                  type="number"
+                  value={generalForm.document_threshold}
+                  onChange={(e) =>
+                    setGeneralForm((p) => ({
+                      ...p,
+                      document_threshold: e.target.value,
+                    }))
+                  }
+                />
+                <div style={s.hint}>
+                  Loans at or above this amount require uploaded documents
+                  before approval — only enforced while "Require Documents"
+                  below is ON.
+                </div>
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>Auto-Approve Ceiling (₦)</label>
+                <input
+                  style={s.input}
+                  type="number"
+                  value={generalForm.auto_approve_max_amount}
+                  onChange={(e) =>
+                    setGeneralForm((p) => ({
+                      ...p,
+                      auto_approve_max_amount: e.target.value,
+                    }))
+                  }
+                />
+                <div style={s.hint}>
+                  Loans at or below this amount are approved instantly when
+                  "Auto-Approve" below is ON. Never applies to loans that
+                  require documents.
+                </div>
+              </div>
             </div>
 
             <div style={s.sectionLabel}>FEATURE TOGGLES</div>
@@ -728,6 +778,12 @@ export default function LoanSettingsPage() {
                 icon: "📑",
                 title: "Allow Multiple Active Loans",
                 desc: "Let a buyer apply for a new loan while one is still active",
+              },
+              {
+                key: "auto_approve",
+                icon: "⚡",
+                title: "Auto-Approve",
+                desc: "Instantly approve loans at or below the Auto-Approve Ceiling above (skipped if the loan requires documents)",
               },
             ].map((toggle) => (
               <div key={toggle.key} style={s.toggleRow}>
@@ -890,6 +946,26 @@ export default function LoanSettingsPage() {
                 </div>
               </div>
             ))}
+
+            <div style={s.field}>
+              <label style={s.label}>Maximum Total Discount (%)</label>
+              <input
+                style={s.input}
+                type="number"
+                step="0.05"
+                value={loyaltyForm.max_total_discount}
+                onChange={(e) =>
+                  setLoyaltyForm((p) => ({
+                    ...p,
+                    max_total_discount: e.target.value,
+                  }))
+                }
+              />
+              <div style={s.hint}>
+                Hard cap on stacked loyalty discounts, regardless of how many
+                tiers a buyer qualifies for.
+              </div>
+            </div>
 
             <div style={s.infoBox}>
               💡 <strong>Example:</strong> A buyer with no defaults and 1

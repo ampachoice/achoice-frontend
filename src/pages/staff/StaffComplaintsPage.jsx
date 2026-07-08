@@ -11,6 +11,7 @@ export default function StaffComplaintsPage() {
   const [loading, setLoading]       = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [toast, setToast] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   let user = null;
   try { user = JSON.parse(localStorage.getItem("user")); } catch {}
@@ -72,24 +73,51 @@ export default function StaffComplaintsPage() {
         .sc-empty  { text-align:center; padding:60px; color:#aaa; font-size:14px; }
         .sc-loading { text-align:center; padding:60px; color:#888; }
         .sc-toast  { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1f4d1f; color:#fff; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; z-index:9999; }
-        @media(max-width:700px) { .sc-main { padding:16px; margin-left:0; } .sc-sidebar { display:none; } }
+        .sc-hamburger { display:none; }
+        .sc-backdrop { display:none; }
+        .sc-sidebar-close { display:none; }
+        @media(max-width:700px) {
+          .sc-main { padding:16px; margin-left:0; }
+          .sc-sidebar {
+            width:min(280px,82vw);
+            transform:translateX(-100%);
+            transition:transform 0.25s ease;
+            box-shadow:2px 0 16px rgba(0,0,0,0.25);
+            z-index:600;
+          }
+          .sc-sidebar.sc-sidebar-open { transform:translateX(0); }
+          .sc-hamburger {
+            display:flex; align-items:center; justify-content:center;
+            width:40px; height:40px; border-radius:10px; border:1px solid #e8e4dc;
+            background:#fff; font-size:18px; cursor:pointer; flex-shrink:0;
+          }
+          .sc-backdrop.sc-backdrop-open {
+            display:block; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:550;
+          }
+          .sc-sidebar-close { display:block; margin-left:auto; background:none; border:none; color:#fff; font-size:18px; cursor:pointer; }
+          .sc-topbar { justify-content:space-between; }
+        }
       `}</style>
 
       <div className="sc-shell">
-        <div className="sc-sidebar">
+        {mobileNavOpen && (
+          <div className="sc-backdrop sc-backdrop-open" onClick={() => setMobileNavOpen(false)} />
+        )}
+        <div className={"sc-sidebar" + (mobileNavOpen ? " sc-sidebar-open" : "")}>
           <div className="sc-sidebar-logo">
             <img src={LOGO_PATH} alt="Achoice" />
             <div>
               <div className="sc-sidebar-name">ACHOICE</div>
               <div className="sc-sidebar-sub">Staff Panel</div>
             </div>
+            <button className="sc-sidebar-close" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">✕</button>
           </div>
           <nav className="sc-sidebar-nav">
             {navItems.map((item) => (
               <div
                 key={item.label}
                 className={"sc-sidebar-item" + (item.active ? " sc-sidebar-item-active" : "")}
-                onClick={() => navigate(item.path)}
+                onClick={() => { navigate(item.path); setMobileNavOpen(false); }}
               >
                 <span>{item.icon}</span> {item.label}
               </div>
@@ -109,6 +137,7 @@ export default function StaffComplaintsPage() {
 
         <div className="sc-main">
           <div className="sc-topbar">
+            <button className="sc-hamburger" onClick={() => setMobileNavOpen(true)} aria-label="Open menu">☰</button>
             <NotificationBell />
           </div>
 
