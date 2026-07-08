@@ -41,6 +41,7 @@ import AdminPaystackPage  from './pages/admin/AdminPaystackPage';
 import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
 import AdminComplaintsPage from './pages/admin/AdminComplaintsPage';
 import AdminComplaintDetailPage from './pages/admin/AdminComplaintDetailPage';
+import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
 import StaffComplaintDetailPage from './pages/staff/StaffComplaintDetailPage';
 
@@ -148,6 +149,10 @@ const router = createBrowserRouter([
       {
         path: 'complaints/:id',
         element: <ProtectedRoute adminOnly><AdminComplaintDetailPage /></ProtectedRoute>
+      },
+      {
+        path: 'audit-log',
+        element: <ProtectedRoute adminOnly><AdminAuditLogPage /></ProtectedRoute>
       },
     ]
   },
