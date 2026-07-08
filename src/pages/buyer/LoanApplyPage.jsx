@@ -137,6 +137,15 @@ export default function LoanApplyPage() {
   const purposes = loanConfig?.purposes || [];
   const durations = loanConfig?.durations || [];
 
+  // Mirrors the exact check LoanController::decision() uses server-side —
+  // documents are only ever required when both the master toggle is on AND
+  // the amount reaches the threshold. Keeping this in sync means the UI
+  // never asks for documents the backend wouldn't actually require, or
+  // skips documents the backend would actually reject an approval over.
+  const documentsRequired =
+    !!loanConfig?.require_documents &&
+    Number(loanForm.amount) >= Number(loanConfig?.document_threshold ?? Infinity);
+
   const minTierRate = tiers.length
     ? Math.min(...tiers.map((t) => t.rate))
     : null;
@@ -202,6 +211,10 @@ export default function LoanApplyPage() {
   };
 
   const validateStep3 = () => {
+    if (!documentsRequired) {
+      setError(null);
+      return true;
+    }
     if (!documents.nin_document) {
       setError("Please upload your NIN document.");
       return false;
@@ -1035,16 +1048,30 @@ export default function LoanApplyPage() {
                   <div style={s.cardStep}>Step 3 of 4</div>
                   <h2 style={s.cardTitle}>Supporting Documents</h2>
                   <p style={s.cardSub}>
-                    Upload clear scans or photos. Accepted: JPG, PNG, PDF. Max
-                    5MB each.
+                    {documentsRequired
+                      ? "Upload clear scans or photos. Accepted: JPG, PNG, PDF. Max 5MB each."
+                      : "Not required for this loan amount."}
                   </p>
                 </div>
 
-                <div style={s.infoNotice}>
-                  📎 NIN document, BVN document and bank statement are required.
-                  Collateral is optional but increases your chances of approval.
-                </div>
+                {!documentsRequired ? (
+                  <div style={s.infoNotice}>
+                    ✅ Loans under ₦
+                    {Number(
+                      loanConfig?.document_threshold ?? 0,
+                    ).toLocaleString()}{" "}
+                    don't require supporting documents. You can skip straight
+                    to review — nothing to upload here.
+                  </div>
+                ) : (
+                  <div style={s.infoNotice}>
+                    📎 NIN document, BVN document and bank statement are required.
+                    Collateral is optional but increases your chances of approval.
+                  </div>
+                )}
 
+                {documentsRequired && (
+                  <>
                 {[
                   {
                     key: "nin_document",
@@ -1126,6 +1153,8 @@ export default function LoanApplyPage() {
                     )}
                   </div>
                 ))}
+                  </>
+                )}
 
                 <div style={s.btnRow}>
                   <button style={s.backBtn} onClick={prevStep}>
