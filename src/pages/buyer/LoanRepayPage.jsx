@@ -11,6 +11,7 @@ export default function LoanRepayPage() {
   const location = useLocation();
   const [activeLoan, setActiveLoan] = useState(null);
   const [loanHistory, setLoanHistory] = useState([]);
+  const [selectedLoanId, setSelectedLoanId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [repaying, setRepaying] = useState(false);
   const [error, setError] = useState(null);
@@ -101,22 +102,29 @@ export default function LoanRepayPage() {
     fetchLoanData();
   }, []);
 
-  // Quietly fetch installment summary whenever the active loan changes, so
+  // Quietly fetch installment summary whenever the viewed loan changes, so
   // overdue status can be shown on the hero card without requiring the
-  // buyer to open the full schedule modal first.
+  // buyer to open the full schedule modal first. Follows whichever loan is
+  // currently selected — the latest one by default, or an older still-owing
+  // loan the buyer explicitly switched to from history.
   useEffect(() => {
-    if (!activeLoan?.id) {
+    const viewedLoanId = selectedLoanId
+      ? ([activeLoan, ...loanHistory].find((l) => l?.id === selectedLoanId) ||
+          activeLoan)?.id
+      : activeLoan?.id;
+
+    if (!viewedLoanId) {
       setScheduleSummary(null);
       return;
     }
     api
-      .get(`/loans/${activeLoan.id}/installments`)
+      .get(`/loans/${viewedLoanId}/installments`)
       .then((res) => {
         setRealSchedule(res.data?.installments || []);
         setScheduleSummary(res.data?.summary || null);
       })
       .catch(() => {});
-  }, [activeLoan?.id, activeLoan?.balance]);
+  }, [activeLoan?.id, activeLoan?.balance, selectedLoanId, loanHistory]);
 
   const handleVerifyPayment = async (customRef) => {
     const reference = customRef || lastReference;
@@ -208,7 +216,19 @@ export default function LoanRepayPage() {
 
   if (loading) return <div style={s.center}>Loading your loans...</div>;
 
-  const loan = activeLoan;
+  // A buyer can have more than one loan carrying a balance at once if
+  // "Allow Multiple Active Loans" is on. /loans/my-loan only ever returns
+  // the newest one — so any OLDER loan that's disbursed but not yet fully
+  // repaid needs to stay selectable here, or it becomes unpayable through
+  // the UI even though it still has a real balance owing.
+  const payableHistoryLoans = loanHistory.filter(
+    (l) => l.id !== activeLoan?.id && l.status === "disbursed",
+  );
+  const loan = selectedLoanId
+    ? [activeLoan, ...loanHistory].find((l) => l?.id === selectedLoanId) ||
+      activeLoan
+    : activeLoan;
+  const viewingOlderLoan = loan && activeLoan && loan.id !== activeLoan.id;
   const isActive = loan && (loan.status === 'active' || loan.status === 'disbursed');
   const totalRepayment = loan ? Number(loan.total_repayable || 0) : 0;
   const amountPaid = loan ? Number(loan.amount_paid || 0) : 0;
@@ -293,6 +313,33 @@ export default function LoanRepayPage() {
               disabled={verifying}>
               {verifying ? '⏳ Verifying...' : '✅ Verify Payment'}
             </button>
+          </div>
+        )}
+
+        {/* Heads-up when there's another loan still owing that isn't the
+            one currently shown — easy to miss if buyers don't scroll down
+            to history. */}
+        {!viewingOlderLoan && payableHistoryLoans.length > 0 && (
+          <div style={s.otherLoansBanner}>
+            💡 You have {payableHistoryLoans.length} other loan
+            {payableHistoryLoans.length > 1 ? "s" : ""} still carrying a
+            balance — scroll down to Loan History to view and pay
+            {payableHistoryLoans.length > 1 ? " them" : " it"}.
+          </div>
+        )}
+
+        {/* Viewing-an-older-loan banner — since the hero card below normally
+            shows the LATEST loan, make it obvious when it's actually showing
+            an older one the buyer selected from history to pay off. */}
+        {viewingOlderLoan && (
+          <div style={s.viewingOlderBanner}>
+            📌 Viewing an older loan (₦{Number(loan.amount).toLocaleString()}, applied {fmtDate(loan.created_at)}).{" "}
+            <span
+              style={s.viewingOlderLink}
+              onClick={() => setSelectedLoanId(null)}
+            >
+              ← Back to latest loan
+            </span>
           </div>
         )}
 
@@ -470,26 +517,49 @@ export default function LoanRepayPage() {
         )}
 
         {/* Loan History */}
-        {loanHistory.length > 0 && (
+        {loanHistory.filter((l) => l.id !== activeLoan?.id).length > 0 && (
           <div style={s.historyCard}>
             <h2 style={s.historyTitle}>Loan History</h2>
-            {loanHistory.map(l => (
-              <div key={l.id} style={s.historyItem}>
-                <div style={s.historyLeft}>
-                  <div style={{ ...s.historyDot, ...getStatusStyle(l.status) }}>₦</div>
-                  <div>
-                    <div style={s.historyAmount}>₦{Number(l.amount).toLocaleString()}</div>
-                    <div style={s.historyMeta}>{fmtDate(l.created_at)} — {l.purpose}</div>
-                    {l.disbursed_at && (
-                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                        Disbursed: {fmtDate(l.disbursed_at)}{l.due_date && ` · Due: ${fmtDate(l.due_date)}`}
+            {loanHistory
+              .filter((l) => l.id !== activeLoan?.id)
+              .map((l) => {
+                const payable = l.status === "disbursed";
+                const isSelected = selectedLoanId === l.id;
+                return (
+                  <div
+                    key={l.id}
+                    style={{
+                      ...s.historyItem,
+                      ...(payable ? s.historyItemPayable : {}),
+                      ...(isSelected ? s.historyItemSelected : {}),
+                    }}
+                    onClick={
+                      payable ? () => setSelectedLoanId(l.id) : undefined
+                    }
+                  >
+                    <div style={s.historyLeft}>
+                      <div style={{ ...s.historyDot, ...getStatusStyle(l.status) }}>₦</div>
+                      <div>
+                        <div style={s.historyAmount}>₦{Number(l.amount).toLocaleString()}</div>
+                        <div style={s.historyMeta}>{fmtDate(l.created_at)} — {l.purpose}</div>
+                        {l.disbursed_at && (
+                          <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                            Disbursed: {fmtDate(l.disbursed_at)}{l.due_date && ` · Due: ${fmtDate(l.due_date)}`}
+                          </div>
+                        )}
+                        {payable && (
+                          <div style={s.historyPayHint}>
+                            {isSelected
+                              ? "✓ Currently viewing — balance ₦" + Number(l.balance).toLocaleString()
+                              : "💳 Still has a balance — tap to view and pay this loan"}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+                    <div style={{ ...s.historyBadge, ...getStatusStyle(l.status) }}>{l.status}</div>
                   </div>
-                </div>
-                <div style={{ ...s.historyBadge, ...getStatusStyle(l.status) }}>{l.status}</div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         )}
       </div>
@@ -662,6 +732,12 @@ const s = {
   historyCard: { background: '#fff', borderRadius: 12, border: '1px solid #e8e4dc', padding: 24, marginTop: 24 },
   historyTitle: { fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 16 },
   historyItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap', gap: 8 },
+  historyItemPayable: { cursor: 'pointer', borderRadius: 8, padding: '14px 10px', margin: '0 -10px' },
+  historyItemSelected: { background: '#f0f7ec' },
+  historyPayHint: { fontSize: 11, color: '#1a4fa0', fontWeight: 600, marginTop: 4 },
+  viewingOlderBanner: { background: '#e7f0ff', border: '2px solid #1a4fa0', borderRadius: 10, padding: '14px 20px', marginBottom: 20, fontSize: 13, fontWeight: 600, color: '#1a4fa0', textAlign: 'center' },
+  otherLoansBanner: { background: '#fff8e7', border: '2px solid #b36b00', borderRadius: 10, padding: '14px 20px', marginBottom: 20, fontSize: 13, fontWeight: 600, color: '#b36b00', textAlign: 'center' },
+  viewingOlderLink: { textDecoration: 'underline', cursor: 'pointer', marginLeft: 6 },
   historyLeft: { display: 'flex', alignItems: 'center', gap: 12 },
   historyDot: { width: 38, height: 38, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 },
   historyAmount: { fontSize: 15, fontWeight: 700, color: '#111' },

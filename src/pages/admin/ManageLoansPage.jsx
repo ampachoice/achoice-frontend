@@ -156,7 +156,7 @@ export default function ManageLoansPage() {
       const loan = loans.find((l) => l.id === loanId);
       setShowApproveModal(loan);
       setApproveForm({
-        interest_rate: loanSettings?.default_interest || "5",
+        interest_rate: loan.interest_rate ?? loanSettings?.default_interest ?? "5",
         duration_months: loan.duration_months || "6",
       });
       return;
@@ -192,9 +192,7 @@ export default function ManageLoansPage() {
     try {
       const res = await api.patch(`/admin/loans/${loan.id}/decision`, {
         decision: "approved",
-        interest_rate: Number(
-          loanSettings?.default_interest || approveForm.interest_rate,
-        ),
+        interest_rate: Number(approveForm.interest_rate),
         duration_months: Number(approveForm.duration_months),
       });
       const updated = res.data?.loan || res.data;
@@ -334,13 +332,22 @@ export default function ManageLoansPage() {
                 <div style={s.modalField}>
                   <label style={s.modalLabel}>
                     Interest Rate (%){" "}
-                    <span style={s.modalLabelNote}>— from loan settings</span>
+                    <span style={s.modalLabelNote}>
+                      — calculated when the buyer applied, adjustable if needed
+                    </span>
                   </label>
-                  <div style={s.modalRateDisplay}>
-                    {loanSettings?.default_interest ||
-                      approveForm.interest_rate}
-                    % flat
-                  </div>
+                  <input
+                    style={s.input}
+                    type="number"
+                    step="0.1"
+                    value={approveForm.interest_rate}
+                    onChange={(e) =>
+                      setApproveForm((p) => ({
+                        ...p,
+                        interest_rate: e.target.value,
+                      }))
+                    }
+                  />
                 </div>
                 <div style={s.modalField}>
                   <label style={s.modalLabel}>
@@ -359,10 +366,7 @@ export default function ManageLoansPage() {
                     <div style={s.previewTitle}>Loan Summary Preview</div>
                     <div style={s.previewGrid}>
                       {(() => {
-                        const rate = Number(
-                          loanSettings?.default_interest ||
-                            approveForm.interest_rate,
-                        );
+                        const rate = Number(approveForm.interest_rate);
                         const amount = Number(showApproveModal.amount);
                         const months = Number(approveForm.duration_months);
                         const interest = (amount * rate) / 100;
@@ -1861,6 +1865,19 @@ const s = {
     fontSize: 18,
     fontWeight: 700,
     color: "#1f4d1f",
+  },
+  input: {
+    width: "100%",
+    background: "#f0f7ec",
+    border: "1px solid #c5ddb8",
+    borderRadius: 7,
+    padding: "12px 16px",
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#1f4d1f",
+    fontFamily: "inherit",
+    outline: "none",
+    boxSizing: "border-box",
   },
   modalInput: {
     width: "100%",
