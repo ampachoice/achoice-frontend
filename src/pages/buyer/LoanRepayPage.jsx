@@ -150,7 +150,7 @@ export default function LoanRepayPage() {
     if (!amount || parseFloat(amount) <= 0) return;
     setRepaying(true);
     try {
-      const res = await repayLoan({ amount: Number(amount) });
+      const res = await repayLoan({ amount: Number(amount), loan_id: loan?.id });
       if (res.data?.payment_url) {
         // Save reference before redirect
         if (res.data?.reference) {

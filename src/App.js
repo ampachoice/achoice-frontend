@@ -66,6 +66,11 @@ const router = createBrowserRouter([
   { path: '/orders',      element: <ProtectedRoute><OrderHistoryPage /></ProtectedRoute> },
   { path: '/loans/apply', element: <ProtectedRoute><LoanApplyPage /></ProtectedRoute> },
   { path: '/loans/repay', element: <ProtectedRoute><LoanRepayPage /></ProtectedRoute> },
+  // Safety net: LoanController's Paystack callback defaults to '/loans' if
+  // PAYSTACK_LOAN_CALLBACK_URL isn't set in the backend's env — without this
+  // route, that sends buyers to the homepage right after paying instead of
+  // back to their loan. Serves the same page either way.
+  { path: '/loans', element: <ProtectedRoute><LoanRepayPage /></ProtectedRoute> },
   { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
   { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },

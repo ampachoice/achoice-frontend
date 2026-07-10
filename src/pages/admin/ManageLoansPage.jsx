@@ -192,7 +192,6 @@ export default function ManageLoansPage() {
     try {
       const res = await api.patch(`/admin/loans/${loan.id}/decision`, {
         decision: "approved",
-        interest_rate: Number(approveForm.interest_rate),
         duration_months: Number(approveForm.duration_months),
       });
       const updated = res.data?.loan || res.data;
@@ -333,21 +332,12 @@ export default function ManageLoansPage() {
                   <label style={s.modalLabel}>
                     Interest Rate (%){" "}
                     <span style={s.modalLabelNote}>
-                      — calculated when the buyer applied, adjustable if needed
+                      — locked to what the buyer applied at, not editable
                     </span>
                   </label>
-                  <input
-                    style={s.input}
-                    type="number"
-                    step="0.1"
-                    value={approveForm.interest_rate}
-                    onChange={(e) =>
-                      setApproveForm((p) => ({
-                        ...p,
-                        interest_rate: e.target.value,
-                      }))
-                    }
-                  />
+                  <div style={s.modalRateDisplay}>
+                    {approveForm.interest_rate}% flat
+                  </div>
                 </div>
                 <div style={s.modalField}>
                   <label style={s.modalLabel}>
@@ -1865,19 +1855,6 @@ const s = {
     fontSize: 18,
     fontWeight: 700,
     color: "#1f4d1f",
-  },
-  input: {
-    width: "100%",
-    background: "#f0f7ec",
-    border: "1px solid #c5ddb8",
-    borderRadius: 7,
-    padding: "12px 16px",
-    fontSize: 18,
-    fontWeight: 700,
-    color: "#1f4d1f",
-    fontFamily: "inherit",
-    outline: "none",
-    boxSizing: "border-box",
   },
   modalInput: {
     width: "100%",
