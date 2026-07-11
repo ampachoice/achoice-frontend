@@ -15,7 +15,8 @@ import CartPage         from './pages/buyer/CartPage';
 import CheckoutPage     from './pages/buyer/CheckoutPage';
 import OrderHistoryPage from './pages/buyer/OrderHistoryPage';
 import LoanApplyPage    from './pages/buyer/LoanApplyPage';
-import LoanRepayPage    from './pages/buyer/LoanRepayPage';
+import LoansListPage    from './pages/buyer/LoansListPage';
+// LoanDetailPage, LoanLiquidatePage, LoanSchedulePage come next — not wired up yet
 import ProfilePage      from './pages/buyer/ProfilePage';
 import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
@@ -65,12 +66,13 @@ const router = createBrowserRouter([
   { path: '/checkout',    element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
   { path: '/orders',      element: <ProtectedRoute><OrderHistoryPage /></ProtectedRoute> },
   { path: '/loans/apply', element: <ProtectedRoute><LoanApplyPage /></ProtectedRoute> },
-  { path: '/loans/repay', element: <ProtectedRoute><LoanRepayPage /></ProtectedRoute> },
-  // Safety net: LoanController's Paystack callback defaults to '/loans' if
-  // PAYSTACK_LOAN_CALLBACK_URL isn't set in the backend's env — without this
-  // route, that sends buyers to the homepage right after paying instead of
-  // back to their loan. Serves the same page either way.
-  { path: '/loans', element: <ProtectedRoute><LoanRepayPage /></ProtectedRoute> },
+  { path: '/loans',       element: <ProtectedRoute><LoansListPage /></ProtectedRoute> },
+  // Old "My Loans" URL — redirect so any existing bookmarks/links still work
+  { path: '/loans/repay', element: <Navigate to="/loans" replace /> },
+  // TODO: wire these up as each page is built —
+  // { path: '/loans/:id',           element: <ProtectedRoute><LoanDetailPage /></ProtectedRoute> },
+  // { path: '/loans/:id/liquidate', element: <ProtectedRoute><LoanLiquidatePage /></ProtectedRoute> },
+  // { path: '/loans/:id/schedule',  element: <ProtectedRoute><LoanSchedulePage /></ProtectedRoute> },
   { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
   { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
