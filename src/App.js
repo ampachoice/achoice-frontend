@@ -16,7 +16,8 @@ import CheckoutPage     from './pages/buyer/CheckoutPage';
 import OrderHistoryPage from './pages/buyer/OrderHistoryPage';
 import LoanApplyPage    from './pages/buyer/LoanApplyPage';
 import LoansListPage    from './pages/buyer/LoansListPage';
-// LoanDetailPage, LoanLiquidatePage, LoanSchedulePage come next — not wired up yet
+import LoanDetailPage   from './pages/buyer/LoanDetailPage';
+// LoanLiquidatePage, LoanSchedulePage come next — not wired up yet
 import ProfilePage      from './pages/buyer/ProfilePage';
 import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
@@ -70,7 +71,7 @@ const router = createBrowserRouter([
   // Old "My Loans" URL — redirect so any existing bookmarks/links still work
   { path: '/loans/repay', element: <Navigate to="/loans" replace /> },
   // TODO: wire these up as each page is built —
-  // { path: '/loans/:id',           element: <ProtectedRoute><LoanDetailPage /></ProtectedRoute> },
+  { path: '/loans/:id', element: <ProtectedRoute><LoanDetailPage /></ProtectedRoute> },
   // { path: '/loans/:id/liquidate', element: <ProtectedRoute><LoanLiquidatePage /></ProtectedRoute> },
   // { path: '/loans/:id/schedule',  element: <ProtectedRoute><LoanSchedulePage /></ProtectedRoute> },
   { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
