@@ -17,7 +17,8 @@ import OrderHistoryPage from './pages/buyer/OrderHistoryPage';
 import LoanApplyPage    from './pages/buyer/LoanApplyPage';
 import LoansListPage    from './pages/buyer/LoansListPage';
 import LoanDetailPage   from './pages/buyer/LoanDetailPage';
-// LoanLiquidatePage, LoanSchedulePage come next — not wired up yet
+import LoanLiquidatePage from './pages/buyer/LoanLiquidatePage';
+// LoanSchedulePage comes next — not wired up yet
 import ProfilePage      from './pages/buyer/ProfilePage';
 import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
@@ -72,7 +73,7 @@ const router = createBrowserRouter([
   { path: '/loans/repay', element: <Navigate to="/loans" replace /> },
   // TODO: wire these up as each page is built —
   { path: '/loans/:id', element: <ProtectedRoute><LoanDetailPage /></ProtectedRoute> },
-  // { path: '/loans/:id/liquidate', element: <ProtectedRoute><LoanLiquidatePage /></ProtectedRoute> },
+  { path: '/loans/:id/liquidate', element: <ProtectedRoute><LoanLiquidatePage /></ProtectedRoute> },
   // { path: '/loans/:id/schedule',  element: <ProtectedRoute><LoanSchedulePage /></ProtectedRoute> },
   { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
   { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
