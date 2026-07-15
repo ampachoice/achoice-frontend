@@ -1265,8 +1265,19 @@ export default function LoanApplyPage() {
                       type="checkbox"
                       checked={agreedToTerms}
                       onChange={(e) => setAgreedToTerms(e.target.checked)}
-                      style={s.termsCheckbox}
+                      style={s.termsCheckboxHidden}
                     />
+                    <span
+                      style={
+                        agreedToTerms
+                          ? { ...s.termsCheckboxCircle, ...s.termsCheckboxCircleChecked }
+                          : s.termsCheckboxCircle
+                      }
+                    >
+                      {agreedToTerms && (
+                        <span style={s.termsCheckboxTick}>✓</span>
+                      )}
+                    </span>
                     <div style={s.termsText}>
                       I have read and agree to the{" "}
                       <button
@@ -1769,13 +1780,40 @@ const s = {
     alignItems: "flex-start",
     gap: 12,
     cursor: "pointer",
+    position: "relative",
   },
-  termsCheckbox: {
+  termsCheckboxHidden: {
+    position: "absolute",
+    opacity: 0,
+    width: 22,
+    height: 22,
+    margin: 0,
     marginTop: 2,
-    width: 18,
-    height: 18,
-    flexShrink: 0,
     cursor: "pointer",
+  },
+  termsCheckboxCircle: {
+    width: 22,
+    height: 22,
+    minWidth: 22,
+    borderRadius: "50%",
+    border: "2px solid #b5c9a8",
+    background: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: 2,
+    transition: "all 0.15s ease",
+  },
+  termsCheckboxCircleChecked: {
+    background: "#1f4d1f",
+    borderColor: "#1f4d1f",
+  },
+  termsCheckboxTick: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: 700,
+    lineHeight: 1,
   },
   termsText: { fontSize: 13, color: "#333", lineHeight: 1.6 },
   termsLink: {
