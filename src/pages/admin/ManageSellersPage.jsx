@@ -1319,6 +1319,7 @@ export default function ManageSellersPage() {
                 <thead>
                   <tr style={s.tableHead}>
                     <th style={s.th}>Seller</th>
+                    <th style={s.th}>Contact</th>
                     <th style={s.th}>State</th>
                     <th style={s.th}>Products</th>
                     <th style={s.th}>Sold</th>
@@ -1341,6 +1342,14 @@ export default function ManageSellersPage() {
                       <td style={s.td}>
                         <div style={s.sellerName}>{seller.business_name}</div>
                         <div style={s.sellerOwner}>{seller.owner}</div>
+                      </td>
+                      <td style={s.td}>
+                        <div style={s.sellerContactEmail}>
+                          {seller.user?.email || seller.email || "—"}
+                        </div>
+                        <div style={s.sellerContactPhone}>
+                          {seller.user?.phone || seller.phone || "—"}
+                        </div>
                       </td>
                       <td style={s.td}>{seller.state}</td>
                       <td style={s.td}>{seller.total_products}</td>
@@ -1876,6 +1885,8 @@ const s = {
   },
   sellerName: { fontWeight: 600, color: "#111" },
   sellerOwner: { fontSize: 11, color: "#888", marginTop: 2 },
+  sellerContactEmail: { fontSize: 12, color: "#333" },
+  sellerContactPhone: { fontSize: 11, color: "#888", marginTop: 2 },
   statusBadge: {
     fontSize: 11,
     fontWeight: 600,
