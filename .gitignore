@@ -23,3 +23,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel
+
+# Ignore all env files except explicit .example/.sample templates
+.env
+.env.*
+!.env.example
+!.env.sample
