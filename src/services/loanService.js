@@ -18,6 +18,12 @@ export const getMyLoanHistory = () => api.get('/loans/my-history');
 // → Paystack webhook on backend updates loan balance automatically
 export const repayLoan = (data) => api.post('/loans/repay', data);
 
+// Manually confirm a payment by reference — call this after Paystack
+// redirects back, or as a fallback if the webhook hasn't fired yet.
+// Body: { reference: string }
+export const verifyLoanPayment = (reference) =>
+  api.post('/loans/verify-payment', { reference });
+
 // ── GTBank-style loan interface (new) ────────────────────────────────────────
 
 // Loans List page — total due this month + one card per active/disbursed loan

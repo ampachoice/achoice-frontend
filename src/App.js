@@ -1,5 +1,14 @@
 
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, useLocation } from 'react-router-dom';
+
+// Paystack redirects here with ?reference=... in the URL. A plain
+// <Navigate to="/loans"> drops that query string entirely, which silently
+// broke payment verification — LoansListPage never saw the reference it
+// needed to confirm the payment. This preserves it across the redirect.
+function RedirectToLoansPreservingQuery() {
+  const location = useLocation();
+  return <Navigate to={`/loans${location.search}`} replace />;
+}
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────
 import LoginPage          from './pages/auth/LoginPage';
@@ -18,7 +27,7 @@ import LoanApplyPage    from './pages/buyer/LoanApplyPage';
 import LoansListPage    from './pages/buyer/LoansListPage';
 import LoanDetailPage   from './pages/buyer/LoanDetailPage';
 import LoanLiquidatePage from './pages/buyer/LoanLiquidatePage';
-// LoanSchedulePage comes next — not wired up yet
+import LoanSchedulePage from './pages/buyer/LoanSchedulePage';
 import ProfilePage      from './pages/buyer/ProfilePage';
 import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
@@ -70,11 +79,10 @@ const router = createBrowserRouter([
   { path: '/loans/apply', element: <ProtectedRoute><LoanApplyPage /></ProtectedRoute> },
   { path: '/loans',       element: <ProtectedRoute><LoansListPage /></ProtectedRoute> },
   // Old "My Loans" URL — redirect so any existing bookmarks/links still work
-  { path: '/loans/repay', element: <Navigate to="/loans" replace /> },
-  // TODO: wire these up as each page is built —
+  { path: '/loans/repay', element: <RedirectToLoansPreservingQuery /> },
   { path: '/loans/:id', element: <ProtectedRoute><LoanDetailPage /></ProtectedRoute> },
   { path: '/loans/:id/liquidate', element: <ProtectedRoute><LoanLiquidatePage /></ProtectedRoute> },
-  // { path: '/loans/:id/schedule',  element: <ProtectedRoute><LoanSchedulePage /></ProtectedRoute> },
+  { path: '/loans/:id/schedule',  element: <ProtectedRoute><LoanSchedulePage /></ProtectedRoute> },
   { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
   { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },

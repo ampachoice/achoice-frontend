@@ -113,23 +113,55 @@ export default function LoanDetailPage() {
               <div style={s.headerIcon}>🌾</div>
             </div>
 
-            {/* Action buttons */}
-            <div style={s.actionRow}>
-              <button
-                style={s.liquidateBtn}
-                onClick={() => navigate(`/loans/${id}/liquidate`)}
+            {/* Status banner — shown for every stage that isn't yet disbursed,
+                so a pending/approved/rejected loan never just looks "empty" */}
+            {!loan.is_disbursed && (
+              <div
+                style={{
+                  ...s.statusBanner,
+                  ...(loan.status === 'rejected' ? s.statusBannerRejected : s.statusBannerPending),
+                }}
               >
-                ⚡ Liquidate
-              </button>
-              <button
-                style={s.scheduleBtn}
-                onClick={() => navigate(`/loans/${id}/schedule`)}
-              >
-                📋 Schedule
-              </button>
-            </div>
+                <div style={s.statusBannerLabel}>{loan.status_label}</div>
+                {loan.status === 'pending' && (
+                  <div style={s.statusBannerText}>
+                    Your application is being reviewed. You'll be notified once a decision is made.
+                  </div>
+                )}
+                {loan.status === 'approved' && (
+                  <div style={s.statusBannerText}>
+                    Your loan has been approved and will be disbursed shortly.
+                  </div>
+                )}
+                {loan.status === 'rejected' && (
+                  <div style={s.statusBannerText}>
+                    {loan.rejection_reason || 'This application was not approved.'}
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Next payment + progress ring */}
+            {/* Action buttons — repaying/liquidating only makes sense once
+                money has actually moved */}
+            {loan.is_disbursed && (
+              <div style={s.actionRow}>
+                <button
+                  style={s.liquidateBtn}
+                  onClick={() => navigate(`/loans/${id}/liquidate`)}
+                >
+                  ⚡ Liquidate
+                </button>
+                <button
+                  style={s.scheduleBtn}
+                  onClick={() => navigate(`/loans/${id}/schedule`)}
+                >
+                  📋 Schedule
+                </button>
+              </div>
+            )}
+
+            {/* Next payment + progress ring — only relevant once disbursed */}
+            {loan.is_disbursed && (
             <div style={s.progressCard}>
               <div style={s.nextPaymentAmount}>
                 {loan.next_payment ? fmt(loan.next_payment.amount) : '—'}
@@ -173,6 +205,7 @@ export default function LoanDetailPage() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Details */}
             <div style={s.detailsCard}>
@@ -279,6 +312,21 @@ const s = {
     justifyContent: 'center',
     fontSize: 22,
   },
+  statusBanner: {
+    borderRadius: 14,
+    padding: '18px 20px',
+    marginBottom: 20,
+  },
+  statusBannerPending: {
+    background: '#fff8e7',
+    border: '1px solid #f0d99a',
+  },
+  statusBannerRejected: {
+    background: '#fdecec',
+    border: '1px solid #f5b5b5',
+  },
+  statusBannerLabel: { fontSize: 15, fontWeight: 700, color: '#111', marginBottom: 4 },
+  statusBannerText: { fontSize: 13, color: '#666', lineHeight: 1.5 },
   actionRow: { display: 'flex', gap: 12, marginBottom: 24 },
   liquidateBtn: {
     flex: 1,

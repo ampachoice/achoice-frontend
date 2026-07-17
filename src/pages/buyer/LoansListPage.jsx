@@ -1,20 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getLoanSummary } from '../../services/loanService';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { getLoanSummary, verifyLoanPayment } from '../../services/loanService';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
 
 export default function LoansListPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [toast, setToast] = useState(null);
+  const [verifying, setVerifying] = useState(false);
 
-  useEffect(() => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 1), 0));
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
 
+  const fetchSummary = () => {
     getLoanSummary()
       .then((res) => setSummary(res.data))
       .catch((err) => {
@@ -23,9 +28,56 @@ export default function LoansListPage() {
         );
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 1), 0));
+
+    // Confirm a payment when returning from Paystack. Check the URL first
+    // (the normal path), then fall back to whatever reference was last
+    // saved to localStorage before redirecting — a second safety net in
+    // case the URL's query string got lost anywhere along the way.
+    const params = new URLSearchParams(location.search);
+    const urlRef = params.get('reference') || params.get('trxref');
+    const savedRef = localStorage.getItem('last_loan_reference');
+    const reference = urlRef || savedRef;
+
+    if (reference) {
+      setVerifying(true);
+      verifyLoanPayment(reference)
+        .then(() => {
+          showToast('Payment confirmed! Your loan balance has been updated.');
+        })
+        .catch((err) => {
+          showToast(
+            err.response?.data?.message ||
+              'Payment received but not yet confirmed. It may take a moment to reflect — refresh shortly.',
+            'error',
+          );
+        })
+        .finally(() => {
+          localStorage.removeItem('last_loan_reference');
+          // Strip the reference out of the URL so refreshing the page
+          // doesn't try to re-verify an already-processed payment.
+          navigate('/loans', { replace: true });
+          setVerifying(false);
+          fetchSummary();
+        });
+    } else {
+      fetchSummary();
+    }
   }, []);
 
   const loans = summary?.loans || [];
+
+  const statusStyle = (status) =>
+    ({
+      pending:   { background: '#fff8e7', color: '#b36b00' },
+      approved:  { background: '#e7f0ff', color: '#1a4fa0' },
+      disbursed: { background: '#eafaf0', color: '#1a7a3a' },
+      active:    { background: '#eafaf0', color: '#1a7a3a' },
+    })[status] || { background: '#f0f0f0', color: '#555' };
 
   return (
     <div style={s.page}>
@@ -68,6 +120,10 @@ export default function LoansListPage() {
       </nav>
 
       <div style={s.container}>
+        {verifying && (
+          <div style={s.verifyingBanner}>⏳ Confirming your payment...</div>
+        )}
+
         <div style={s.headerRow}>
           <h1 style={s.title}>Loans</h1>
           <span style={s.openNew} onClick={() => navigate('/loans/apply')}>
@@ -124,16 +180,24 @@ export default function LoansListPage() {
                       <div style={s.loanIcon}>🌾</div>
                       <div>
                         <div style={s.loanLabel}>{loan.label}</div>
-                        <div style={s.loanSub}>Loan balance</div>
+                        <div style={s.loanSub}>
+                          {loan.is_disbursed ? 'Loan balance' : loan.status_label}
+                        </div>
                       </div>
                     </div>
                     <div style={s.loanCardRight}>
                       <div style={s.loanAmount}>
                         ₦{Number(loan.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </div>
-                      <div style={s.loanBalance}>
-                        ₦{Number(loan.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
+                      {loan.is_disbursed ? (
+                        <div style={s.loanBalance}>
+                          ₦{Number(loan.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                      ) : (
+                        <div style={{ ...s.statusBadge, ...statusStyle(loan.status) }}>
+                          {loan.status_label}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -142,6 +206,16 @@ export default function LoansListPage() {
           </>
         )}
       </div>
+      {toast && (
+        <div
+          style={{
+            ...s.toast,
+            ...(toast.type === 'error' ? s.toastError : {}),
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
@@ -151,6 +225,42 @@ const s = {
   logoImg: { width: 32, height: 32, borderRadius: 6 },
   logoText: { fontWeight: 700, fontSize: 15 },
   container: { maxWidth: 720, margin: '0 auto', padding: '32px 20px 60px' },
+  verifyingBanner: {
+    background: '#e7f0ff',
+    border: '1px solid #b8d0f0',
+    color: '#1a4fa0',
+    padding: '12px 18px',
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 600,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  statusBadge: {
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '4px 10px',
+    borderRadius: 99,
+    display: 'inline-block',
+    marginTop: 2,
+  },
+  toast: {
+    position: 'fixed',
+    bottom: 24,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: '#1f4d1f',
+    color: '#fff',
+    padding: '12px 24px',
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 600,
+    zIndex: 9999,
+    boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+    maxWidth: '90vw',
+    textAlign: 'center',
+  },
+  toastError: { background: '#cc0000' },
   headerRow: {
     display: 'flex',
     justifyContent: 'space-between',
