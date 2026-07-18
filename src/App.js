@@ -43,6 +43,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import Adminreportspage   from './pages/admin/Adminreportspage';
 import ManageSellersPage  from './pages/admin/ManageSellersPage';
 import ManageProductsPage from './pages/admin/ManageProductsPage';
+import AdminFlashSalesPage from './pages/admin/AdminFlashSalesPage';
 import ManageOrdersPage   from './pages/admin/ManageOrdersPage';
 import ManageLoansPage    from './pages/admin/ManageLoansPage';
 import LoanSettingsPage   from './pages/admin/LoanSettingsPage';
@@ -72,9 +73,13 @@ const router = createBrowserRouter([
   { path: '/reset-password',  element: <ResetPasswordPage /> },
   { path: '/change-password', element: <ChangePasswordPage /> },
 
-  // ── Buyer (any logged-in user) ───────────────────────────────────────────────
-  { path: '/products',    element: <ProtectedRoute><ProductPage /></ProtectedRoute> },
-  { path: '/product/:id', element: <ProtectedRoute><ProductPage /></ProtectedRoute> },
+  // ── Buyer ─────────────────────────────────────────────────────────────────
+  // Product browsing is public — the backend already serves these routes
+  // without auth (see routes/api.php "Public routes" block), and a
+  // Jumia-style storefront should let guests browse and click through from
+  // the landing page without being forced to log in first.
+  { path: '/products',    element: <ProductPage /> },
+  { path: '/product/:id', element: <ProductPage /> },
   { path: '/cart',        element: <ProtectedRoute><CartPage /></ProtectedRoute> },
   { path: '/checkout',    element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
   { path: '/orders',      element: <ProtectedRoute><OrderHistoryPage /></ProtectedRoute> },
@@ -136,6 +141,10 @@ const router = createBrowserRouter([
       {
         path: 'products',
         element: <ProtectedRoute adminOnly><ManageProductsPage /></ProtectedRoute>
+      },
+      {
+        path: 'flash-sales',
+        element: <ProtectedRoute adminOnly><AdminFlashSalesPage /></ProtectedRoute>
       },
       {
         path: 'product-approvals',

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { register } from "../../services/authService";
+import { register, sendOtp, verifyOtp } from "../../services/authService";
+
+const DEFAULT_RESEND_COOLDOWN = 60; // seconds — matches the backend's default otp_resend_cooldown_seconds
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -60,6 +62,24 @@ export default function RegisterPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // ── Email OTP verification (required before the account can be created) ──
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState(""); // which email the verification belongs to
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState(null);
+  const [otpMessage, setOtpMessage] = useState(null);
+  const [resendCountdown, setResendCountdown] = useState(0);
+
+  // Tick the resend countdown down once a second
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCountdown]);
 
   useEffect(() => {
     if (document.getElementById("rp-style")) return;
@@ -177,8 +197,84 @@ export default function RegisterPage() {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  // Editing the email after it's been verified invalidates that verification —
+  // a code was issued for the old address, not the new one.
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, email: value }));
+    if (emailVerified && value !== verifiedEmail) {
+      setEmailVerified(false);
+      setOtpSent(false);
+      setOtpCode("");
+      setOtpMessage(null);
+      setOtpError(null);
+      setResendCountdown(0);
+    }
+  };
+
+  const handleUseDifferentEmail = () => {
+    setFormData((prev) => ({ ...prev, email: "" }));
+    setEmailVerified(false);
+    setOtpSent(false);
+    setOtpCode("");
+    setOtpMessage(null);
+    setOtpError(null);
+    setResendCountdown(0);
+  };
+
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      setOtpError("Enter your email address first.");
+      return;
+    }
+    setOtpSending(true);
+    setOtpError(null);
+    setOtpMessage(null);
+    try {
+      const res = await sendOtp(formData.email, "buyer_signup");
+      setOtpSent(true);
+      setOtpMessage(res.data?.message || "Verification code sent — check your email.");
+      setResendCountdown(DEFAULT_RESEND_COOLDOWN);
+    } catch (err) {
+      if (err.response?.status === 429) {
+        // A code was already sent recently — let them enter it, and sync the
+        // resend countdown to the server's actual cooldown.
+        setOtpSent(true);
+        setResendCountdown(err.response.data?.retry_after_seconds ?? DEFAULT_RESEND_COOLDOWN);
+        setOtpError(err.response.data?.message || "Please wait before requesting another code.");
+      } else {
+        setOtpError(err.response?.data?.message || "Failed to send verification code. Please try again.");
+      }
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode || otpCode.length < 4) {
+      setOtpError("Enter the code sent to your email.");
+      return;
+    }
+    setOtpVerifying(true);
+    setOtpError(null);
+    try {
+      await verifyOtp(formData.email, otpCode);
+      setEmailVerified(true);
+      setVerifiedEmail(formData.email);
+      setOtpMessage("✓ Email verified.");
+    } catch (err) {
+      setOtpError(err.response?.data?.message || "Invalid or expired code. Please try again.");
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!emailVerified) {
+      setError("Please verify your email address before creating an account.");
+      return;
+    }
     if (formData.password !== formData.password_confirmation) {
       setError("Passwords do not match.");
       return;
@@ -342,10 +438,87 @@ export default function RegisterPage() {
                   name="email"
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={handleChange}
+                  onChange={handleEmailChange}
                   required
                   autoComplete="email"
+                  readOnly={emailVerified}
+                  style={emailVerified ? { background: "#f7f5f0", color: "#666" } : undefined}
                 />
+              </div>
+
+              {/* ── Email OTP verification — must complete before the form can submit ── */}
+              <div className="rp-field">
+                {emailVerified ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      background: "#f0fff4",
+                      border: "1px solid #a8d5a8",
+                      color: "#1a7a3a",
+                      borderRadius: 8,
+                      padding: "9px 12px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                  >
+                    ✓ Email verified
+                    <button
+                      type="button"
+                      onClick={handleUseDifferentEmail}
+                      style={{ marginLeft: "auto", background: "none", border: "none", color: "#1f4d1f", fontSize: 12, textDecoration: "underline", cursor: "pointer" }}
+                    >
+                      Use a different email
+                    </button>
+                  </div>
+                ) : !otpSent ? (
+                  <button
+                    type="button"
+                    className="rp-eye"
+                    style={{ width: "100%", borderRadius: 10, border: "1.5px solid #ddd", padding: "13px 14px", fontSize: 13, fontWeight: 700, color: "#1f4d1f", background: "#f7f5f0", cursor: otpSending ? "not-allowed" : "pointer" }}
+                    onClick={handleSendOtp}
+                    disabled={otpSending || !formData.email}
+                  >
+                    {otpSending ? "Sending code..." : "Verify Email — Send Code"}
+                  </button>
+                ) : (
+                  <div>
+                    <label className="rp-label">Enter the 6-digit code sent to your email</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        className="rp-input"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="123456"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        style={{ letterSpacing: 3, textAlign: "center", flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={otpVerifying || otpCode.length < 4}
+                        style={{ padding: "0 20px", borderRadius: 10, border: "none", background: "#1f4d1f", color: "#fff", fontWeight: 700, fontSize: 13, cursor: otpVerifying ? "not-allowed" : "pointer" }}
+                      >
+                        {otpVerifying ? "Verifying..." : "Verify"}
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={resendCountdown > 0 || otpSending}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: 12, fontWeight: 600, color: resendCountdown > 0 ? "#aaa" : "#1f4d1f", textDecoration: resendCountdown > 0 ? "none" : "underline", cursor: resendCountdown > 0 ? "default" : "pointer" }}
+                      >
+                        {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : "Resend code"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {otpMessage && !emailVerified && <div className="rp-pw-match" style={{ color: "#1a7a3a" }}>{otpMessage}</div>}
+                {otpError && <div className="rp-pw-match" style={{ color: "#cc0000" }}>{otpError}</div>}
               </div>
 
               <div className="rp-field">
@@ -463,14 +636,17 @@ export default function RegisterPage() {
 
               <button
                 type="submit"
-                className={loading || !!success ? "rp-btn-dis" : "rp-btn"}
-                disabled={loading || !!success}
+                className={loading || !!success || !emailVerified ? "rp-btn-dis" : "rp-btn"}
+                disabled={loading || !!success || !emailVerified}
+                title={!emailVerified ? "Verify your email address first" : undefined}
               >
                 {loading
                   ? "Creating Account..."
                   : success
                     ? "Redirecting..."
-                    : "Create Free Account →"}
+                    : !emailVerified
+                      ? "Verify Email to Continue"
+                      : "Create Free Account →"}
               </button>
             </form>
 

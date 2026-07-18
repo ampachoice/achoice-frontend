@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getAllProducts } from '../services/productService';
 import api from '../services/api';
@@ -7,6 +7,22 @@ import NotificationBell from '../components/buyer/NotificationBell';
 
 const LOGO_PATH = '/achoice logo.png';
 const PRODUCTS_PER_PAGE = 8;
+
+// Category quick-links / rails — slug must match the backend's product
+// `category` enum exactly (grains, vegetables, fruits, tubers, livestock,
+// poultry, fishery, dairy, processed) so GET /products/category/{slug} works.
+const CATEGORIES = [
+  { slug: 'grains',     label: 'Grains',     icon: '🌾' },
+  { slug: 'vegetables', label: 'Vegetables', icon: '🥬' },
+  { slug: 'fruits',     label: 'Fruits',     icon: '🍎' },
+  { slug: 'tubers',     label: 'Tubers',     icon: '🍠' },
+  { slug: 'livestock',  label: 'Livestock',  icon: '🐄' },
+  { slug: 'poultry',    label: 'Poultry',    icon: '🐔' },
+  { slug: 'fishery',    label: 'Fishery',    icon: '🐟' },
+  { slug: 'dairy',      label: 'Dairy',      icon: '🥛' },
+  { slug: 'processed',  label: 'Processed',  icon: '📦' },
+];
+const RAIL_PRODUCTS_LIMIT = 12;
 
 // Default carousel slides — replaced by admin banner settings
 const DEFAULT_SLIDES = [
@@ -147,6 +163,73 @@ const injectCSS = () => {
     .hp-promo-item:last-child { border-right: none; }
     .hp-promo-icon { font-size: 22px; }
 
+    /* Category quick-links row */
+    .hp-cat-row {
+      display: flex; overflow-x: auto; gap: 16px; padding: 24px 40px;
+      background: #fff; border-bottom: 1px solid #eee; scrollbar-width: none;
+    }
+    .hp-cat-row::-webkit-scrollbar { display: none; }
+    .hp-cat-item {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      flex-shrink: 0; width: 84px; cursor: pointer; text-decoration: none;
+    }
+    .hp-cat-icon-circle {
+      width: 60px; height: 60px; border-radius: 50%; background: #f7f5f0;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+      border: 1px solid #e8e4dc; transition: background 0.2s, transform 0.15s;
+    }
+    .hp-cat-item:hover .hp-cat-icon-circle { background: #eef6ea; transform: translateY(-2px); }
+    .hp-cat-label { font-size: 11.5px; font-weight: 600; color: #333; text-align: center; }
+
+    /* Category rails */
+    .hp-rail-section { padding: 40px 40px 8px; }
+    .hp-rail-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; }
+    .hp-rail-title { font-family: 'Georgia, serif'; font-size: 19px; font-weight: 700; color: #111; display: flex; align-items: center; gap: 8px; }
+    .hp-rail-see-all { font-size: 12.5px; font-weight: 700; color: #1f4d1f; text-decoration: none; white-space: nowrap; }
+    .hp-rail-see-all:hover { text-decoration: underline; }
+    .hp-rail-track { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; }
+    .hp-rail-card { flex-shrink: 0; width: 170px; scroll-snap-align: start; }
+
+    /* Flash Sale strip */
+    .hp-flash-section { padding: 32px 40px 8px; background: #fff8ec; }
+    .hp-flash-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+    .hp-flash-title { display: flex; align-items: center; gap: 8px; font-family: 'Georgia, serif'; font-size: 20px; font-weight: 700; color: #cc0000; }
+    .hp-flash-track { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 18px; scroll-snap-type: x proximity; }
+    .hp-flash-card {
+      flex-shrink: 0; width: 180px; background: #fff; border-radius: 10px; overflow: hidden;
+      border: 1px solid #f3d9a8; cursor: pointer; scroll-snap-align: start;
+    }
+    .hp-flash-discount-badge {
+      position: absolute; top: 8px; left: 8px; background: #cc0000; color: #fff;
+      font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 4px;
+    }
+    .hp-flash-timer {
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      background: #1a1a1a; color: #f0c050; font-size: 11px; font-weight: 700;
+      padding: 4px 6px; letter-spacing: 0.5px; font-variant-numeric: tabular-nums;
+    }
+    .hp-flash-progress-track { height: 6px; background: #eee; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .hp-flash-progress-fill { height: 100%; background: linear-gradient(90deg, #f0c050, #cc0000); }
+    .hp-flash-left-label { font-size: 9.5px; color: #888; margin-top: 3px; }
+
+    /* Top Seller Spotlight */
+    .hp-spotlight-section { padding: 48px 40px; background: #f7f5f0; }
+    .hp-spotlight-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+    .hp-spotlight-card {
+      background: #fff; border-radius: 10px; padding: 18px; text-align: center;
+      border: 1px solid #e8e4dc; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .hp-spotlight-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.07); }
+    .hp-spotlight-logo {
+      width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center; background: #1f4d1f;
+      color: #fff; font-weight: 700; font-size: 20px;
+    }
+    .hp-spotlight-badge {
+      display: inline-block; font-size: 9.5px; font-weight: 700; padding: 3px 9px;
+      border-radius: 20px; margin-top: 8px; letter-spacing: 0.3px;
+    }
+
     @media (max-width: 768px) {
       .hp-hamburger { display: block !important; }
       .hp-nav-links { display: none !important; }
@@ -180,6 +263,15 @@ const injectCSS = () => {
       .hp-promo-item { padding: 10px 16px; font-size: 12px; }
       .hp-carousel-prev { left: 8px; }
       .hp-carousel-next { right: 8px; }
+      .hp-cat-row { padding: 18px 16px; gap: 12px; }
+      .hp-cat-item { width: 68px; }
+      .hp-cat-icon-circle { width: 50px; height: 50px; font-size: 22px; }
+      .hp-rail-section { padding: 28px 16px 4px !important; }
+      .hp-rail-card { width: 148px; }
+      .hp-flash-section { padding: 24px 16px 4px !important; }
+      .hp-flash-card { width: 150px; }
+      .hp-spotlight-section { padding: 32px 16px !important; }
+      .hp-spotlight-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
     }
 
     @media (max-width: 480px) {
@@ -208,6 +300,24 @@ export default function HomePage() {
   const [newsletter, setNewsletter] = useState({ name: '', email: '' });
   const [newsletterMsg, setNewsletterMsg] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Category rails — { [slug]: { loading, products } }
+  const [categoryRails, setCategoryRails] = useState({});
+
+  // Flash sales — fetched with a client timestamp so the countdown can tick
+  // locally between polls without drifting (server seconds_remaining is the source of truth).
+  const [flashSales, setFlashSales] = useState([]);
+  const [flashSalesFetchedAt, setFlashSalesFetchedAt] = useState(null);
+  const [tick, setTick] = useState(0); // increments every second to force countdown re-render
+
+  // Top Seller Spotlight
+  const [spotlightSellers, setSpotlightSellers] = useState([]);
+  const [spotlightLoading, setSpotlightLoading] = useState(true);
+
+  // Genuine admin-curated Featured Products row (GET /products/featured) —
+  // distinct from the full searchable catalog section further down the page.
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
 
   // Carousel state
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -257,8 +367,52 @@ export default function HomePage() {
     });
     api.get('/settings/site').then(r => setSiteSetting(r.data)).catch(() => {});
 
+    // Category rails — fetch each category independently so a slow/empty
+    // one never blocks the others; an empty category is simply hidden.
+    CATEGORIES.forEach(({ slug }) => {
+      setCategoryRails(prev => ({ ...prev, [slug]: { loading: true, products: [] } }));
+      api.get(`/products/category/${slug}`)
+        .then(r => {
+          const data = r.data?.data || (Array.isArray(r.data) ? r.data : []);
+          setCategoryRails(prev => ({
+            ...prev,
+            [slug]: { loading: false, products: (Array.isArray(data) ? data : []).slice(0, RAIL_PRODUCTS_LIMIT) },
+          }));
+        })
+        .catch(() => setCategoryRails(prev => ({ ...prev, [slug]: { loading: false, products: [] } })));
+    });
+
+    // Flash sales — poll every 45s (within the 30-60s window) since
+    // quantity_left can hit 0 before the countdown does.
+    const fetchFlashSales = () => {
+      api.get('/flash-sales')
+        .then(r => {
+          setFlashSales(Array.isArray(r.data?.flash_sales) ? r.data.flash_sales : []);
+          setFlashSalesFetchedAt(Date.now());
+        })
+        .catch(() => {});
+    };
+    fetchFlashSales();
+    const flashPollRef = setInterval(fetchFlashSales, 45000);
+    const tickRef = setInterval(() => setTick(t => t + 1), 1000);
+
+    // Top Seller Spotlight
+    setSpotlightLoading(true);
+    api.get('/sellers/spotlight?limit=6')
+      .then(r => setSpotlightSellers(Array.isArray(r.data?.spotlight_sellers) ? r.data.spotlight_sellers : []))
+      .catch(() => {})
+      .finally(() => setSpotlightLoading(false));
+
+    // Genuine admin-curated Featured Products (is_featured, no expiry) —
+    // separate from Flash Sales and from the full searchable catalog below.
+    setFeaturedLoading(true);
+    api.get('/products/featured')
+      .then(r => setFeaturedProducts(Array.isArray(r.data) ? r.data : (r.data?.data || [])))
+      .catch(() => {})
+      .finally(() => setFeaturedLoading(false));
+
     startAutoPlay();
-    return () => clearInterval(autoPlayRef.current);
+    return () => { clearInterval(autoPlayRef.current); clearInterval(flashPollRef); clearInterval(tickRef); };
   }, []);
 
   useEffect(() => {
@@ -296,9 +450,67 @@ export default function HomePage() {
     setTimeout(() => setNewsletterMsg(''), 4000);
   };
 
+  // Live countdown for a flash sale: server gave us seconds_remaining as of
+  // flashSalesFetchedAt, so we tick it down locally between polls (30-60s cadence)
+  // instead of re-deriving it from ends_at, per the "don't calculate client-side" note.
+  // Live countdown for a flash sale: server gave us seconds_remaining as of
+  // flashSalesFetchedAt, so we tick it down locally between polls (30-60s cadence)
+  // instead of re-deriving it from ends_at, per the "don't calculate client-side" note.
+  // `tick` (incremented every second) is the dependency that drives the re-render.
+  const liveFlashSales = useMemo(() => {
+    return flashSales.map(sale => {
+      const elapsed = flashSalesFetchedAt ? Math.floor((Date.now() - flashSalesFetchedAt) / 1000) : 0;
+      return { ...sale, _liveSecondsRemaining: Math.max(0, sale.seconds_remaining - elapsed) };
+    }).filter(sale => sale._liveSecondsRemaining > 0 && sale.quantity_left > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flashSales, flashSalesFetchedAt, tick]);
+
+  const formatCountdown = (totalSeconds) => {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const sec = totalSeconds % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  };
+
+  const initials = (name) => (name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+
+  const scoreBadgeColors = {
+    Excellent: { bg: '#e6f4ea', color: '#1f4d1f' },
+    Good:      { bg: '#eaf2fb', color: '#1a5fa8' },
+    Fair:      { bg: '#fff4de', color: '#a86a00' },
+    'At Risk': { bg: '#fbe9e9', color: '#a81f1f' },
+  };
+
   const renderStars = (rating) => {
     const r = Math.round(Number(rating) || 0);
     return '★'.repeat(r) + '☆'.repeat(5 - r);
+  };
+
+  // Compact product card used inside the horizontal category rails.
+  const renderRailCard = (product) => {
+    const imageUrl = product.images?.[0]?.image_url || product.images?.[0]?.url || product.image;
+    const price = Number(product.discount_price || product.price);
+    const originalPrice = Number(product.price);
+    const hasDiscount = product.discount_price && price < originalPrice;
+    return (
+      <div key={product.id} className="hp-rail-card" style={s.prodCard} onClick={() => navigate(`/product/${product.id}`)}>
+        <div style={{ position: 'relative', height: 130, background: '#f7f5f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {imageUrl ? <img src={imageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ fontSize: 36 }}>🌿</div>}
+          {hasDiscount && <div style={{ position: 'absolute', top: 6, right: 6, background: '#cc0000', color: '#fff', fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 4 }}>SALE</div>}
+        </div>
+        <div style={{ padding: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#111', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
+          <div style={{ fontSize: 10, color: '#888', marginBottom: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.seller?.business_name || 'ACHOICE Seller'}</div>
+          {hasDiscount ? (
+            <>
+              <div style={{ fontSize: 9, color: '#999', textDecoration: 'line-through' }}>₦{originalPrice.toLocaleString()}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#cc0000' }}>₦{price.toLocaleString()}</div>
+            </>
+          ) : <div style={{ fontSize: 13, fontWeight: 700, color: '#1f4d1f' }}>₦{price.toLocaleString()}</div>}
+        </div>
+      </div>
+    );
   };
 
   const totalPages = meta?.last_page || meta?.total_pages || 1;
@@ -461,6 +673,73 @@ export default function HomePage() {
         ))}
       </div>
 
+      {/* Flash Sales — hidden entirely if none are currently active */}
+      {liveFlashSales.length > 0 && (
+        <section className="hp-flash-section">
+          <div className="hp-flash-header">
+            <div className="hp-flash-title">⚡ Flash Sales</div>
+            <div style={{ fontSize: 11.5, color: '#a86a00' }}>Grab them before they're gone</div>
+          </div>
+          <div className="hp-flash-track">
+            {liveFlashSales.map(sale => {
+              const soldPct = Math.min(100, Math.round((sale.quantity_sold / sale.quantity_limit) * 100));
+              const imageUrl = sale.product?.image;
+              return (
+                <div key={sale.id} className="hp-flash-card" onClick={() => navigate(`/product/${sale.product.id}`)}>
+                  <div style={{ position: 'relative', height: 120, background: '#f7f5f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {imageUrl ? <img src={imageUrl} alt={sale.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ fontSize: 34 }}>🌿</div>}
+                    <div className="hp-flash-discount-badge">-{sale.discount_percent}%</div>
+                  </div>
+                  <div className="hp-flash-timer">⏱ {formatCountdown(sale._liveSecondsRemaining)}</div>
+                  <div style={{ padding: '10px 10px 12px' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sale.product.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#cc0000' }}>₦{Number(sale.sale_price).toLocaleString()}</div>
+                      <div style={{ fontSize: 10.5, color: '#999', textDecoration: 'line-through' }}>₦{Number(sale.original_price).toLocaleString()}</div>
+                    </div>
+                    <div className="hp-flash-progress-track"><div className="hp-flash-progress-fill" style={{ width: `${soldPct}%` }} /></div>
+                    <div className="hp-flash-left-label">{sale.quantity_left} left of {sale.quantity_limit}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Category Quick-Links */}
+      <div className="hp-cat-row">
+        {CATEGORIES.map(cat => (
+          <div key={cat.slug} className="hp-cat-item" onClick={() => navigate(`/products?category=${cat.slug}`)}>
+            <div className="hp-cat-icon-circle">{cat.icon}</div>
+            <div className="hp-cat-label">{cat.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Top Seller Spotlight */}
+      {!spotlightLoading && spotlightSellers.length > 0 && (
+        <section className="hp-spotlight-section">
+          <div style={s.sectionLabel}>Trusted Farmers</div>
+          <h2 className="hp-section-title" style={s.sectionTitle}>Top Seller Spotlight</h2>
+          <div className="hp-spotlight-grid">
+            {spotlightSellers.map(seller => {
+              const badgeColors = scoreBadgeColors[seller.score_label] || { bg: '#eee', color: '#555' };
+              return (
+                <div key={seller.id} className="hp-spotlight-card" onClick={() => navigate(`/products?seller_id=${seller.id}`)}>
+                  {seller.logo
+                    ? <img src={seller.logo} alt={seller.business_name} className="hp-spotlight-logo" />
+                    : <div className="hp-spotlight-logo">{initials(seller.business_name)}</div>}
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: '#111' }}>{seller.business_name}</div>
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{seller.state}{seller.lga ? `, ${seller.lga}` : ''}</div>
+                  <div className="hp-spotlight-badge" style={{ background: badgeColors.bg, color: badgeColors.color }}>{seller.score_label} Seller</div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* How It Works */}
       <section id="how-it-works" className="hp-section" style={{ padding: '56px 40px', backgroundColor: '#f7f5f0' }}>
         <div style={s.sectionLabel}>Simple Process</div>
@@ -487,7 +766,7 @@ export default function HomePage() {
         <div className="hp-products-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
           <div>
             <div style={s.sectionLabel}>Fresh This Week</div>
-            <h2 className="hp-section-title" style={{ ...s.sectionTitle, marginBottom: 0 }}>Featured Products</h2>
+            <h2 className="hp-section-title" style={{ ...s.sectionTitle, marginBottom: 0 }}>Browse All Products</h2>
           </div>
           <input className="hp-search-input" style={s.searchInput} type="text" placeholder="Search products..."
             value={search} onChange={e => handleSearch(e.target.value)} />
@@ -544,6 +823,39 @@ export default function HomePage() {
           <button style={s.viewAllBtn} onClick={() => navigate('/products')}>View All Products →</button>
         </div>
       </section>
+
+      {/* Featured Products — admin-curated (is_featured), no expiry, distinct from Flash Sales */}
+      {!featuredLoading && featuredProducts.length > 0 && (
+        <section className="hp-rail-section">
+          <div className="hp-rail-header">
+            <div className="hp-rail-title"><span>🌟</span> Featured Products</div>
+            <span style={{ fontSize: 11.5, color: '#888' }}>Handpicked by ACHOICE</span>
+          </div>
+          <div className="hp-rail-track">
+            {featuredProducts.map(renderRailCard)}
+          </div>
+        </section>
+      )}
+
+      {/* Category Rails — one shelf per category, hidden if that category has no products yet */}
+      {CATEGORIES.map(cat => {
+        const rail = categoryRails[cat.slug];
+        if (!rail || rail.loading || rail.products.length === 0) return null;
+        return (
+          <section key={cat.slug} className="hp-rail-section">
+            <div className="hp-rail-header">
+              <div className="hp-rail-title"><span>{cat.icon}</span> {cat.label}</div>
+              <a className="hp-rail-see-all" href={`/products?category=${cat.slug}`}
+                onClick={(e) => { e.preventDefault(); navigate(`/products?category=${cat.slug}`); }}>
+                See all →
+              </a>
+            </div>
+            <div className="hp-rail-track">
+              {rail.products.map(renderRailCard)}
+            </div>
+          </section>
+        );
+      })}
 
       {/* Video */}
       <section id="video" className="hp-video-section" style={s.videoSection}>

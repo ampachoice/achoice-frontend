@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   getAllProducts,
   getCategories,
@@ -217,7 +217,9 @@ export default function ProductPage() {
   const [page, setPage]               = useState(1);
   const [meta, setMeta]               = useState(null);
   const [searchTerm, setSearchTerm]   = useState("");
-  const [selectedCat, setSelectedCat] = useState("All");
+  // Pre-filter from a landing-page "See all" / category quick-link, e.g. /products?category=grains.
+  const [searchParams] = useSearchParams();
+  const [selectedCat, setSelectedCat] = useState(searchParams.get("category") || "All");
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError]     = useState(null);
 
@@ -271,11 +273,13 @@ export default function ProductPage() {
     if (id) return;
     setListLoading(true);
     setListError(null);
+    const sellerId = searchParams.get("seller_id");
     getAllProducts({
       page,
       per_page: 20,
       ...(selectedCat !== "All" && { category: selectedCat }),
       ...(searchTerm && { search: searchTerm }),
+      ...(sellerId && { seller_id: sellerId }),
     })
       .then((res) => {
         const pData = res.data;
@@ -285,7 +289,7 @@ export default function ProductPage() {
       })
       .catch(() => setListError("Failed to load products. Please check your connection."))
       .finally(() => setListLoading(false));
-  }, [id, page, selectedCat, searchTerm]);
+  }, [id, page, selectedCat, searchTerm, searchParams]);
 
   // load product detail
   useEffect(() => {

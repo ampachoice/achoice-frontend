@@ -11,6 +11,7 @@ const SIDEBAR_ITEMS = [
   { icon: "📋", label: "Complaints", path: "/admin/complaints" },
   { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
   { icon: "🌾", label: "Products", path: "/admin/products" },
+  { icon: "⚡", label: "Flash Sales", path: "/admin/flash-sales" },
   { icon: "📦", label: "Orders", path: "/admin/orders" },
   { icon: "💰", label: "Loans", path: "/admin/loans" },
   { icon: "👥", label: "Staff", path: "/admin/staff" },

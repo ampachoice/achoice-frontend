@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
@@ -11,6 +12,8 @@ export default function CartPage() {
   const [feedback, setFeedback]           = useState('');
   const [cartCount, setCartCount]         = useState(0);
   const [cancelledNotice, setCancelledNotice] = useState(false);
+  // product_id -> active flash sale ({ id, sale_price, quantity_left, ... })
+  const [flashSaleMap, setFlashSaleMap] = useState({});
 
   useEffect(() => {
     if (document.getElementById('cp2-style')) return;
@@ -71,7 +74,11 @@ export default function CartPage() {
       .crt-item-actions { display:flex; flex-direction:column; align-items:flex-end; gap:10px; flex-shrink:0; }
       .crt-qty { display:flex; align-items:center; gap:10px; border:1.5px solid #ddd; border-radius:20px; padding:4px 14px; }
       .crt-qty-btn { background:none; border:none; font-size:20px; cursor:pointer; color:#1f4d1f; font-weight:700; line-height:1; padding:0; }
+      .crt-qty-btn:disabled { color:#ccc; cursor:not-allowed; }
       .crt-qty-num { font-size:15px; font-weight:700; min-width:20px; text-align:center; }
+      .crt-flash-badge { display:inline-flex; align-items:center; gap:4px; background:#fff0e0; color:#cc0000; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; margin-top:4px; }
+      .crt-flash-warning { display:flex; align-items:center; gap:8px; background:#fff8e7; border:1px solid #f0c050; color:#7a5000; font-size:11.5px; border-radius:8px; padding:8px 12px; margin-top:8px; }
+      .crt-flash-fix-btn { background:#1f4d1f; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
       .crt-item-total  { font-size:18px; font-weight:900; color:#1f4d1f; }
       .crt-remove-btn  { background:none; border:none; color:#cc0000; font-size:12px; cursor:pointer; text-decoration:underline; font-family:inherit; }
 
@@ -161,12 +168,27 @@ export default function CartPage() {
       setCancelledNotice(true);
       window.history.replaceState({}, '', '/cart');
     }
+
+    // One item per customer per flash sale (backend-enforced) — fetch the
+    // active list so we can cap the stepper at 1 and label the item here,
+    // instead of letting the buyer hit the 422 at checkout.
+    api.get('/flash-sales')
+      .then(r => {
+        const map = {};
+        (r.data?.flash_sales || []).forEach(sale => { map[sale.product.id] = sale; });
+        setFlashSaleMap(map);
+      })
+      .catch(() => {});
   }, []);
 
   const showFeedback = (msg) => { setFeedback(msg); setTimeout(() => setFeedback(''), 2000); };
 
   const updateQuantity = (id, newQty) => {
     if (newQty < 1) return;
+    if (flashSaleMap[id] && newQty > 1) {
+      showFeedback('Flash sale items are limited to 1 per customer');
+      return;
+    }
     const updated = cart.map(item => item.id === id ? { ...item, quantity: newQty } : item);
     setCart(updated);
     localStorage.setItem('cart', JSON.stringify(updated));
@@ -251,7 +273,9 @@ export default function CartPage() {
                 <button className="crt-clear-btn" onClick={clearCart}>Clear All</button>
               </div>
 
-              {cart.map(item => (
+              {cart.map(item => {
+                const flashSale = flashSaleMap[item.id];
+                return (
                 <div key={item.id} className="crt-item">
                   <div className="crt-item-img">
                     {item.image
@@ -262,18 +286,31 @@ export default function CartPage() {
                     <div className="crt-item-name">{item.name}</div>
                     <div className="crt-item-seller">{item.seller?.business_name || 'Verified ACHOICE Seller'}</div>
                     <div className="crt-item-price">₦{Number(item.price).toLocaleString()} / unit</div>
+                    {flashSale && <div className="crt-flash-badge">⚡ Flash Sale — limit 1</div>}
+                    {flashSale && item.quantity > 1 && (
+                      <div className="crt-flash-warning">
+                        Flash sale items are limited to 1 per customer.
+                        <button className="crt-flash-fix-btn" onClick={() => updateQuantity(item.id, 1)}>Reduce to 1</button>
+                      </div>
+                    )}
                   </div>
                   <div className="crt-item-actions">
                     <div className="crt-qty">
                       <button className="crt-qty-btn" onClick={() => updateQuantity(item.id, item.quantity - 1)}>−</button>
                       <span className="crt-qty-num">{item.quantity}</span>
-                      <button className="crt-qty-btn" onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                      <button
+                        className="crt-qty-btn"
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        disabled={!!flashSale && item.quantity >= 1}
+                        title={flashSale ? 'Flash sale items are limited to 1 per customer' : undefined}
+                      >+</button>
                     </div>
                     <div className="crt-item-total">₦{(Number(item.price) * item.quantity).toLocaleString()}</div>
                     <button className="crt-remove-btn" onClick={() => removeItem(item.id)}>Remove</button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {/* ✅ Keep Shopping — always visible on ALL screen sizes */}
               <button className="crt-continue-btn crt-keep-shopping"
