@@ -120,7 +120,7 @@ export default function LoanRepayPage() {
     api
       .get(`/loans/${viewedLoanId}/installments`)
       .then((res) => {
-        setRealSchedule(res.data?.installments || []);
+        setRealSchedule(res.data?.schedule || []);
         setScheduleSummary(res.data?.summary || null);
       })
       .catch(() => {});
@@ -191,7 +191,7 @@ export default function LoanRepayPage() {
     api
       .get(`/loans/${loanId}/installments`)
       .then((res) => {
-        setRealSchedule(res.data?.installments || []);
+        setRealSchedule(res.data?.schedule || []);
         setScheduleSummary(res.data?.summary || null);
       })
       .catch((err) => {

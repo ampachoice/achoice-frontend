@@ -20,7 +20,7 @@ export default function LoanSchedulePage() {
 
     Promise.all([getInstallments(id), getLoanDetails(id)])
       .then(([instRes, loanRes]) => {
-        setInstallments(instRes.data?.installments || []);
+        setInstallments(instRes.data?.schedule || []);
         setSummary(instRes.data?.summary || null);
         setLoan(loanRes.data);
       })
