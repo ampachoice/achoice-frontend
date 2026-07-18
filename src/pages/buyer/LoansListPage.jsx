@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLoanSummary, verifyLoanPayment } from '../../services/loanService';
+import { getLoanSummary, verifyLoanPayment, payAllDue } from '../../services/loanService';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
 
@@ -13,6 +13,7 @@ export default function LoansListPage() {
   const [cartCount, setCartCount] = useState(0);
   const [toast, setToast] = useState(null);
   const [verifying, setVerifying] = useState(false);
+  const [payingAll, setPayingAll] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -28,6 +29,31 @@ export default function LoansListPage() {
         );
       })
       .finally(() => setLoading(false));
+  };
+
+  const handlePayAll = async () => {
+    setPayingAll(true);
+    try {
+      const res = await payAllDue();
+      if (res.data?.reference_number) {
+        // Same auto-verify-on-return pattern used everywhere else in this
+        // app — a fallback in case the URL's query string doesn't survive
+        // whatever redirect chain Paystack sends the buyer through.
+        localStorage.setItem('last_loan_reference', res.data.reference_number);
+      }
+      if (res.data?.payment_url) {
+        window.location.href = res.data.payment_url;
+      } else {
+        showToast('Payment could not be started. Please try again.', 'error');
+        setPayingAll(false);
+      }
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || 'Failed to start payment. Please try again.',
+        'error',
+      );
+      setPayingAll(false);
+    }
   };
 
   useEffect(() => {
@@ -147,12 +173,23 @@ export default function LoansListPage() {
             {/* Total due this month — the big headline figure */}
             <div style={s.totalCard}>
               <div style={s.totalLabel}>Left to repay this month</div>
-              <div style={s.totalAmount}>
-                ₦
-                {Number(summary?.total_due_this_month || 0).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+              <div style={s.totalCardRow}>
+                <div style={s.totalAmount}>
+                  ₦
+                  {Number(summary?.total_due_this_month || 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+                {Number(summary?.total_due_this_month || 0) > 0 && (
+                  <button
+                    style={payingAll ? s.payAllBtnDisabled : s.payAllBtn}
+                    onClick={handlePayAll}
+                    disabled={payingAll}
+                  >
+                    {payingAll ? '⏳ Starting...' : 'Pay All'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -306,7 +343,36 @@ const s = {
     marginBottom: 24,
   },
   totalLabel: { color: '#aaa', fontSize: 13, marginBottom: 8 },
+  totalCardRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
   totalAmount: { color: '#fff', fontSize: 36, fontWeight: 800 },
+  payAllBtn: {
+    padding: '11px 22px',
+    background: '#1f4d1f',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  },
+  payAllBtnDisabled: {
+    padding: '11px 22px',
+    background: '#555',
+    color: '#ccc',
+    border: 'none',
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'not-allowed',
+    whiteSpace: 'nowrap',
+  },
   loanList: { display: 'flex', flexDirection: 'column', gap: 12 },
   loanCard: {
     background: '#fff',
