@@ -1,4 +1,3 @@
-
 import { createBrowserRouter, RouterProvider, Navigate, useLocation } from 'react-router-dom';
 
 // Paystack redirects here with ?reference=... in the URL. A plain
@@ -36,6 +35,7 @@ import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
 // ── STAFF ────────────────────────────────────────────────────────────────────
 import AgroStaffDashboard from './pages/staff/AgroStaffDashboard';
 import LoanStaffDashboard from './pages/staff/LoanStaffDashboard';
+import StaffProductApprovalsPage from './pages/staff/StaffProductApprovalsPage';
 
 // ── ADMIN ────────────────────────────────────────────────────────────────────
 import AdminLoginPage     from './pages/admin/AdminLoginPage';
@@ -54,6 +54,7 @@ import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
 import AdminComplaintsPage from './pages/admin/AdminComplaintsPage';
 import AdminComplaintDetailPage from './pages/admin/AdminComplaintDetailPage';
 import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
+import AdminProductApprovalsPage from './pages/admin/AdminProductApprovalsPage';
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
 import StaffComplaintDetailPage from './pages/staff/StaffComplaintDetailPage';
 
@@ -94,6 +95,10 @@ const router = createBrowserRouter([
     element: <ProtectedRoute allowedRoles={['staff', 'admin']}><AgroStaffDashboard /></ProtectedRoute>
   },
   {
+    path: '/staff/agro/product-approvals',
+    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffProductApprovalsPage /></ProtectedRoute>
+  },
+  {
     path: '/staff/loans',
     element: <ProtectedRoute allowedRoles={['staff', 'admin']}><LoanStaffDashboard /></ProtectedRoute>
   },
@@ -126,6 +131,10 @@ const router = createBrowserRouter([
       {
         path: 'products',
         element: <ProtectedRoute adminOnly><ManageProductsPage /></ProtectedRoute>
+      },
+      {
+        path: 'product-approvals',
+        element: <ProtectedRoute adminOnly><AdminProductApprovalsPage /></ProtectedRoute>
       },
       {
         path: 'orders',
@@ -181,12 +190,3 @@ const router = createBrowserRouter([
 export default function App() {
   return <RouterProvider router={router} />;
 }
-
-
-
-
-
-
-
-
-
