@@ -29,6 +29,10 @@ export const verifyLoanPayment = (reference) =>
 // Loans List page — total due this month + one card per active/disbursed loan
 export const getLoanSummary = () => api.get('/loans/summary');
 
+// "Pay All" — one Paystack payment covering every active loan's amount due
+// Returns: { payment_url, reference_number, total_due, loans_covered }
+export const payAllDue = () => api.post('/loans/pay-all-due');
+
 // Loan Detail page — balance, progress ring data, next payment, last 5 payments
 export const getLoanDetails = (id) => api.get(`/loans/${id}/details`);
 
