@@ -58,7 +58,13 @@ import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
 import AdminProductApprovalsPage from './pages/admin/AdminProductApprovalsPage';
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
 import StaffComplaintDetailPage from './pages/staff/StaffComplaintDetailPage';
-import SellerDashboard from './pages/seller/SellerDashboard';
+
+// ── SELLER ───────────────────────────────────────────────────────────────────
+import SellerDashboardPage from './pages/seller/SellerDashboardPage';
+import SellerStoreProfilePage from './pages/seller/SellerStoreProfilePage';
+import SellerProductsPage from './pages/seller/SellerProductsPage';
+import SellerOrdersPage from './pages/seller/SellerOrdersPage';
+import SellerFinancePage from './pages/seller/SellerFinancePage';
 
 // ── PROTECTED ROUTE ───────────────────────────────────────────────────────────
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -116,9 +122,43 @@ const router = createBrowserRouter([
     path: '/staff/complaints/:id',
     element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintDetailPage /></ProtectedRoute>
   },
+
+  // ── Seller ───────────────────────────────────────────────────────────────────
+  // Batch 1 (Foundation): only Dashboard is fully built. The rest of the sidebar
+  // nav points at a shared "coming soon" placeholder so nothing 404s while the
+  // remaining batches (Products, Orders, Finance, Reviews, Store Profile) land —
+  // see /areas/achoice-seller-dashboard.md for the batch plan.
   {
     path: '/seller/dashboard',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerDashboard /></ProtectedRoute>
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerDashboardPage /></ProtectedRoute>
+  },
+  {
+    path: '/seller/products',
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerProductsPage /></ProtectedRoute>
+  },
+  {
+    path: '/seller/orders',
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerOrdersPage /></ProtectedRoute>
+  },
+  {
+    path: '/seller/finance',
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerFinancePage /></ProtectedRoute>
+  },
+  {
+    path: '/seller/reviews',
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerReviewsPage /></ProtectedRoute>
+  },
+  {
+    path: '/seller/store-preview',
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerStorePreviewPage /></ProtectedRoute>
+  },
+  {
+    path: '/seller/notifications',
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerNotificationsPage /></ProtectedRoute>
+  },
+  {
+    path: '/seller/profile',
+    element: <ProtectedRoute allowedRoles={['seller']}><SellerStoreProfilePage /></ProtectedRoute>
   },
 
   // ── Admin ────────────────────────────────────────────────────────────────────
