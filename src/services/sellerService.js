@@ -38,6 +38,16 @@ export const requestRemittance = () => api.post('/seller/earnings/request-remitt
 
 // ── Reviews ──────────────────────────────────────────────────────────────
 export const getSellerReviews = (params) => api.get('/seller/reviews', { params });
+export const replyToReview = (reviewId, reply) => api.post(`/seller/reviews/${reviewId}/reply`, { reply });
+export const deleteReviewReply = (reviewId) => api.delete(`/seller/reviews/${reviewId}/reply`);
+
+// ── Followers ────────────────────────────────────────────────────────────
+export const getSellerFollowers = (params) => api.get('/seller/followers', { params });
+
+// ── Flash sale requests ──────────────────────────────────────────────────
+export const getFlashSaleRequests = (params) => api.get('/seller/flash-sale-requests', { params });
+export const createFlashSaleRequest = (data) => api.post('/seller/flash-sale-requests', data);
+export const withdrawFlashSaleRequest = (id) => api.delete(`/seller/flash-sale-requests/${id}`);
 
 // ── Public storefront (used for the seller's own store preview) ───────────
 export const getPublicSellerProducts = (sellerId, params) => api.get('/products', { params: { ...params, seller_id: sellerId } });

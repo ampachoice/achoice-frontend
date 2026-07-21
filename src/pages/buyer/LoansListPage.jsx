@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLoanSummary, verifyLoanPayment, payAllDue, liquidateAllLoans } from '../../services/loanService';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
+import { getLoanSummary, verifyLoanPayment, payAllDue } from '../../services/loanService';
+import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 
 export default function LoansListPage() {
   const navigate = useNavigate();
@@ -14,7 +13,6 @@ export default function LoansListPage() {
   const [toast, setToast] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const [payingAll, setPayingAll] = useState(false);
-  const [liquidatingAll, setLiquidatingAll] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -54,35 +52,6 @@ export default function LoansListPage() {
         'error',
       );
       setPayingAll(false);
-    }
-  };
-
-  const handleLiquidateAll = async () => {
-    const totalBalance = loans.reduce((sum, l) => sum + Number(l.balance || 0), 0);
-    const confirmed = window.confirm(
-      `This will pay off the FULL remaining balance on every active loan — a total of ` +
-      `₦${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Continue?`,
-    );
-    if (!confirmed) return;
-
-    setLiquidatingAll(true);
-    try {
-      const res = await liquidateAllLoans();
-      if (res.data?.reference_number) {
-        localStorage.setItem('last_loan_reference', res.data.reference_number);
-      }
-      if (res.data?.payment_url) {
-        window.location.href = res.data.payment_url;
-      } else {
-        showToast('Payment could not be started. Please try again.', 'error');
-        setLiquidatingAll(false);
-      }
-    } catch (err) {
-      showToast(
-        err.response?.data?.message || 'Failed to start payment. Please try again.',
-        'error',
-      );
-      setLiquidatingAll(false);
     }
   };
 
@@ -167,11 +136,7 @@ export default function LoansListPage() {
           <span className="ll-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="ll-nav-right">
-          <div className="ll-cart" onClick={() => navigate('/cart')}>
-            🛒 {cartCount > 0 && <span className="ll-badge">{cartCount}</span>}
-          </div>
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
+          <LoanHeaderActions cartCount={cartCount} />
         </div>
       </nav>
 
@@ -182,20 +147,9 @@ export default function LoansListPage() {
 
         <div style={s.headerRow}>
           <h1 style={s.title}>Loans</h1>
-          <div style={s.headerActions}>
-            {loans.length > 0 && (
-              <button
-                style={liquidatingAll ? s.liquidateAllBtnDisabled : s.liquidateAllBtn}
-                onClick={handleLiquidateAll}
-                disabled={liquidatingAll}
-              >
-                {liquidatingAll ? '⏳ Starting...' : '⚡ Liquidate All Loans'}
-              </button>
-            )}
-            <span style={s.openNew} onClick={() => navigate('/loans/apply')}>
-              Open new
-            </span>
-          </div>
+          <span style={s.openNew} onClick={() => navigate('/loans/apply')}>
+            Open new
+          </span>
         </div>
 
         {loading && <div style={s.loadingText}>Loading your loans...</div>}
@@ -344,39 +298,8 @@ const s = {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
-    flexWrap: 'wrap',
-    gap: 14,
-  },
-  headerActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 18,
-    flexWrap: 'wrap',
   },
   title: { fontSize: 28, fontWeight: 800, color: '#111' },
-  liquidateAllBtn: {
-    padding: '10px 18px',
-    background: '#fff',
-    color: '#1f4d1f',
-    border: '1.5px solid #1f4d1f',
-    borderRadius: 10,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    transition: 'background 0.15s ease, color 0.15s ease',
-  },
-  liquidateAllBtnDisabled: {
-    padding: '10px 18px',
-    background: '#f0f0f0',
-    color: '#aaa',
-    border: '1.5px solid #ddd',
-    borderRadius: 10,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: 'not-allowed',
-    whiteSpace: 'nowrap',
-  },
   openNew: {
     color: '#1f4d1f',
     fontWeight: 700,

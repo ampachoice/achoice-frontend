@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getLoanDetails, liquidateLoan } from '../../services/loanService';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
+import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 
 export default function LoanLiquidatePage() {
   const navigate = useNavigate();
@@ -105,11 +104,7 @@ export default function LoanLiquidatePage() {
           <span className="lq-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="lq-nav-right">
-          <div className="lq-cart" onClick={() => navigate('/cart')}>
-            🛒 {cartCount > 0 && <span className="lq-badge">{cartCount}</span>}
-          </div>
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
+          <LoanHeaderActions cartCount={cartCount} />
         </div>
       </nav>
 

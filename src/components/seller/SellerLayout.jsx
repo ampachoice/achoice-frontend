@@ -4,30 +4,52 @@ import { getSellerProfile } from "../../services/sellerService";
 
 const LOGO_PATH = "/achoice logo.png";
 
+// Core, day-to-day nav — stays in the sidebar
 const SIDEBAR_ITEMS = [
   { icon: "📊", label: "Dashboard", path: "/seller/dashboard" },
   { icon: "📦", label: "Products", path: "/seller/products" },
   { icon: "🛒", label: "Orders", path: "/seller/orders" },
   { icon: "💰", label: "Finance", path: "/seller/finance" },
+  { icon: "💳", label: "Business Loans", path: "/seller/loans" },
+  { icon: "⚡", label: "Flash Sales", path: "/seller/flash-sales" },
   { icon: "⭐", label: "Reviews", path: "/seller/reviews" },
+  { icon: "🔔", label: "Notifications", path: "/seller/notifications" },
+];
+
+// Store setup / lower-frequency items — moved into the top-right Settings
+// dropdown, mirroring AdminLayout's split between SIDEBAR_ITEMS and SETTINGS_ITEMS.
+const SETTINGS_ITEMS = [
   { icon: "🏪", label: "Store Profile", path: "/seller/profile" },
+  { icon: "👁", label: "Preview Store", path: "/seller/store-preview" },
+  { icon: "👥", label: "Followers", path: "/seller/followers" },
 ];
 
 /**
- * Shared seller shell: sidebar + header + the "pending approval" banner.
- * Mirrors AdminLayout's structure so the two feel consistent.
+ * Shared seller shell: sidebar + header + settings dropdown + the
+ * "pending approval" banner. Mirrors AdminLayout's structure so the two
+ * feel like one coherent product.
  *
  * Props:
  *  - title, subtitle       header text
- *  - headerActions         optional extra ReactNode next to the header (e.g. "+ Add Product")
+ *  - showDate              show today's formatted date on the right of the header
+ *  - headerActions         optional extra ReactNode rendered next to the settings gear
  *  - badges                optional map of { "/seller/orders": 2, ... } for sidebar count badges
  *  - children              page content
  */
 const MOBILE_BREAKPOINT = 900;
 
-export default function SellerLayout({ title, subtitle, headerActions = null, badges = {}, children }) {
+export default function SellerLayout({
+  title,
+  subtitle,
+  showDate = false,
+  headerActions = null,
+  badges = {},
+  children,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT
   );
@@ -59,6 +81,16 @@ export default function SellerLayout({ title, subtitle, headerActions = null, ba
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
   const mergedBadges = badges;
 
   const handleLogout = () => {
@@ -68,9 +100,46 @@ export default function SellerLayout({ title, subtitle, headerActions = null, ba
   };
 
   const isActive = (path) => location.pathname === path;
+  const isSettingsActive = SETTINGS_ITEMS.some((item) => isActive(item.path));
 
   const isPending = seller?.status === "pending_approval";
   const isSuspended = seller?.status === "suspended";
+
+  const dateNode = showDate ? (
+    <div style={s.headerDate}>
+      {new Date().toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+    </div>
+  ) : null;
+
+  const settingsMenu = (
+    <div style={s.settingsWrap} ref={settingsRef}>
+      <button
+        style={{ ...s.settingsBtn, ...(isSettingsActive ? s.settingsBtnActive : {}) }}
+        onClick={() => setSettingsOpen((v) => !v)}
+        title="Settings"
+      >
+        ⚙️
+      </button>
+
+      {settingsOpen && (
+        <div style={s.settingsDropdown}>
+          {SETTINGS_ITEMS.map((item) => (
+            <div
+              key={item.path}
+              style={{ ...s.settingsDropdownItem, ...(isActive(item.path) ? s.settingsDropdownItemActive : {}) }}
+              onClick={() => {
+                setSettingsOpen(false);
+                navigate(item.path);
+              }}
+            >
+              <span style={{ fontSize: 15 }}>{item.icon}</span>
+              {item.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div style={s.page}>
@@ -134,18 +203,40 @@ export default function SellerLayout({ title, subtitle, headerActions = null, ba
       {/* Main */}
       <div style={{ ...s.main, ...(isMobile ? s.mainMobile : {}) }}>
         <div style={{ ...s.header, ...(isMobile ? s.headerMobile : {}) }}>
-          {isMobile && (
-            <div style={s.mobileTopRow}>
-              <button style={s.hamburgerBtn} onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
-                ☰
-              </button>
-            </div>
+          {isMobile ? (
+            <>
+              {/* Row 1: hamburger (left) + settings gear (right) */}
+              <div style={s.mobileTopRow}>
+                <button style={s.hamburgerBtn} onClick={() => setMobileNavOpen(true)} aria-label="Open menu">
+                  ☰
+                </button>
+                {settingsMenu}
+              </div>
+
+              {/* Row 2: title + subtitle + date, left aligned */}
+              <div style={s.mobileTitleBlock}>
+                <h1 style={{ ...s.headerTitle, ...s.headerTitleMobile }}>{title}</h1>
+                {subtitle && <p style={s.headerSub}>{subtitle}</p>}
+                {dateNode}
+              </div>
+
+              {/* Row 3: page-specific action button(s), own row */}
+              {headerActions && <div style={s.mobileHeaderActions}>{headerActions}</div>}
+            </>
+          ) : (
+            <>
+              <div style={s.headerTitleCol}>
+                <h1 style={s.headerTitle}>{title}</h1>
+                {subtitle && <p style={s.headerSub}>{subtitle}</p>}
+              </div>
+
+              <div style={s.headerRight}>
+                {dateNode}
+                {headerActions}
+                {settingsMenu}
+              </div>
+            </>
           )}
-          <div style={s.headerTitleCol}>
-            <h1 style={{ ...s.headerTitle, ...(isMobile ? s.headerTitleMobile : {}) }}>{title}</h1>
-            {subtitle && <p style={s.headerSub}>{subtitle}</p>}
-          </div>
-          {headerActions && <div style={isMobile ? s.mobileHeaderActions : s.headerRight}>{headerActions}</div>}
         </div>
 
         {isPending && (
@@ -234,9 +325,10 @@ const s = {
   logoutBtn: { width: "100%", padding: 8, background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, fontSize: 13, cursor: "pointer" },
   main: { flex: 1, marginLeft: 240, padding: 32, minWidth: 0 },
   mainMobile: { marginLeft: 0, padding: "16px 16px 32px", width: "100%" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16, flexWrap: "wrap" },
-  headerMobile: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 },
-  mobileTopRow: { display: "flex", alignItems: "center", width: "100%" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, gap: 16, flexWrap: "wrap" },
+  headerMobile: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 },
+  mobileTopRow: { display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" },
+  mobileTitleBlock: { display: "flex", flexDirection: "column", gap: 2 },
   mobileHeaderActions: { display: "flex", flexWrap: "wrap", gap: 10 },
   headerTitleCol: { minWidth: 0 },
   hamburgerBtn: { width: 40, height: 40, flexShrink: 0, borderRadius: 10, border: "1px solid #e8e4dc", background: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
@@ -244,6 +336,24 @@ const s = {
   headerTitleMobile: { fontSize: 19, marginBottom: 0 },
   headerSub: { fontSize: 14, color: "#888" },
   headerRight: { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" },
+  headerDate: { fontSize: 13, color: "#888", whiteSpace: "nowrap" },
+  settingsWrap: { position: "relative" },
+  settingsBtn: { width: 40, height: 40, borderRadius: 10, border: "1px solid #e8e4dc", background: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+  settingsBtnActive: { background: "#1f4d1f", borderColor: "#1f4d1f" },
+  settingsDropdown: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    right: 0,
+    background: "#fff",
+    borderRadius: 10,
+    border: "1px solid #e8e4dc",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+    width: 210,
+    padding: 6,
+    zIndex: 500,
+  },
+  settingsDropdownItem: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 7, fontSize: 13, color: "#333", cursor: "pointer" },
+  settingsDropdownItemActive: { background: "#f0f7ec", color: "#1f4d1f", fontWeight: 700 },
   banner: {
     display: "flex",
     alignItems: "flex-start",

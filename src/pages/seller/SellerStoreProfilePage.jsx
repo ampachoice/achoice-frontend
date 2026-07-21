@@ -1,6 +1,22 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import SellerLayout from "../../components/seller/SellerLayout";
 import { getSellerProfile, updateSellerProfile } from "../../services/sellerService";
+
+// Same unsigned Cloudinary preset used for product images (SellerProductsPage.jsx)
+// and the admin product form — the one proven-working image upload path in
+// this codebase, so the logo uploader follows it too rather than the
+// server-side Cloudinary SDK that nothing else here actually exercises.
+const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/ds4wspou1/image/upload";
+const CLOUDINARY_UPLOAD_PRESET = "achoice_preset";
+
+async function uploadImageToCloudinary(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  const res = await axios.post(CLOUDINARY_UPLOAD_URL, formData);
+  return res.data.secure_url;
+}
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
@@ -30,6 +46,9 @@ export default function SellerStoreProfilePage() {
   const [bankSaving, setBankSaving] = useState(false);
   const [bankError, setBankError] = useState(null);
   const [bankSaved, setBankSaved] = useState(false);
+
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState(null);
 
   const loadProfile = () => {
     setLoading(true);
@@ -101,6 +120,23 @@ export default function SellerStoreProfilePage() {
     }
   };
 
+  const handleLogoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoError(null);
+    setLogoUploading(true);
+    try {
+      const logoUrl = await uploadImageToCloudinary(file);
+      const res = await updateSellerProfile({ logo: logoUrl });
+      setProfile((p) => ({ ...p, ...res.data.seller }));
+    } catch (err) {
+      setLogoError(err.response?.data?.message || "Failed to upload logo. Please try again.");
+    } finally {
+      setLogoUploading(false);
+      e.target.value = "";
+    }
+  };
+
   if (loading) {
     return (
       <SellerLayout title="Store Profile">
@@ -124,11 +160,23 @@ export default function SellerStoreProfilePage() {
     <SellerLayout title="Store Profile" subtitle="Manage your business information and payout details.">
       {/* Summary strip */}
       <div style={s.summaryCard}>
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 700, color: "#111" }}>{profile.business_name}</div>
-          <div style={{ fontSize: 12.5, color: "#888", marginTop: 2 }}>
-            Member since{" "}
-            {new Date(profile.member_since).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={s.logoWrap}>
+            <div style={s.logoCircle}>
+              {profile.logo ? <img src={profile.logo} alt="" style={s.logoImg} /> : <span style={{ fontSize: 22 }}>🏪</span>}
+            </div>
+            <label style={s.logoUploadBtn}>
+              {logoUploading ? "..." : "✎"}
+              <input type="file" accept="image/*" onChange={handleLogoSelect} style={{ display: "none" }} disabled={logoUploading} />
+            </label>
+          </div>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#111" }}>{profile.business_name}</div>
+            <div style={{ fontSize: 12.5, color: "#888", marginTop: 2 }}>
+              Member since{" "}
+              {new Date(profile.member_since).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            </div>
+            {logoError && <div style={{ fontSize: 11.5, color: "#cc0000", marginTop: 4 }}>{logoError}</div>}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -292,6 +340,10 @@ const s = {
     marginBottom: 20,
   },
   statusBadge: { fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 20, textTransform: "capitalize" },
+  logoWrap: { position: "relative", flexShrink: 0 },
+  logoCircle: { width: 56, height: 56, borderRadius: "50%", background: "#f7f5f0", border: "1px solid #e8e4dc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  logoImg: { width: "100%", height: "100%", objectFit: "cover" },
+  logoUploadBtn: { position: "absolute", bottom: -2, right: -2, width: 22, height: 22, borderRadius: "50%", background: "#1f4d1f", color: "#fff", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", border: "2px solid #fff" },
   twoCol: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 },
   card: { background: "#fff", border: "1px solid #e8e4dc", borderRadius: 12, padding: 22 },
   cardTitle: { fontSize: 15, fontWeight: 700, color: "#111", marginBottom: 16 },

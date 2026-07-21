@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getInstallments, getLoanDetails } from '../../services/loanService';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
+import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 
 export default function LoanSchedulePage() {
   const navigate = useNavigate();
@@ -20,7 +19,7 @@ export default function LoanSchedulePage() {
 
     Promise.all([getInstallments(id), getLoanDetails(id)])
       .then(([instRes, loanRes]) => {
-        setInstallments(instRes.data?.schedule || []);
+        setInstallments(instRes.data?.installments || []);
         setSummary(instRes.data?.summary || null);
         setLoan(loanRes.data);
       })
@@ -79,11 +78,7 @@ export default function LoanSchedulePage() {
           <span className="ls-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="ls-nav-right">
-          <div className="ls-cart" onClick={() => navigate('/cart')}>
-            🛒 {cartCount > 0 && <span className="ls-badge">{cartCount}</span>}
-          </div>
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
+          <LoanHeaderActions cartCount={cartCount} />
         </div>
       </nav>
 

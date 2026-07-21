@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getLoanDetails } from '../../services/loanService';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
+import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 
 export default function LoanDetailPage() {
   const navigate = useNavigate();
@@ -78,11 +77,7 @@ export default function LoanDetailPage() {
           <span className="ld-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="ld-nav-right">
-          <div className="ld-cart" onClick={() => navigate('/cart')}>
-            🛒 {cartCount > 0 && <span className="ld-badge">{cartCount}</span>}
-          </div>
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
+          <LoanHeaderActions cartCount={cartCount} />
         </div>
       </nav>
 

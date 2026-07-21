@@ -12,3 +12,8 @@ export const getAdminFlashSales = (params) => api.get('/admin/flash-sales', { pa
 export const createFlashSale = (data) => api.post('/admin/flash-sales', data);
 export const updateFlashSale = (id, data) => api.put(`/admin/flash-sales/${id}`, data);
 export const deleteFlashSale = (id) => api.delete(`/admin/flash-sales/${id}`);
+
+// Flash sale requests — seller-submitted, admin reviews
+export const getAdminFlashSaleRequests = (params) => api.get('/admin/flash-sale-requests', { params });
+export const approveFlashSaleRequest = (id) => api.patch(`/admin/flash-sale-requests/${id}/approve`);
+export const rejectFlashSaleRequest = (id, reason) => api.patch(`/admin/flash-sale-requests/${id}/reject`, { reason });

@@ -56,7 +56,7 @@ export default function SellerDashboardPage() {
   const colors = SCORE_COLORS[storeScore?.score_label] || { bg: "#eee", color: "#555" };
 
   return (
-    <SellerLayout title={`Welcome back, ${seller.business_name}`} subtitle={`${seller.state || ""}`}>
+    <SellerLayout title={`Welcome back, ${seller.business_name}`} subtitle={`${seller.state || ""}`} showDate>
       {/* Shortcuts — actionable counts, each links to where the seller would resolve it */}
       <div style={s.shortcutGrid}>
         <ShortcutCard
