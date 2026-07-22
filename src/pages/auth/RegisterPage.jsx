@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register, sendOtp, verifyOtp } from "../../services/authService";
+import "./RegisterPage.css";
 
 const DEFAULT_RESEND_COOLDOWN = 60; // seconds — matches the backend's default otp_resend_cooldown_seconds
 
@@ -80,119 +81,6 @@ export default function RegisterPage() {
     const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [resendCountdown]);
-
-  useEffect(() => {
-    if (document.getElementById("rp-style")) return;
-    const el = document.createElement("style");
-    el.id = "rp-style";
-    el.textContent = `
-      body { margin:0; }
-      .rp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; display:flex; flex-direction:column; }
-
-      /* ── Top Bar ── */
-      .rp-topbar { background:#1f4d1f; color:#fff; padding:7px 48px; display:flex; justify-content:space-between; align-items:center; font-size:12px; flex-wrap:wrap; gap:4px; }
-      .rp-topbar-right { display:flex; gap:16px; }
-
-      /* ── Nav ── */
-      .rp-nav { background:#fff; border-bottom:1px solid #e8e4dc; padding:12px 48px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
-      .rp-brand { display:flex; align-items:center; gap:10px; cursor:pointer; }
-      .rp-brand img { width:44px; height:44px; object-fit:contain; }
-      .rp-brand-name { font-size:15px; font-weight:700; color:#1f4d1f; }
-      .rp-brand-tag  { font-size:10px; color:#888; }
-      .rp-nav-links  { display:flex; align-items:center; gap:24px; }
-      .rp-nav-link   { text-decoration:none; color:#333; font-size:14px; }
-      .rp-nav-btn    { padding:9px 20px; background:#1f4d1f; color:#fff; border:none; border-radius:7px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
-
-      /* ── Body / two-col layout on desktop ── */
-      .rp-body { flex:1; display:flex; align-items:flex-start; justify-content:center; padding:48px 16px 60px; }
-      .rp-inner { display:grid; grid-template-columns:1fr 380px; gap:32px; width:100%; max-width:900px; align-items:start; }
-
-      /* Left panel */
-      .rp-left { background:#1f4d1f; border-radius:16px; padding:40px 32px; color:#fff; }
-      .rp-left-badge { display:inline-block; background:#f0c050; color:#1a3d1a; font-size:11px; font-weight:700; padding:4px 14px; border-radius:99px; margin-bottom:20px; letter-spacing:.5px; }
-      .rp-left-title { font-family:Georgia,serif; font-size:26px; font-weight:700; line-height:1.25; margin:0 0 14px; }
-      .rp-left-sub   { font-size:13px; color:#a8d5a8; line-height:1.7; margin:0 0 28px; }
-      .rp-left-feat  { display:flex; flex-direction:column; gap:14px; margin-bottom:32px; }
-      .rp-left-feat-item { display:flex; align-items:flex-start; gap:12px; }
-      .rp-left-feat-icon { width:36px; height:36px; background:rgba(255,255,255,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-      .rp-left-feat-text { font-size:13px; color:#c5ddb8; line-height:1.6; }
-      .rp-left-feat-label { font-size:13px; font-weight:600; color:#fff; margin-bottom:3px; }
-      .rp-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; border-top:1px solid rgba(255,255,255,0.15); padding-top:24px; }
-      .rp-stat-val   { font-size:22px; font-weight:700; color:#f0c050; }
-      .rp-stat-label { font-size:11px; color:#a8d5a8; margin-top:2px; }
-
-      /* Card */
-      .rp-card { background:#fff; border-radius:16px; border:1px solid #e8e4dc; padding:36px 32px; box-shadow:0 6px 28px rgba(0,0,0,0.07); }
-      .rp-card-logo  { display:flex; justify-content:center; margin-bottom:4px; }
-      .rp-card-logo img { width:48px; height:48px; object-fit:contain; }
-      .rp-card-title { font-size:22px; font-weight:700; color:#111; text-align:center; margin:0 0 4px; }
-      .rp-card-sub   { font-size:13px; color:#888; text-align:center; margin:0 0 24px; }
-
-      .rp-success { background:#f0fff4; color:#1f4d1f; border:1px solid #a8d5a8; padding:12px 16px; border-radius:8px; font-size:14px; font-weight:600; margin-bottom:16px; text-align:center; }
-      .rp-error   { background:#fff0f0; color:#cc0000; border:1px solid #ffb3b3; padding:12px 16px; border-radius:8px; font-size:13px; margin-bottom:16px; }
-
-      .rp-field { margin-bottom:16px; }
-      .rp-label { display:block; font-size:12px; font-weight:600; color:#444; margin-bottom:6px; letter-spacing:.2px; }
-      .rp-input { width:100%; padding:13px 14px; border:1.5px solid #ddd; border-radius:10px; font-size:14px; outline:none; font-family:inherit; box-sizing:border-box; transition:border .2s; }
-      .rp-input:focus { border-color:#1f4d1f; }
-      .rp-pw-wrap { display:flex; align-items:center; border:1.5px solid #ddd; border-radius:10px; overflow:hidden; transition:border .2s; }
-      .rp-pw-wrap:focus-within { border-color:#1f4d1f; }
-      .rp-pw-input { flex:1; padding:13px 14px; border:none; font-size:14px; outline:none; font-family:inherit; min-width:0; background:#fff; }
-      .rp-eye { background:#f7f5f0; border:none; border-left:1.5px solid #ddd; padding:13px 14px; cursor:pointer; font-size:17px; flex-shrink:0; }
-
-      .rp-row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-
-      .rp-pw-match { font-size:12px; margin-top:5px; font-weight:600; }
-
-      .rp-btn     { width:100%; padding:15px; background:#1f4d1f; color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; margin-top:4px; }
-      .rp-btn-dis { width:100%; padding:15px; background:#ccc; color:#fff; border:none; border-radius:10px; font-size:16px; cursor:not-allowed; font-family:inherit; margin-top:4px; }
-      .rp-login-text { text-align:center; margin-top:18px; font-size:13px; color:#888; }
-      .rp-login-text a { color:#1f4d1f; font-weight:700; text-decoration:none; }
-
-      /* ── Footer ── */
-      .rp-footer { background:#1f4d1f; color:#fff; padding:44px 48px 0; }
-      .rp-footer-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:36px; margin-bottom:36px; }
-      .rp-footer-brand { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-      .rp-footer-brand img { width:38px; height:38px; object-fit:contain; }
-      .rp-footer-name { font-size:14px; font-weight:700; color:#fff; }
-      .rp-footer-tag  { font-size:10px; color:#a8d5a8; }
-      .rp-footer-desc { font-size:12px; color:#a8d5a8; line-height:1.7; margin:0; }
-      .rp-footer-heading { font-size:11px; font-weight:700; color:#f0c050; margin-bottom:14px; letter-spacing:1.5px; text-transform:uppercase; }
-      .rp-footer-link { font-size:13px; color:#a8d5a8; margin-bottom:9px; cursor:pointer; }
-      .rp-footer-bottom { border-top:1px solid rgba(255,255,255,0.1); padding:16px 0; text-align:center; font-size:12px; color:#a8d5a8; }
-
-      /* ── TABLET ── */
-      @media (max-width:820px) {
-        .rp-inner { grid-template-columns:1fr; max-width:480px; }
-        .rp-left  { display:none; }
-      }
-
-      /* ── MOBILE ── */
-      @media (max-width:640px) {
-        .rp-topbar { padding:6px 16px; font-size:11px; }
-        .rp-topbar-right { display:none; }
-        .rp-topbar-left span:last-child { display:none; }
-        .rp-nav { padding:10px 16px; }
-        .rp-nav-links { display:none; }
-        .rp-brand img { width:38px; height:38px; }
-        .rp-brand-name { font-size:13px; }
-        .rp-body { padding:20px 12px 48px; }
-        .rp-card { padding:24px 16px; border-radius:14px; }
-        .rp-card-title { font-size:20px; }
-        .rp-input, .rp-pw-input { font-size:16px; padding:14px 12px; }
-        .rp-eye { padding:14px 12px; }
-        .rp-row2 { grid-template-columns:1fr; gap:0; }
-        .rp-btn, .rp-btn-dis { font-size:16px; padding:16px; }
-        .rp-footer { padding:32px 16px 0; }
-        .rp-footer-grid { grid-template-columns:1fr 1fr; gap:22px; }
-      }
-
-      @media (max-width:400px) {
-        .rp-footer-grid { grid-template-columns:1fr; }
-      }
-    `;
-    document.head.appendChild(el);
-  }, []);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -287,13 +175,26 @@ export default function RegisterPage() {
       setSuccess("🎉 Account created successfully! Redirecting to login...");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      if (err.response?.data?.errors) {
-        setError(Object.values(err.response.data.errors)[0][0]);
+      const message = err.response?.data?.errors
+        ? Object.values(err.response.data.errors)[0][0]
+        : err.response?.data?.message;
+
+      // The server re-checks OTP verification with its own time window
+      // (otp_expiry_minutes from the moment it was verified) — if someone
+      // verifies but then spends too long on this step, /register rejects
+      // them even though the UI still says "verified." Without this, they'd
+      // be stuck resubmitting into the same error forever with no way out
+      // except manually finding "Use a different email." Send them back to
+      // Phase 1 to re-verify instead.
+      if (message && message.toLowerCase().includes("verify your email")) {
+        setEmailVerified(false);
+        setOtpSent(false);
+        setOtpCode("");
+        setOtpMessage(null);
+        setResendCountdown(0);
+        setError("Your email verification expired while completing the form. Please verify again.");
       } else {
-        setError(
-          err.response?.data?.message ||
-            "Registration failed. Please try again.",
-        );
+        setError(message || "Registration failed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -410,245 +311,257 @@ export default function RegisterPage() {
             <div className="rp-card-logo">
               <img src={LOGO_PATH} alt="Logo" />
             </div>
-            <h2 className="rp-card-title">Create Account</h2>
-            <p className="rp-card-sub">Free forever, no hidden charges</p>
+            <h2 className="rp-card-title">
+              {emailVerified ? "Complete Your Registration" : "Verify Your Email"}
+            </h2>
+            <p className="rp-card-sub">
+              {emailVerified
+                ? `Almost there — just a few more details for ${verifiedEmail}`
+                : "Free forever, no hidden charges. We'll send a code to confirm it's really you."}
+            </p>
 
             {success && <div className="rp-success">{success}</div>}
             {error && <div className="rp-error">⚠️ {error}</div>}
 
-            <form onSubmit={handleSubmit}>
-              <div className="rp-field">
-                <label className="rp-label">Full Name</label>
-                <input
-                  className="rp-input"
-                  type="text"
-                  name="name"
-                  placeholder="e.g. Chukwuemeka Okafor"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
+            {!emailVerified ? (
+              /* ── PHASE 1: email + verification only ── */
+              <form onSubmit={(e) => { e.preventDefault(); if (!otpSent) handleSendOtp(); }}>
+                <div className="rp-field">
+                  <label className="rp-label">Email Address</label>
+                  <input
+                    className="rp-input"
+                    type="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value={formData.email}
+                    onChange={handleEmailChange}
+                    required
+                    autoComplete="email"
+                    autoFocus
+                  />
+                </div>
 
-              <div className="rp-field">
-                <label className="rp-label">Email Address</label>
-                <input
-                  className="rp-input"
-                  type="email"
-                  name="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleEmailChange}
-                  required
-                  autoComplete="email"
-                  readOnly={emailVerified}
-                  style={emailVerified ? { background: "#f7f5f0", color: "#666" } : undefined}
-                />
-              </div>
-
-              {/* ── Email OTP verification — must complete before the form can submit ── */}
-              <div className="rp-field">
-                {emailVerified ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      background: "#f0fff4",
-                      border: "1px solid #a8d5a8",
-                      color: "#1a7a3a",
-                      borderRadius: 8,
-                      padding: "9px 12px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    ✓ Email verified
+                <div className="rp-field">
+                  {!otpSent ? (
                     <button
                       type="button"
-                      onClick={handleUseDifferentEmail}
-                      style={{ marginLeft: "auto", background: "none", border: "none", color: "#1f4d1f", fontSize: 12, textDecoration: "underline", cursor: "pointer" }}
+                      className="rp-eye"
+                      style={{ width: "100%", borderRadius: 10, border: "1.5px solid #ddd", padding: "13px 14px", fontSize: 13, fontWeight: 700, color: "#1f4d1f", background: "#f7f5f0", cursor: otpSending ? "not-allowed" : "pointer" }}
+                      onClick={handleSendOtp}
+                      disabled={otpSending || !formData.email}
                     >
-                      Use a different email
+                      {otpSending ? "Sending code..." : "Verify Email — Send Code"}
                     </button>
-                  </div>
-                ) : !otpSent ? (
+                  ) : (
+                    <div>
+                      <label className="rp-label">Enter the 6-digit code sent to your email</label>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input
+                          className="rp-input"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="123456"
+                          maxLength={6}
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          style={{ letterSpacing: 3, textAlign: "center", flex: 1 }}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={otpVerifying || otpCode.length < 4}
+                          style={{ padding: "0 20px", borderRadius: 10, border: "none", background: "#1f4d1f", color: "#fff", fontWeight: 700, fontSize: 13, cursor: otpVerifying ? "not-allowed" : "pointer" }}
+                        >
+                          {otpVerifying ? "Verifying..." : "Verify"}
+                        </button>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={resendCountdown > 0 || otpSending}
+                          style={{ background: "none", border: "none", padding: 0, fontSize: 12, fontWeight: 600, color: resendCountdown > 0 ? "#aaa" : "#1f4d1f", textDecoration: resendCountdown > 0 ? "none" : "underline", cursor: resendCountdown > 0 ? "default" : "pointer" }}
+                        >
+                          {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : "Resend code"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {otpMessage && <div className="rp-pw-match" style={{ color: "#1a7a3a" }}>{otpMessage}</div>}
+                  {otpError && <div className="rp-pw-match" style={{ color: "#cc0000" }}>{otpError}</div>}
+                </div>
+              </form>
+            ) : (
+              /* ── PHASE 2: full registration form — only reachable once email is verified ── */
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    background: "#f0fff4",
+                    border: "1px solid #a8d5a8",
+                    color: "#1a7a3a",
+                    borderRadius: 8,
+                    padding: "9px 12px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    marginBottom: 16,
+                  }}
+                >
+                  ✓ {verifiedEmail}
                   <button
                     type="button"
-                    className="rp-eye"
-                    style={{ width: "100%", borderRadius: 10, border: "1.5px solid #ddd", padding: "13px 14px", fontSize: 13, fontWeight: 700, color: "#1f4d1f", background: "#f7f5f0", cursor: otpSending ? "not-allowed" : "pointer" }}
-                    onClick={handleSendOtp}
-                    disabled={otpSending || !formData.email}
+                    onClick={handleUseDifferentEmail}
+                    style={{ marginLeft: "auto", background: "none", border: "none", color: "#1f4d1f", fontSize: 12, textDecoration: "underline", cursor: "pointer" }}
                   >
-                    {otpSending ? "Sending code..." : "Verify Email — Send Code"}
+                    Use a different email
                   </button>
-                ) : (
-                  <div>
-                    <label className="rp-label">Enter the 6-digit code sent to your email</label>
-                    <div style={{ display: "flex", gap: 8 }}>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                  <div className="rp-field">
+                    <label className="rp-label">Full Name</label>
+                    <input
+                      className="rp-input"
+                      type="text"
+                      name="name"
+                      placeholder="e.g. Chukwuemeka Okafor"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="rp-field">
+                    <label className="rp-label">Phone Number</label>
+                    <input
+                      className="rp-input"
+                      type="tel"
+                      name="phone"
+                      placeholder="e.g. 08012345678"
+                      maxLength={11}
+                      value={formData.phone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "").slice(0, 11);
+                        setFormData((prev) => ({ ...prev, phone: val }));
+                      }}
+                      required
+                    />
+                  </div>
+
+                  <div className="rp-row2">
+                    <div className="rp-field">
+                      <label className="rp-label">State</label>
+                      <select
+                        className="rp-input"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select state</option>
+                        {NIGERIAN_STATES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="rp-field">
+                      <label className="rp-label">
+                        Home Address{" "}
+                        <span style={{ color: "#aaa", fontWeight: 400 }}>
+                          (optional)
+                        </span>
+                      </label>
                       <input
                         className="rp-input"
                         type="text"
-                        inputMode="numeric"
-                        placeholder="123456"
-                        maxLength={6}
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        style={{ letterSpacing: 3, textAlign: "center", flex: 1 }}
+                        name="address"
+                        placeholder="Street address"
+                        value={formData.address}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rp-field">
+                    <label className="rp-label">Password</label>
+                    <div className="rp-pw-wrap">
+                      <input
+                        className="rp-pw-input"
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        placeholder="Min 8 characters"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
-                        onClick={handleVerifyOtp}
-                        disabled={otpVerifying || otpCode.length < 4}
-                        style={{ padding: "0 20px", borderRadius: 10, border: "none", background: "#1f4d1f", color: "#fff", fontWeight: 700, fontSize: 13, cursor: otpVerifying ? "not-allowed" : "pointer" }}
+                        className="rp-eye"
+                        onClick={() => setShowPassword(!showPassword)}
                       >
-                        {otpVerifying ? "Verifying..." : "Verify"}
+                        {showPassword ? "🙈" : "👁"}
                       </button>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                  </div>
+
+                  <div className="rp-field">
+                    <label className="rp-label">Confirm Password</label>
+                    <div className="rp-pw-wrap">
+                      <input
+                        className="rp-pw-input"
+                        type={showConfirm ? "text" : "password"}
+                        name="password_confirmation"
+                        placeholder="Repeat your password"
+                        value={formData.password_confirmation}
+                        onChange={handleChange}
+                        required
+                        autoComplete="new-password"
+                      />
                       <button
                         type="button"
-                        onClick={handleSendOtp}
-                        disabled={resendCountdown > 0 || otpSending}
-                        style={{ background: "none", border: "none", padding: 0, fontSize: 12, fontWeight: 600, color: resendCountdown > 0 ? "#aaa" : "#1f4d1f", textDecoration: resendCountdown > 0 ? "none" : "underline", cursor: resendCountdown > 0 ? "default" : "pointer" }}
+                        className="rp-eye"
+                        onClick={() => setShowConfirm(!showConfirm)}
                       >
-                        {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : "Resend code"}
+                        {showConfirm ? "🙈" : "👁"}
                       </button>
                     </div>
+                    {pwMatch && (
+                      <div
+                        className="rp-pw-match"
+                        style={{
+                          color:
+                            formData.password === formData.password_confirmation
+                              ? "#1a7a3a"
+                              : "#cc0000",
+                        }}
+                      >
+                        {formData.password === formData.password_confirmation
+                          ? "✓ Passwords match"
+                          : "✕ Passwords do not match"}
+                      </div>
+                    )}
                   </div>
-                )}
-                {otpMessage && !emailVerified && <div className="rp-pw-match" style={{ color: "#1a7a3a" }}>{otpMessage}</div>}
-                {otpError && <div className="rp-pw-match" style={{ color: "#cc0000" }}>{otpError}</div>}
-              </div>
 
-              <div className="rp-field">
-                <label className="rp-label">Phone Number</label>
-                <input
-                  className="rp-input"
-                  type="tel"
-                  name="phone"
-                  placeholder="e.g. 08012345678"
-                  maxLength={11}
-                  value={formData.phone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 11);
-                    setFormData((prev) => ({ ...prev, phone: val }));
-                  }}
-                  required
-                />
-              </div>
-
-              <div className="rp-row2">
-                <div className="rp-field">
-                  <label className="rp-label">State</label>
-                  <select
-                    className="rp-input"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                  >
-                    <option value="">Select state</option>
-                    {NIGERIAN_STATES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="rp-field">
-                  <label className="rp-label">
-                    Home Address{" "}
-                    <span style={{ color: "#aaa", fontWeight: 400 }}>
-                      (optional)
-                    </span>
-                  </label>
-                  <input
-                    className="rp-input"
-                    type="text"
-                    name="address"
-                    placeholder="Street address"
-                    value={formData.address}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="rp-field">
-                <label className="rp-label">Password</label>
-                <div className="rp-pw-wrap">
-                  <input
-                    className="rp-pw-input"
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Min 8 characters"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    autoComplete="new-password"
-                  />
                   <button
-                    type="button"
-                    className="rp-eye"
-                    onClick={() => setShowPassword(!showPassword)}
+                    type="submit"
+                    className={loading || !!success ? "rp-btn-dis" : "rp-btn"}
+                    disabled={loading || !!success}
                   >
-                    {showPassword ? "🙈" : "👁"}
+                    {loading
+                      ? "Creating Account..."
+                      : success
+                        ? "Redirecting..."
+                        : "Create Free Account →"}
                   </button>
-                </div>
-              </div>
-
-              <div className="rp-field">
-                <label className="rp-label">Confirm Password</label>
-                <div className="rp-pw-wrap">
-                  <input
-                    className="rp-pw-input"
-                    type={showConfirm ? "text" : "password"}
-                    name="password_confirmation"
-                    placeholder="Repeat your password"
-                    value={formData.password_confirmation}
-                    onChange={handleChange}
-                    required
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="rp-eye"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                  >
-                    {showConfirm ? "🙈" : "👁"}
-                  </button>
-                </div>
-                {pwMatch && (
-                  <div
-                    className="rp-pw-match"
-                    style={{
-                      color:
-                        formData.password === formData.password_confirmation
-                          ? "#1a7a3a"
-                          : "#cc0000",
-                    }}
-                  >
-                    {formData.password === formData.password_confirmation
-                      ? "✓ Passwords match"
-                      : "✕ Passwords do not match"}
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className={loading || !!success || !emailVerified ? "rp-btn-dis" : "rp-btn"}
-                disabled={loading || !!success || !emailVerified}
-                title={!emailVerified ? "Verify your email address first" : undefined}
-              >
-                {loading
-                  ? "Creating Account..."
-                  : success
-                    ? "Redirecting..."
-                    : !emailVerified
-                      ? "Verify Email to Continue"
-                      : "Create Free Account →"}
-              </button>
-            </form>
+                </form>
+              </>
+            )}
 
             <p className="rp-login-text">
               Already have an account? <Link to="/login">Sign In</Link>
