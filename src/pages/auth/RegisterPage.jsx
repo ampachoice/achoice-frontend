@@ -205,21 +205,6 @@ export default function RegisterPage() {
 
   return (
     <div className="rp-wrap">
-      {/* Top Bar */}
-      <div className="rp-topbar">
-        <div
-          className="rp-topbar-left"
-          style={{ display: "flex", gap: 14, flexWrap: "wrap" }}
-        >
-          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
-          <span>✉ support@achoice.ng</span>
-        </div>
-        <div className="rp-topbar-right">
-          <span>📞 09067794991</span>
-          <span>Mon-Sat: 07:00am-06:00pm</span>
-        </div>
-      </div>
-
       {/* Nav */}
       <nav className="rp-nav">
         <div className="rp-brand" onClick={() => navigate("/")}>

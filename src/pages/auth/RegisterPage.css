@@ -1,10 +1,6 @@
 body { margin:0; }
 .rp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; display:flex; flex-direction:column; }
 
-/* ── Top Bar ── */
-.rp-topbar { background:#1f4d1f; color:#fff; padding:7px 48px; display:flex; justify-content:space-between; align-items:center; font-size:12px; flex-wrap:wrap; gap:4px; }
-.rp-topbar-right { display:flex; gap:16px; }
-
 /* ── Nav ── */
 .rp-nav { background:#fff; border-bottom:1px solid #e8e4dc; padding:12px 48px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
 .rp-brand { display:flex; align-items:center; gap:10px; cursor:pointer; }
@@ -81,9 +77,6 @@ body { margin:0; }
 
 /* ── MOBILE ── */
 @media (max-width:640px) {
-  .rp-topbar { padding:6px 16px; font-size:11px; }
-  .rp-topbar-right { display:none; }
-  .rp-topbar-left span:last-child { display:none; }
   .rp-nav { padding:10px 16px; }
   .rp-nav-links { display:none; }
   .rp-brand img { width:38px; height:38px; }
