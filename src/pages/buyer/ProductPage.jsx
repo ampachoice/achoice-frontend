@@ -143,6 +143,8 @@ const CSS = `
   @media (max-width:900px) {
     .pp-nav { padding:10px 20px; }
     .pp-search-group { display:none; }
+    .pp-nav-actions-desktop { display:none !important; }
+    .pp-hamburger-btn { display:block !important; }
     .pp-mobile-bar { display:block; top:54px; }
     .pp-container { padding:20px; }
     .pp-detail-card { grid-template-columns:1fr; gap:24px; padding:20px; }
@@ -514,60 +516,66 @@ export default function ProductPage() {
             )}
           </div>
           {token && <NotificationBell />}
-          <button
-            style={{
-              padding: "8px 14px",
-              border: "1.5px solid #f0c050",
-              color: "#f0c050",
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 700,
-              background: "transparent",
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-            onClick={() => navigate("/become-a-seller")}
+          <div
+            className="pp-nav-actions-desktop"
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
           >
-            Become a Seller
-          </button>
-          {token ? (
-            <BuyerDropdown cartCount={cartCount} />
-          ) : (
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                style={{
-                  padding: "8px 14px",
-                  border: "1px solid #fff",
-                  color: "#fff",
-                  borderRadius: 6,
-                  fontSize: 13,
-                  background: "transparent",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-                onClick={() => navigate("/login")}
-              >
-                Sign In
-              </button>
-              <button
-                style={{
-                  padding: "8px 14px",
-                  background: "#f0c050",
-                  color: "#1a3d1a",
-                  border: "none",
-                  borderRadius: 6,
-                  fontSize: 13,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  fontWeight: 700,
-                }}
-                onClick={() => navigate("/register")}
-              >
-                Get Started
-              </button>
-            </div>
-          )}
-          {/* Mobile hamburger */}
+            <button
+              style={{
+                padding: "8px 14px",
+                border: "1.5px solid #f0c050",
+                color: "#f0c050",
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 700,
+                background: "transparent",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                whiteSpace: "nowrap",
+              }}
+              onClick={() => navigate("/become-a-seller")}
+            >
+              Become a Seller
+            </button>
+            {token ? (
+              <BuyerDropdown cartCount={cartCount} />
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  style={{
+                    padding: "8px 14px",
+                    border: "1px solid #fff",
+                    color: "#fff",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    background: "transparent",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                  onClick={() => navigate("/login")}
+                >
+                  Sign In
+                </button>
+                <button
+                  style={{
+                    padding: "8px 14px",
+                    background: "#f0c050",
+                    color: "#1a3d1a",
+                    border: "none",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    fontWeight: 700,
+                  }}
+                  onClick={() => navigate("/register")}
+                >
+                  Get Started
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Mobile hamburger — reveals the actions above via the dropdown menu, which already duplicates Become a Seller / Sign In / Get Started */}
           <button
             className="pp-hamburger-btn"
             style={{
