@@ -195,7 +195,9 @@ function Stars({ rating = 0, size = 14 }) {
   return (
     <span style={{ fontSize: size, lineHeight: 1, letterSpacing: 1 }}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} style={{ color: n <= r ? "#f0c050" : "#ddd" }}>★</span>
+        <span key={n} style={{ color: n <= r ? "#f0c050" : "#ddd" }}>
+          ★
+        </span>
       ))}
     </span>
   );
@@ -209,36 +211,45 @@ export default function ProductPage() {
   const navigate = useNavigate();
 
   // shared
-  const [cartCount, setCartCount]   = useState(0);
+  const [cartCount, setCartCount] = useState(0);
   const [categories, setCategories] = useState(["All"]);
 
   // listing
-  const [products, setProducts]       = useState([]);
-  const [page, setPage]               = useState(1);
-  const [meta, setMeta]               = useState(null);
-  const [searchTerm, setSearchTerm]   = useState("");
+  const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   // Pre-filter from a landing-page "See all" / category quick-link, e.g. /products?category=grains.
   const [searchParams] = useSearchParams();
-  const [selectedCat, setSelectedCat] = useState(searchParams.get("category") || "All");
+  const [selectedCat, setSelectedCat] = useState(
+    searchParams.get("category") || "All",
+  );
   const [listLoading, setListLoading] = useState(false);
-  const [listError, setListError]     = useState(null);
+  const [listError, setListError] = useState(null);
 
   // detail
-  const [product, setProduct]             = useState(null);
-  const [reviews, setReviews]             = useState([]);
+  const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [activeImg, setActiveImg]         = useState(0);
+  const [activeImg, setActiveImg] = useState(0);
 
   // review form
-  const [reviewForm, setReviewForm]           = useState({ rating: 5, comment: "", order_id: "" });
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
+    order_id: "",
+  });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewSuccess, setReviewSuccess]       = useState(false);
-  const [reviewError, setReviewError]           = useState(null);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewError, setReviewError] = useState(null);
 
   const user = (() => {
-    try { return JSON.parse(localStorage.getItem("user") || "null"); }
-    catch { return null; }
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
   })();
 
   // sync cart count
@@ -258,7 +269,9 @@ export default function ProductPage() {
       .then((res) => {
         const raw = res.data?.categories || res.data || [];
         const names = (Array.isArray(raw) ? raw : [])
-          .map((c) => (typeof c === "string" ? c : c.slug || c.name || c.category))
+          .map((c) =>
+            typeof c === "string" ? c : c.slug || c.name || c.category,
+          )
           .filter(Boolean);
         setCategories(["All", ...names]);
       })
@@ -266,7 +279,9 @@ export default function ProductPage() {
   }, []);
 
   // reset page on filter change
-  useEffect(() => { setPage(1); }, [selectedCat, searchTerm]);
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCat, searchTerm]);
 
   // load product list
   useEffect(() => {
@@ -287,7 +302,9 @@ export default function ProductPage() {
         setProducts(data);
         setMeta(pData?.meta || (pData?.last_page ? pData : null));
       })
-      .catch(() => setListError("Failed to load products. Please check your connection."))
+      .catch(() =>
+        setListError("Failed to load products. Please check your connection."),
+      )
       .finally(() => setListLoading(false));
   }, [id, page, selectedCat, searchTerm, searchParams]);
 
@@ -313,27 +330,31 @@ export default function ProductPage() {
   }, [id]);
 
   // add to cart
-  const handleAddToCart = useCallback((p) => {
-    if (!p) return;
-    const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-    const idx = cart.findIndex((item) => item.id === p.id);
-    if (idx > -1) {
-      cart[idx].quantity += 1;
-    } else {
-      cart.push({
-        id: p.id,
-        name: p.name,
-        price: Number(p.discount_price || p.price),
-        image: p.images?.[0]?.image_url || p.images?.[0]?.url || p.image || "",
-        quantity: 1,
-        unit: p.unit || "",
-        seller: p.seller?.business_name || "",
-      });
-    }
-    localStorage.setItem("cart", JSON.stringify(cart));
-    setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
-    navigate("/cart");
-  }, [navigate]);
+  const handleAddToCart = useCallback(
+    (p) => {
+      if (!p) return;
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const idx = cart.findIndex((item) => item.id === p.id);
+      if (idx > -1) {
+        cart[idx].quantity += 1;
+      } else {
+        cart.push({
+          id: p.id,
+          name: p.name,
+          price: Number(p.discount_price || p.price),
+          image:
+            p.images?.[0]?.image_url || p.images?.[0]?.url || p.image || "",
+          quantity: 1,
+          unit: p.unit || "",
+          seller: p.seller?.business_name || "",
+        });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
+      navigate("/cart");
+    },
+    [navigate],
+  );
 
   // submit review
   const handleReviewSubmit = async (e) => {
@@ -350,14 +371,23 @@ export default function ProductPage() {
       setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
       setReviewSummary(rd?.summary || null);
     } catch (err) {
-      setReviewError(err.response?.data?.message || "Failed to submit review. Please try again.");
+      setReviewError(
+        err.response?.data?.message ||
+          "Failed to submit review. Please try again.",
+      );
     } finally {
       setReviewSubmitting(false);
     }
   };
 
   const fmtDate = (d) =>
-    d ? new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "";
+    d
+      ? new Date(d).toLocaleDateString("en-NG", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
 
   // ── Nav — uses same pattern as HomePage for reliable rendering ─────────────
   const token = localStorage.getItem("token");
@@ -367,34 +397,68 @@ export default function ProductPage() {
     <>
       <style>{CSS}</style>
 
-      {/* Top bar */}
-      <div style={{ background:"#1f4d1f", color:"#fff", fontSize:12, padding:"6px 40px", display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:4 }}>
-        <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
-          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
-          <span>✉ support@achoice.ng</span>
-        </div>
-        <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
-          <span>📞 09067794991</span>
-          <span>Mon - Sat: 07:00am to 06:00pm</span>
-        </div>
-      </div>
-
       {/* Main nav */}
-      <nav style={{ background:"#1f4d1f", padding:"10px 40px", display:"flex", justifyContent:"space-between", alignItems:"center", position:"sticky", top:0, zIndex:200, gap:12, flexWrap:"nowrap" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", flexShrink:0 }} onClick={() => navigate("/products")}>
-          <img src="/android-chrome-192x192.png" alt="Achoice"
-            style={{ width:36, height:36, borderRadius:6, objectFit:"contain" }}
-            onError={(e) => { e.target.style.display = "none"; }} />
-          <div style={{ fontWeight:700, fontSize:17, color:"#fff", whiteSpace:"nowrap" }}>
-            ACHOICE <span style={{ color:"#f0c050" }}>MARKET</span>
+      <nav
+        style={{
+          background: "#1f4d1f",
+          padding: "10px 40px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          position: "sticky",
+          top: 0,
+          zIndex: 200,
+          gap: 12,
+          flexWrap: "nowrap",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+          onClick={() => navigate("/products")}
+        >
+          <img
+            src="/android-chrome-192x192.png"
+            alt="Achoice"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 6,
+              objectFit: "contain",
+            }}
+            onError={(e) => {
+              e.target.style.display = "none";
+            }}
+          />
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 17,
+              color: "#fff",
+              whiteSpace: "nowrap",
+            }}
+          >
+            ACHOICE <span style={{ color: "#f0c050" }}>MARKET</span>
           </div>
         </div>
 
         {/* Desktop search — hidden on mobile via CSS */}
         {!id && (
           <div className="pp-search-group">
-            <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            <select
+              value={selectedCat}
+              onChange={(e) => setSelectedCat(e.target.value)}
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
             <input
               type="search"
@@ -406,31 +470,115 @@ export default function ProductPage() {
         )}
 
         {/* Right side actions */}
-        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
-          <div style={{ fontSize:22, cursor:"pointer", position:"relative", color:"#fff", display:"flex", alignItems:"center" }}
-            onClick={() => navigate("/cart")}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 22,
+              cursor: "pointer",
+              position: "relative",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+            }}
+            onClick={() => navigate("/cart")}
+          >
             🛒
             {cartCount > 0 && (
-              <span style={{ position:"absolute", top:-8, right:-10, background:"#f0c050", color:"#1f4d1f", fontSize:10, fontWeight:700, width:18, height:18, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #1f4d1f" }}>
+              <span
+                style={{
+                  position: "absolute",
+                  top: -8,
+                  right: -10,
+                  background: "#f0c050",
+                  color: "#1f4d1f",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "2px solid #1f4d1f",
+                }}
+              >
                 {cartCount}
               </span>
             )}
           </div>
           {token && <NotificationBell />}
+          <button
+            style={{
+              padding: "8px 14px",
+              border: "1.5px solid #f0c050",
+              color: "#f0c050",
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 700,
+              background: "transparent",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+            onClick={() => navigate("/become-a-seller")}
+          >
+            Become a Seller
+          </button>
           {token ? (
             <BuyerDropdown cartCount={cartCount} />
           ) : (
-            <div style={{ display:"flex", gap:8 }}>
-              <button style={{ padding:"8px 14px", border:"1px solid #fff", color:"#fff", borderRadius:6, fontSize:13, background:"transparent", cursor:"pointer", fontFamily:"inherit" }}
-                onClick={() => navigate("/login")}>Sign In</button>
-              <button style={{ padding:"8px 14px", background:"#f0c050", color:"#1a3d1a", border:"none", borderRadius:6, fontSize:13, cursor:"pointer", fontFamily:"inherit", fontWeight:700 }}
-                onClick={() => navigate("/register")}>Get Started</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                style={{
+                  padding: "8px 14px",
+                  border: "1px solid #fff",
+                  color: "#fff",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+                onClick={() => navigate("/login")}
+              >
+                Sign In
+              </button>
+              <button
+                style={{
+                  padding: "8px 14px",
+                  background: "#f0c050",
+                  color: "#1a3d1a",
+                  border: "none",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontWeight: 700,
+                }}
+                onClick={() => navigate("/register")}
+              >
+                Get Started
+              </button>
             </div>
           )}
           {/* Mobile hamburger */}
           <button
             className="pp-hamburger-btn"
-            style={{ background:"none", border:"none", fontSize:24, cursor:"pointer", color:"#fff", padding:4, display:"none" }}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 24,
+              cursor: "pointer",
+              color: "#fff",
+              padding: 4,
+              display: "none",
+            }}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? "✕" : "☰"}
@@ -440,44 +588,153 @@ export default function ProductPage() {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:999, background:"rgba(0,0,0,0.5)" }} onClick={() => setMenuOpen(false)}>
-          <div style={{ position:"absolute", top:0, right:0, bottom:0, width:"75%", maxWidth:300, background:"#fff", display:"flex", flexDirection:"column", boxShadow:"-4px 0 20px rgba(0,0,0,0.2)" }}
-            onClick={(e) => e.stopPropagation()}>
-            <div style={{ background:"#1f4d1f", padding:"20px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ color:"#fff", fontWeight:700, fontSize:16 }}>Menu</span>
-              <button style={{ background:"none", border:"none", color:"#fff", fontSize:22, cursor:"pointer" }} onClick={() => setMenuOpen(false)}>✕</button>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+            background: "rgba(0,0,0,0.5)",
+          }}
+          onClick={() => setMenuOpen(false)}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: "75%",
+              maxWidth: 300,
+              background: "#fff",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "-4px 0 20px rgba(0,0,0,0.2)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                background: "#1f4d1f",
+                padding: "20px 16px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>
+                Menu
+              </span>
+              <button
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#fff",
+                  fontSize: 22,
+                  cursor: "pointer",
+                }}
+                onClick={() => setMenuOpen(false)}
+              >
+                ✕
+              </button>
             </div>
-            <div style={{ flex:1, overflowY:"auto", padding:"8px 0" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
               {[
-                { label:"🏠 Home", path:"/" },
-                { label:"🛍️ Shop Products", path:"/products" },
-                { label:"👤 My Profile", path:"/profile" },
-                { label:"🛒 Cart", path:"/cart" },
-                { label:"📦 My Orders", path:"/orders" },
-                { label:"💰 Apply for Loan", path:"/loans/apply" },
-                { label:"📋 My Loans", path:"/loans/repay" },
-                { label:"📝 Complaints & Refunds", path:"/complaints" },
-                { label:"🔔 Notifications", path:"/notifications" },
+                { label: "🏠 Home", path: "/" },
+                { label: "🛍️ Shop Products", path: "/products" },
+                { label: "👤 My Profile", path: "/profile" },
+                { label: "🛒 Cart", path: "/cart" },
+                { label: "📦 My Orders", path: "/orders" },
+                { label: "💰 Apply for Loan", path: "/loans/apply" },
+                { label: "📋 My Loans", path: "/loans/repay" },
+                { label: "📝 Complaints & Refunds", path: "/complaints" },
+                { label: "🔔 Notifications", path: "/notifications" },
+                { label: "🏪 Become a Seller", path: "/become-a-seller" },
               ].map((item) => (
-                <div key={item.path}
-                  style={{ padding:"14px 20px", cursor:"pointer", fontSize:15, color:"#222", borderBottom:"1px solid #f5f5f5" }}
-                  onClick={() => { navigate(item.path); setMenuOpen(false); }}>
+                <div
+                  key={item.path}
+                  style={{
+                    padding: "14px 20px",
+                    cursor: "pointer",
+                    fontSize: 15,
+                    color: "#222",
+                    borderBottom: "1px solid #f5f5f5",
+                  }}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMenuOpen(false);
+                  }}
+                >
                   {item.label}
                 </div>
               ))}
             </div>
-            <div style={{ padding:"16px 20px", borderTop:"1px solid #eee" }}>
+            <div style={{ padding: "16px 20px", borderTop: "1px solid #eee" }}>
               {token ? (
-                <button style={{ width:"100%", padding:"12px", background:"#fff0f0", color:"#cc0000", border:"none", borderRadius:8, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
-                  onClick={() => { localStorage.clear(); navigate("/login"); }}>
+                <button
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    background: "#fff0f0",
+                    color: "#cc0000",
+                    border: "none",
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                  onClick={() => {
+                    localStorage.clear();
+                    navigate("/login");
+                  }}
+                >
                   🚪 Logout
                 </button>
               ) : (
-                <div style={{ display:"flex", gap:8 }}>
-                  <button style={{ flex:1, padding:"12px", background:"#fff", color:"#1f4d1f", border:"1px solid #1f4d1f", borderRadius:8, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
-                    onClick={() => { navigate("/login"); setMenuOpen(false); }}>Sign In</button>
-                  <button style={{ flex:1, padding:"12px", background:"#1f4d1f", color:"#fff", border:"none", borderRadius:8, fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
-                    onClick={() => { navigate("/register"); setMenuOpen(false); }}>Get Started</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "#fff",
+                      color: "#1f4d1f",
+                      border: "1px solid #1f4d1f",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                    onClick={() => {
+                      navigate("/login");
+                      setMenuOpen(false);
+                    }}
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      background: "#1f4d1f",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                    onClick={() => {
+                      navigate("/register");
+                      setMenuOpen(false);
+                    }}
+                  >
+                    Get Started
+                  </button>
                 </div>
               )}
             </div>
@@ -489,8 +746,15 @@ export default function ProductPage() {
       {!id && (
         <div className="pp-mobile-bar">
           <div className="pp-mobile-bar-inner">
-            <select value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            <select
+              value={selectedCat}
+              onChange={(e) => setSelectedCat(e.target.value)}
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
             <input
               type="search"
@@ -500,12 +764,18 @@ export default function ProductPage() {
               autoComplete="off"
             />
             {searchTerm && (
-              <button className="pp-mobile-bar-clear" onClick={() => setSearchTerm("")}>✕</button>
+              <button
+                className="pp-mobile-bar-clear"
+                onClick={() => setSearchTerm("")}
+              >
+                ✕
+              </button>
             )}
           </div>
           {searchTerm && (
             <div className="pp-mobile-bar-count">
-              {products.length} result{products.length !== 1 ? "s" : ""} for &quot;{searchTerm}&quot;
+              {products.length} result{products.length !== 1 ? "s" : ""} for
+              &quot;{searchTerm}&quot;
             </div>
           )}
         </div>
@@ -529,9 +799,24 @@ export default function ProductPage() {
         <div className="pp-error">
           {listError}{" "}
           <button
-            onClick={() => { setListError(null); setPage(1); }}
-            style={{ marginLeft:8, padding:"6px 14px", background:"#1f4d1f", color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontSize:13, fontFamily:"inherit" }}
-          >Retry</button>
+            onClick={() => {
+              setListError(null);
+              setPage(1);
+            }}
+            style={{
+              marginLeft: 8,
+              padding: "6px 14px",
+              background: "#1f4d1f",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontSize: 13,
+              fontFamily: "inherit",
+            }}
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -549,30 +834,38 @@ export default function ProductPage() {
       <div className="pp-wrap">
         <Nav />
         <div className="pp-container">
-          <button className="pp-back-btn" onClick={() => navigate("/products")}>← Back to Products</button>
+          <button className="pp-back-btn" onClick={() => navigate("/products")}>
+            ← Back to Products
+          </button>
           <div className="pp-empty">Product not found.</div>
         </div>
       </div>
     );
 
   // ── Detail data ──────────────────────────────────────────────────────────
-  const images    = product
+  const images = product
     ? product.images?.length > 0
       ? product.images.map((img) => img.image_url || img.url || img)
-      : product.image ? [product.image] : []
+      : product.image
+        ? [product.image]
+        : []
     : [];
-  const hasDisc   = product && product.discount_price && Number(product.discount_price) > 0;
-  const dispPrice = product ? (hasDisc ? product.discount_price : product.price) : 0;
+  const hasDisc =
+    product && product.discount_price && Number(product.discount_price) > 0;
+  const dispPrice = product
+    ? hasDisc
+      ? product.discount_price
+      : product.price
+    : 0;
   const avgRating = parseFloat(product?.reviews_avg_rating || 0);
-  const rvCount   = Number(product?.reviews_count || 0);
-  const seller    = product?.seller;
+  const rvCount = Number(product?.reviews_count || 0);
+  const seller = product?.seller;
 
   // ── Main render ──────────────────────────────────────────────────────────
   return (
     <div className="pp-wrap">
       <Nav />
       <div className="pp-container">
-
         {/* ════════════════════ LISTING ════════════════════ */}
         {!id && (
           <>
@@ -585,8 +878,10 @@ export default function ProductPage() {
             ) : (
               <div className="pp-grid">
                 {products.map((p) => {
-                  const pDisc = p.discount_price && Number(p.discount_price) > 0;
-                  const pImg  = p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
+                  const pDisc =
+                    p.discount_price && Number(p.discount_price) > 0;
+                  const pImg =
+                    p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
                   return (
                     <div
                       key={p.id}
@@ -594,11 +889,15 @@ export default function ProductPage() {
                       onClick={() => navigate(`/product/${p.id}`)}
                     >
                       <div className="pp-card-img-box">
-                        {pImg
-                          ? <img src={pImg} alt={p.name} loading="lazy" />
-                          : <span style={{ fontSize: 40 }}>📦</span>}
+                        {pImg ? (
+                          <img src={pImg} alt={p.name} loading="lazy" />
+                        ) : (
+                          <span style={{ fontSize: 40 }}>📦</span>
+                        )}
                         {pDisc && <div className="pp-sale-badge">SALE</div>}
-                        {p.category && <div className="pp-cat-badge">{p.category}</div>}
+                        {p.category && (
+                          <div className="pp-cat-badge">{p.category}</div>
+                        )}
                       </div>
                       <div className="pp-card-body">
                         <div className="pp-card-name">{p.name}</div>
@@ -612,7 +911,10 @@ export default function ProductPage() {
                           </span>
                         </div>
                         <div className="pp-card-price">
-                          ₦{Number(pDisc ? p.discount_price : p.price).toLocaleString()}
+                          ₦
+                          {Number(
+                            pDisc ? p.discount_price : p.price,
+                          ).toLocaleString()}
                         </div>
                         {pDisc && (
                           <div className="pp-card-orig">
@@ -621,7 +923,10 @@ export default function ProductPage() {
                         )}
                         <button
                           className="pp-card-btn"
-                          onClick={(e) => { e.stopPropagation(); handleAddToCart(p); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(p);
+                          }}
                         >
                           Add &amp; Checkout
                         </button>
@@ -639,7 +944,9 @@ export default function ProductPage() {
                   className="pp-page-btn"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                >← Prev</button>
+                >
+                  ← Prev
+                </button>
                 <span className="pp-page-label">
                   Page {page} of {meta.last_page || meta.total_pages || 1}
                 </span>
@@ -647,7 +954,9 @@ export default function ProductPage() {
                   className="pp-page-btn"
                   disabled={page >= (meta.last_page || meta.total_pages || 1)}
                   onClick={() => setPage((p) => p + 1)}
-                >Next →</button>
+                >
+                  Next →
+                </button>
               </div>
             )}
           </>
@@ -656,7 +965,10 @@ export default function ProductPage() {
         {/* ════════════════════ DETAIL ════════════════════ */}
         {id && product && (
           <>
-            <button className="pp-back-btn" onClick={() => navigate("/products")}>
+            <button
+              className="pp-back-btn"
+              onClick={() => navigate("/products")}
+            >
               ← Back to Products
             </button>
 
@@ -664,16 +976,20 @@ export default function ProductPage() {
               {/* Images column */}
               <div>
                 <div className="pp-main-img-box">
-                  {images.length > 0
-                    ? <img src={images[activeImg]} alt={product.name} />
-                    : <div className="pp-img-placeholder">🌿</div>}
+                  {images.length > 0 ? (
+                    <img src={images[activeImg]} alt={product.name} />
+                  ) : (
+                    <div className="pp-img-placeholder">🌿</div>
+                  )}
                   {hasDisc && <div className="pp-detail-sale">SALE</div>}
                 </div>
                 {images.length > 1 && (
                   <div className="pp-thumbs">
                     {images.map((img, i) => (
                       <img
-                        key={i} src={img} alt=""
+                        key={i}
+                        src={img}
+                        alt=""
                         className={`pp-thumb${i === activeImg ? " active" : ""}`}
                         onClick={() => setActiveImg(i)}
                       />
@@ -692,14 +1008,19 @@ export default function ProductPage() {
                 <div className="pp-rating-row">
                   <Stars rating={avgRating} size={18} />
                   <span>
-                    {avgRating.toFixed(1)} · {rvCount} review{rvCount !== 1 ? "s" : ""}
+                    {avgRating.toFixed(1)} · {rvCount} review
+                    {rvCount !== 1 ? "s" : ""}
                   </span>
                 </div>
 
                 <div className="pp-price-row">
-                  <div className="pp-price">₦{Number(dispPrice).toLocaleString()}</div>
+                  <div className="pp-price">
+                    ₦{Number(dispPrice).toLocaleString()}
+                  </div>
                   {hasDisc && (
-                    <div className="pp-orig-price">₦{Number(product.price).toLocaleString()}</div>
+                    <div className="pp-orig-price">
+                      ₦{Number(product.price).toLocaleString()}
+                    </div>
                   )}
                 </div>
 
@@ -717,7 +1038,8 @@ export default function ProductPage() {
 
                 {product.min_order_qty && (
                   <div className="pp-info-tag">
-                    📦 Min. order: {product.min_order_qty} {product.unit || "units"}
+                    📦 Min. order: {product.min_order_qty}{" "}
+                    {product.unit || "units"}
                   </div>
                 )}
 
@@ -737,7 +1059,10 @@ export default function ProductPage() {
                   onClick={() => handleAddToCart(product)}
                   disabled={Number(product.quantity) === 0}
                 >
-                  🛒 {Number(product.quantity) === 0 ? "Out of Stock" : "Add to Cart"}
+                  🛒{" "}
+                  {Number(product.quantity) === 0
+                    ? "Out of Stock"
+                    : "Add to Cart"}
                 </button>
 
                 {seller && (
@@ -745,17 +1070,28 @@ export default function ProductPage() {
                     <div className="pp-seller-label">Sold by</div>
                     <div className="pp-seller-name">{seller.business_name}</div>
                     {parseFloat(seller.rating) > 0 && (
-                      <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:4 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          marginTop: 4,
+                        }}
+                      >
                         <Stars rating={parseFloat(seller.rating)} size={13} />
-                        <span style={{ fontSize:13, color:"#666" }}>
+                        <span style={{ fontSize: 13, color: "#666" }}>
                           {parseFloat(seller.rating).toFixed(1)}
                         </span>
                       </div>
                     )}
                     <div className="pp-seller-meta">
-                      {seller.total_sales > 0 && <span>🛍 {seller.total_sales} sales</span>}
+                      {seller.total_sales > 0 && (
+                        <span>🛍 {seller.total_sales} sales</span>
+                      )}
                       {(seller.business_address || seller.state) && (
-                        <span>📍 {seller.business_address || seller.state}</span>
+                        <span>
+                          📍 {seller.business_address || seller.state}
+                        </span>
                       )}
                     </div>
                     {seller.whatsapp_number && (
@@ -780,19 +1116,25 @@ export default function ProductPage() {
               {rvCount > 0 && reviewSummary && (
                 <div className="pp-rating-breakdown">
                   <div className="pp-rating-big">
-                    <div className="pp-rating-big-num">{avgRating.toFixed(1)}</div>
+                    <div className="pp-rating-big-num">
+                      {avgRating.toFixed(1)}
+                    </div>
                     <Stars rating={avgRating} size={22} />
                     <div className="pp-rating-big-count">{rvCount} reviews</div>
                   </div>
                   <div className="pp-rating-bars">
                     {[5, 4, 3, 2, 1].map((star) => {
                       const count = Number(reviewSummary[star] || 0);
-                      const pct   = rvCount > 0 ? Math.round((count / rvCount) * 100) : 0;
+                      const pct =
+                        rvCount > 0 ? Math.round((count / rvCount) * 100) : 0;
                       return (
                         <div key={star} className="pp-bar-row">
                           <span className="pp-bar-label">{star}★</span>
                           <div className="pp-bar-bg">
-                            <div className="pp-bar-fill" style={{ width: `${pct}%` }} />
+                            <div
+                              className="pp-bar-fill"
+                              style={{ width: `${pct}%` }}
+                            />
                           </div>
                           <span className="pp-bar-count">{count}</span>
                         </div>
@@ -811,10 +1153,14 @@ export default function ProductPage() {
                           {r.user?.name?.charAt(0)?.toUpperCase() || "?"}
                         </div>
                         <div>
-                          <div className="pp-review-user">{r.user?.name || "Anonymous"}</div>
+                          <div className="pp-review-user">
+                            {r.user?.name || "Anonymous"}
+                          </div>
                           <Stars rating={r.rating} size={13} />
                         </div>
-                        <div className="pp-review-date">{fmtDate(r.created_at)}</div>
+                        <div className="pp-review-date">
+                          {fmtDate(r.created_at)}
+                        </div>
                       </div>
                       <p className="pp-review-comment">{r.comment}</p>
                     </div>
@@ -830,7 +1176,9 @@ export default function ProductPage() {
                 <div className="pp-review-form">
                   <h3>Leave a Review</h3>
                   {reviewSuccess && (
-                    <div className="pp-review-ok">✅ Review submitted! Thank you.</div>
+                    <div className="pp-review-ok">
+                      ✅ Review submitted! Thank you.
+                    </div>
                   )}
                   {reviewError && (
                     <div className="pp-review-err">⚠️ {reviewError}</div>
@@ -842,7 +1190,10 @@ export default function ProductPage() {
                         className="pp-review-select"
                         value={reviewForm.rating}
                         onChange={(e) =>
-                          setReviewForm({ ...reviewForm, rating: Number(e.target.value) })
+                          setReviewForm({
+                            ...reviewForm,
+                            rating: Number(e.target.value),
+                          })
                         }
                       >
                         {[5, 4, 3, 2, 1].map((n) => (
@@ -855,7 +1206,9 @@ export default function ProductPage() {
                     <div className="pp-review-field">
                       <label className="pp-review-label">
                         Order ID{" "}
-                        <span style={{ color:"#aaa", fontWeight:400 }}>(optional)</span>
+                        <span style={{ color: "#aaa", fontWeight: 400 }}>
+                          (optional)
+                        </span>
                       </label>
                       <input
                         className="pp-review-input"
@@ -863,7 +1216,10 @@ export default function ProductPage() {
                         placeholder="Your order ID e.g. ACH-XXXXXXXX"
                         value={reviewForm.order_id}
                         onChange={(e) =>
-                          setReviewForm({ ...reviewForm, order_id: e.target.value })
+                          setReviewForm({
+                            ...reviewForm,
+                            order_id: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -876,7 +1232,10 @@ export default function ProductPage() {
                         placeholder="Share your honest experience with this product…"
                         value={reviewForm.comment}
                         onChange={(e) =>
-                          setReviewForm({ ...reviewForm, comment: e.target.value })
+                          setReviewForm({
+                            ...reviewForm,
+                            comment: e.target.value,
+                          })
                         }
                       />
                     </div>
