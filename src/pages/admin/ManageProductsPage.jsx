@@ -5,6 +5,7 @@ import api from "../../services/api";
 import axios from "axios";
 import AdminLayout from "../../components/admin/AdminLayout";
 
+
 const BACKEND_CATEGORIES = [
   { id: 1, name: "Grains", slug: "grains" },
   { id: 2, name: "Vegetables", slug: "vegetables" },
@@ -52,13 +53,16 @@ export default function ManageProductsPage() {
     min_order_qty: 1,
   });
 
+  const [pendingCount, setPendingCount] = useState(0);
+
   const fetchData = async (pageNum = 1) => {
     setLoading(true);
     try {
-      const [pRes, sRes, cRes] = await Promise.allSettled([
+      const [pRes, sRes, cRes, pendingRes] = await Promise.allSettled([
         api.get(`/products?page=${pageNum}&per_page=20`),
         getSellers(),
         api.get("/settings/categories"),
+        api.get("/admin/products/pending-review?per_page=1"),
       ]);
       if (pRes.status === "fulfilled") {
         const pData = pRes.value.data;
@@ -72,6 +76,8 @@ export default function ManageProductsPage() {
         const catData = cRes.value.data.categories || cRes.value.data || [];
         setCategories(catData.length > 0 ? catData : BACKEND_CATEGORIES);
       }
+      if (pendingRes.status === "fulfilled")
+        setPendingCount(pendingRes.value.data?.total ?? 0);
     } catch (err) {
       console.error("Fetch error:", err);
     } finally {
@@ -153,7 +159,7 @@ export default function ManageProductsPage() {
       cloudData.append("upload_preset", "achoice_preset");
       try {
         const cloudRes = await axios.post(
-          "https://api.cloudinary.com/v1_1/i3gdrwus/image/upload",
+          "https://api.cloudinary.com/v1_1/ds4wspou1/image/upload",
           cloudData,
         );
         finalImageUrl = cloudRes.data.secure_url;
@@ -208,7 +214,7 @@ export default function ManageProductsPage() {
       cloudData.append("upload_preset", "achoice_preset");
       try {
         const cloudRes = await axios.post(
-          "https://api.cloudinary.com/v1_1/i3gdrwus/image/upload",
+          "https://api.cloudinary.com/v1_1/ds4wspou1/image/upload",
           cloudData,
         );
         finalImageUrl = cloudRes.data.secure_url;
@@ -468,10 +474,18 @@ export default function ManageProductsPage() {
       <AdminLayout
         title="Manage Products"
         subtitle={`${totalProducts} products in inventory`}
+        badges={{ "/admin/products": pendingCount }}
         headerActions={
-          <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
-            {showForm ? "Cancel" : "+ Add Product"}
-          </button>
+          <>
+            {pendingCount > 0 && (
+              <button style={s.pendingBtn} onClick={() => navigate("/admin/product-approvals")}>
+                🔍 Pending Review ({pendingCount})
+              </button>
+            )}
+            <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
+              {showForm ? "Cancel" : "+ Add Product"}
+            </button>
+          </>
         }
       >
         {/* Summary Stats */}
@@ -696,146 +710,146 @@ export default function ManageProductsPage() {
         {/* Products Table */}
         <div style={s.tableCard}>
           <div className="table-responsive">
-            <table style={s.table}>
-              <thead>
-                <tr style={s.tableHead}>
-                  <th style={s.th}>Product</th>
-                  <th style={s.th}>Category</th>
-                  <th style={s.th}>Price</th>
-                  <th style={s.th}>Total Stock</th>
-                  <th style={s.th}>Sold</th>
-                  <th style={s.th}>Remaining</th>
-                  <th style={s.th}>Status</th>
-                  <th style={s.th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p) => {
-                  const totalStock = Number(p.quantity || 0);
-                  const sold = Number(p.items_sold || 0);
-                  const remaining = Math.max(totalStock - sold, 0);
-                  const stockPct =
-                    totalStock > 0
-                      ? Math.min((remaining / totalStock) * 100, 100)
-                      : 0;
-                  return (
-                    <tr key={p.id} style={s.tableRow}>
-                      <td style={s.td}>
-                        <div style={s.productCell}>
-                          <img
-                            src={
-                              p.images?.[0]?.image_url ||
-                              p.images?.[0]?.url ||
-                              p.image ||
-                              "https://via.placeholder.com/40"
-                            }
-                            style={s.productThumb}
-                            alt={p.name}
-                          />
-                          <div>
-                            <div style={s.productName}>{p.name}</div>
-                            <div
-                              style={{
-                                ...s.productSeller,
-                                cursor: p.seller?.id ? "pointer" : "default",
-                                color: p.seller?.id ? "#1f4d1f" : "#888",
-                              }}
-                              onClick={() =>
-                                p.seller?.id &&
-                                navigate(`/admin/sellers/${p.seller.id}`)
-                              }
-                            >
-                              {p.seller?.business_name || "—"}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td style={s.td}>
-                        <span style={s.categoryBadge}>{p.category}</span>
-                      </td>
-                      <td style={s.td}>
-                        {p.discount_price ? (
-                          <div>
-                            <div style={s.discountPrice}>
-                              ₦{Number(p.discount_price).toLocaleString()}
-                            </div>
-                            <div style={s.originalPrice}>
-                              ₦{Number(p.price).toLocaleString()}
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={s.priceVal}>
-                            ₦{Number(p.price).toLocaleString()}
-                          </div>
-                        )}
-                      </td>
-                      <td style={s.td}>
-                        <div style={s.stockVal}>
-                          {totalStock} {p.unit}
-                        </div>
-                      </td>
-                      <td style={s.td}>
-                        <div style={s.soldVal}>{sold} sold</div>
-                      </td>
-                      <td style={s.td}>
-                        <div style={s.remainingVal}>
-                          {remaining} {p.unit}
-                        </div>
-                        <div style={s.stockBar}>
+          <table style={s.table}>
+            <thead>
+              <tr style={s.tableHead}>
+                <th style={s.th}>Product</th>
+                <th style={s.th}>Category</th>
+                <th style={s.th}>Price</th>
+                <th style={s.th}>Total Stock</th>
+                <th style={s.th}>Sold</th>
+                <th style={s.th}>Remaining</th>
+                <th style={s.th}>Status</th>
+                <th style={s.th}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((p) => {
+                const totalStock = Number(p.quantity || 0);
+                const sold = Number(p.items_sold || 0);
+                const remaining = Math.max(totalStock - sold, 0);
+                const stockPct =
+                  totalStock > 0
+                    ? Math.min((remaining / totalStock) * 100, 100)
+                    : 0;
+                return (
+                  <tr key={p.id} style={s.tableRow}>
+                    <td style={s.td}>
+                      <div style={s.productCell}>
+                        <img
+                          src={
+                            p.images?.[0]?.image_url ||
+                            p.images?.[0]?.url ||
+                            p.image ||
+                            "https://via.placeholder.com/40"
+                          }
+                          style={s.productThumb}
+                          alt={p.name}
+                        />
+                        <div>
+                          <div style={s.productName}>{p.name}</div>
                           <div
                             style={{
-                              ...s.stockBarFill,
-                              width: `${stockPct}%`,
-                              background:
-                                stockPct > 50
-                                  ? "#1f4d1f"
-                                  : stockPct > 20
-                                    ? "#f0c050"
-                                    : "#cc0000",
+                              ...s.productSeller,
+                              cursor: p.seller?.id ? "pointer" : "default",
+                              color: p.seller?.id ? "#1f4d1f" : "#888",
                             }}
-                          />
+                            onClick={() =>
+                              p.seller?.id &&
+                              navigate(`/admin/sellers/${p.seller.id}`)
+                            }
+                          >
+                            {p.seller?.business_name || "—"}
+                          </div>
                         </div>
-                      </td>
-                      <td style={s.td}>
-                        <span
+                      </div>
+                    </td>
+                    <td style={s.td}>
+                      <span style={s.categoryBadge}>{p.category}</span>
+                    </td>
+                    <td style={s.td}>
+                      {p.discount_price ? (
+                        <div>
+                          <div style={s.discountPrice}>
+                            ₦{Number(p.discount_price).toLocaleString()}
+                          </div>
+                          <div style={s.originalPrice}>
+                            ₦{Number(p.price).toLocaleString()}
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={s.priceVal}>
+                          ₦{Number(p.price).toLocaleString()}
+                        </div>
+                      )}
+                    </td>
+                    <td style={s.td}>
+                      <div style={s.stockVal}>
+                        {totalStock} {p.unit}
+                      </div>
+                    </td>
+                    <td style={s.td}>
+                      <div style={s.soldVal}>{sold} sold</div>
+                    </td>
+                    <td style={s.td}>
+                      <div style={s.remainingVal}>
+                        {remaining} {p.unit}
+                      </div>
+                      <div style={s.stockBar}>
+                        <div
                           style={{
-                            ...s.statusBadge,
+                            ...s.stockBarFill,
+                            width: `${stockPct}%`,
                             background:
-                              p.status === "available"
-                                ? "#eafaf0"
-                                : p.status === "out_of_stock"
-                                  ? "#fff0f0"
-                                  : "#f0f0f0",
-                            color:
-                              p.status === "available"
-                                ? "#1a7a3a"
-                                : p.status === "out_of_stock"
-                                  ? "#cc0000"
-                                  : "#888",
+                              stockPct > 50
+                                ? "#1f4d1f"
+                                : stockPct > 20
+                                  ? "#f0c050"
+                                  : "#cc0000",
                           }}
-                        >
-                          {p.status?.replace("_", " ")}
-                        </span>
-                      </td>
-                      <td style={s.td}>
-                        <button
-                          style={s.editBtn}
-                          onClick={() => handleEditOpen(p)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          style={s.deleteBtn}
-                          onClick={() => handleDelete(p.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        />
+                      </div>
+                    </td>
+                    <td style={s.td}>
+                      <span
+                        style={{
+                          ...s.statusBadge,
+                          background:
+                            p.status === "available"
+                              ? "#eafaf0"
+                              : p.status === "out_of_stock"
+                                ? "#fff0f0"
+                                : "#f0f0f0",
+                          color:
+                            p.status === "available"
+                              ? "#1a7a3a"
+                              : p.status === "out_of_stock"
+                                ? "#cc0000"
+                                : "#888",
+                        }}
+                      >
+                        {p.status?.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td style={s.td}>
+                      <button
+                        style={s.editBtn}
+                        onClick={() => handleEditOpen(p)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        style={s.deleteBtn}
+                        onClick={() => handleDelete(p.id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
           </div>
           {filtered.length === 0 && (
             <div style={s.empty}>No products found.</div>
@@ -1034,6 +1048,17 @@ const s = {
     fontSize: 14,
     fontFamily: "inherit",
   },
+  pendingBtn: {
+    background: "#fff8e7",
+    color: "#a86a00",
+    border: "1.5px solid #f0c050",
+    padding: "12px 20px",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: 13,
+    fontFamily: "inherit",
+  },
   statsGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
@@ -1227,3 +1252,5 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
 };
+
+

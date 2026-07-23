@@ -45,6 +45,7 @@ import ManageSellersPage  from './pages/admin/ManageSellersPage';
 import ManageProductsPage from './pages/admin/ManageProductsPage';
 import AdminFlashSalesPage from './pages/admin/AdminFlashSalesPage';
 import AdminFlashSaleRequestsPage from './pages/admin/AdminFlashSaleRequestsPage';
+import AdminUserDetailPage from './pages/admin/AdminUserDetailPage';
 import ManageOrdersPage   from './pages/admin/ManageOrdersPage';
 import ManageLoansPage    from './pages/admin/ManageLoansPage';
 import LoanSettingsPage   from './pages/admin/LoanSettingsPage';
@@ -208,6 +209,10 @@ const router = createBrowserRouter([
       {
         path: 'flash-sale-requests',
         element: <ProtectedRoute adminOnly><AdminFlashSaleRequestsPage /></ProtectedRoute>
+      },
+      {
+        path: 'user-details/:id',
+        element: <ProtectedRoute adminOnly><AdminUserDetailPage /></ProtectedRoute>
       },
       {
         path: 'product-approvals',

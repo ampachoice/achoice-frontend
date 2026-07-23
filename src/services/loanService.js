@@ -32,11 +32,7 @@ export const getLoanSummary = () => api.get('/loans/summary');
 // "Pay All" — one Paystack payment covering every active loan's amount due
 // Returns: { payment_url, reference_number, total_due, loans_covered }
 export const payAllDue = () => api.post('/loans/pay-all-due');
-
-// "Liquidate All Loans" — one Paystack payment paying off every active
-// loan's FULL remaining balance at once, not just what's due this month
-// Returns: { payment_url, reference_number, total_due, loans_covered }
-export const liquidateAllLoans = () => api.post('/loans/liquidate-all');
+export const liquidateAll = () => api.post('/loans/liquidate-all');
 
 // Loan Detail page — balance, progress ring data, next payment, last 5 payments
 export const getLoanDetails = (id) => api.get(`/loans/${id}/details`);

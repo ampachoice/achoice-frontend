@@ -18,6 +18,9 @@ export default function ManageLoansPage() {
   });
   const [expandedLoan, setExpandedLoan] = useState(null);
   const [search, setSearch] = useState("");
+  const [scheduleModalLoanId, setScheduleModalLoanId] = useState(null);
+  const [scheduleData, setScheduleData] = useState({}); // loanId -> response, cached
+  const [scheduleLoading, setScheduleLoading] = useState(false);
 
   // Documents state
   const [expandedDocs, setExpandedDocs] = useState(null);
@@ -235,6 +238,21 @@ export default function ManageLoansPage() {
     setExpandedLoan((prev) => (prev === loanId ? null : loanId));
   };
 
+  const handleViewSchedule = async (loanId) => {
+    setScheduleModalLoanId(loanId);
+    if (scheduleData[loanId]) return; // already cached
+    setScheduleLoading(true);
+    try {
+      const res = await api.get(`/loans/${loanId}/installments`);
+      setScheduleData((prev) => ({ ...prev, [loanId]: res.data }));
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to load repayment schedule.");
+      setScheduleModalLoanId(null);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
   const getStatusStyle = (status) =>
     ({
       pending: { background: "#fff8e7", color: "#b36b00" },
@@ -245,6 +263,14 @@ export default function ManageLoansPage() {
       completed: { background: "#f0f0f0", color: "#555" },
       successful: { background: "#eafaf0", color: "#1a7a3a" },
       failed: { background: "#fff0f0", color: "#cc0000" },
+    })[status] || { background: "#f0f0f0", color: "#555" };
+
+  const getInstallmentStatusStyle = (status) =>
+    ({
+      paid: { background: "#eafaf0", color: "#1a7a3a" },
+      overdue: { background: "#fff0f0", color: "#cc0000" },
+      partial: { background: "#fff8e7", color: "#b36b00" },
+      pending: { background: "#f0f0f0", color: "#555" },
     })[status] || { background: "#f0f0f0", color: "#555" };
 
   const fmtDate = (d) =>
@@ -738,6 +764,14 @@ export default function ManageLoansPage() {
                         ({successfulRepayments.length})
                       </button>
                     )}
+                    {["disbursed", "active", "completed", "defaulted"].includes(loan.status) && (
+                      <button
+                        style={s.viewRepaymentsBtn}
+                        onClick={() => handleViewSchedule(loan.id)}
+                      >
+                        📅 View Schedule
+                      </button>
+                    )}
                   </div>
                   {expandedLoan === loan.id &&
                     successfulRepayments.length > 0 && (
@@ -1104,6 +1138,76 @@ export default function ManageLoansPage() {
             </div>
           );
         })}
+
+        {scheduleModalLoanId && (
+          <div style={s.modalOverlay} onClick={() => setScheduleModalLoanId(null)}>
+            <div style={s.scheduleModalBox} onClick={(e) => e.stopPropagation()}>
+              <div style={s.scheduleModalTitle}>Repayment Schedule</div>
+
+              {scheduleLoading ? (
+                <div style={{ textAlign: "center", padding: 30, color: "#888" }}>Loading schedule...</div>
+              ) : scheduleData[scheduleModalLoanId] ? (
+                (() => {
+                  const d = scheduleData[scheduleModalLoanId];
+                  return (
+                    <>
+                      <div style={s.scheduleHeaderRow}>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: "#111" }}>{d.borrower_name}</div>
+                          <div style={{ fontSize: 12, color: "#888" }}>Account: {d.account_no || "—"}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 12, color: "#888" }}>Loan Balance</div>
+                          <div style={{ fontSize: 17, fontWeight: 700, color: "#1f4d1f" }}>
+                            ₦{Number(d.loan_balance).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={s.scheduleStatsRow}>
+                        <div style={s.scheduleStat}><div style={s.scheduleStatLabel}>Paid</div><div style={s.scheduleStatValue}>{d.summary.paid}/{d.summary.total}</div></div>
+                        <div style={s.scheduleStat}><div style={s.scheduleStatLabel}>Overdue</div><div style={{ ...s.scheduleStatValue, color: d.summary.overdue > 0 ? "#cc0000" : "#111" }}>{d.summary.overdue}</div></div>
+                        <div style={s.scheduleStat}><div style={s.scheduleStatLabel}>Remaining</div><div style={s.scheduleStatValue}>{d.summary.remaining}</div></div>
+                        <div style={s.scheduleStat}><div style={s.scheduleStatLabel}>Interest Balance</div><div style={s.scheduleStatValue}>₦{Number(d.interest_balance).toLocaleString()}</div></div>
+                      </div>
+
+                      <div style={{ overflowX: "auto" }}>
+                        <div style={s.scheduleTable}>
+                          <div style={s.scheduleTableHead}>
+                            <span>#</span>
+                            <span>Due Date</span>
+                            <span>Principal</span>
+                            <span>Interest</span>
+                            <span>Total Due</span>
+                            <span>Paid</span>
+                            <span>Status</span>
+                          </div>
+                          {d.schedule.map((inst) => (
+                            <div key={inst.installment_number} style={s.scheduleTableRow}>
+                              <span>{inst.installment_number}</span>
+                              <span>{inst.due_date}</span>
+                              <span>₦{Number(inst.principal_payment).toLocaleString()}</span>
+                              <span>₦{Number(inst.interest_payment).toLocaleString()}</span>
+                              <span>₦{Number(inst.total_payable).toLocaleString()}</span>
+                              <span>₦{Number(inst.amount_paid).toLocaleString()}</span>
+                              <span style={{ ...getInstallmentStatusStyle(inst.status), padding: "3px 8px", borderRadius: 6, textAlign: "center", fontWeight: 600, textTransform: "capitalize" }}>{inst.status}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()
+              ) : (
+                <div style={{ textAlign: "center", padding: 30, color: "#888" }}>No schedule data available.</div>
+              )}
+
+              <div style={s.modalFooter}>
+                <button style={s.modalCancelBtn} onClick={() => setScheduleModalLoanId(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
       </AdminLayout>
     </>
   );
@@ -1800,6 +1904,55 @@ const s = {
     maxWidth: 520,
     boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
     overflow: "hidden",
+  },
+  scheduleModalBox: {
+    background: "#fff",
+    borderRadius: 14,
+    width: "100%",
+    maxWidth: 720,
+    maxHeight: "88vh",
+    overflowY: "auto",
+    boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+    padding: 26,
+  },
+  scheduleModalTitle: { fontSize: 18, fontWeight: 700, color: "#111", marginBottom: 18 },
+  scheduleHeaderRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingBottom: 16,
+    marginBottom: 16,
+    borderBottom: "1px solid #f0ece4",
+  },
+  scheduleStatsRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+    gap: 12,
+    marginBottom: 20,
+  },
+  scheduleStat: { background: "#f7f5f0", borderRadius: 8, padding: "10px 14px" },
+  scheduleStatLabel: { fontSize: 10.5, color: "#888", marginBottom: 3 },
+  scheduleStatValue: { fontSize: 15, fontWeight: 700, color: "#111" },
+  scheduleTable: { minWidth: 620, fontSize: 12.5 },
+  scheduleTableHead: {
+    display: "grid",
+    gridTemplateColumns: "0.5fr 1fr 1fr 1fr 1fr 1fr 0.9fr",
+    gap: 8,
+    padding: "8px 10px",
+    fontSize: 10.5,
+    fontWeight: 700,
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    borderBottom: "1px solid #eee",
+  },
+  scheduleTableRow: {
+    display: "grid",
+    gridTemplateColumns: "0.5fr 1fr 1fr 1fr 1fr 1fr 0.9fr",
+    gap: 8,
+    padding: "10px",
+    borderBottom: "1px solid #f5f3ee",
+    alignItems: "center",
   },
   modalHeader: {
     display: "flex",

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import AdminUserSearchBar from "./AdminUserSearchBar";
 import api from "../../services/api";
 
 const LOGO_PATH = "/achoice logo.png";
@@ -15,11 +16,11 @@ const SIDEBAR_ITEMS = [
   { icon: "🎫", label: "Flash Sale Requests", path: "/admin/flash-sale-requests" },
   { icon: "📦", label: "Orders", path: "/admin/orders" },
   { icon: "💰", label: "Loans", path: "/admin/loans" },
-  { icon: "👥", label: "Staff", path: "/admin/staff" },
 ];
 
 // Configuration / setup items — moved into the top-right Settings dropdown
 const SETTINGS_ITEMS = [
+  { icon: "👥", label: "Staff", path: "/admin/staff" },
   { icon: "💳", label: "Payments", path: "/admin/payments" },
   { icon: "⚙️", label: "Loan Settings", path: "/admin/loan-settings" },
   { icon: "🚚", label: "Delivery Zones", path: "/admin/delivery-zones" },
@@ -262,6 +263,11 @@ export default function AdminLayout({
                 {settingsMenu}
               </div>
 
+              {/* Row 1.5: user search, own row for width */}
+              <div style={{ width: "100%" }}>
+                <AdminUserSearchBar />
+              </div>
+
               {/* Row 2: title + subtitle + date, left aligned */}
               <div style={s.mobileTitleBlock}>
                 <h1 style={{ ...s.headerTitle, ...s.headerTitleMobile }}>
@@ -282,6 +288,8 @@ export default function AdminLayout({
                 <h1 style={s.headerTitle}>{title}</h1>
                 {subtitle && <p style={s.headerSub}>{subtitle}</p>}
               </div>
+
+              <AdminUserSearchBar />
 
               <div style={s.headerRight}>
                 {dateNode}

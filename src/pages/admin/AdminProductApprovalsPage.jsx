@@ -11,6 +11,11 @@ export default function AdminProductApprovalsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
 
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [editError, setEditError] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3500);
@@ -46,6 +51,44 @@ export default function AdminProductApprovalsPage() {
     setRejectTarget(product);
     setRejectReason("");
     setRejectError("");
+  };
+
+  const openEdit = (product) => {
+    setEditTarget(product);
+    setEditForm({
+      name: product.name || "",
+      description: product.description || "",
+      price: String(product.price ?? ""),
+      discount_price: product.discount_price ? String(product.discount_price) : "",
+      quantity: String(product.quantity ?? ""),
+      unit: product.unit || "",
+      category: product.category || "",
+    });
+    setEditError("");
+  };
+
+  const handleSaveEdit = async () => {
+    setEditError("");
+    setEditSaving(true);
+    try {
+      const res = await api.put(`/products/${editTarget.id}`, {
+        name: editForm.name,
+        description: editForm.description,
+        price: Number(editForm.price),
+        discount_price: editForm.discount_price ? Number(editForm.discount_price) : null,
+        quantity: Number(editForm.quantity),
+        unit: editForm.unit,
+        category: editForm.category,
+      });
+      const updated = res.data?.product || res.data;
+      setProducts((prev) => prev.map((p) => (p.id === editTarget.id ? { ...p, ...updated } : p)));
+      showToast(`"${editForm.name}" updated.`);
+      setEditTarget(null);
+    } catch (err) {
+      setEditError(err?.response?.data?.message || "Failed to save changes.");
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const submitReject = async () => {
@@ -128,6 +171,13 @@ export default function AdminProductApprovalsPage() {
                   {busyId === product.id ? "Working..." : "✓ Approve"}
                 </button>
                 <button
+                  style={s.editBtn}
+                  onClick={() => openEdit(product)}
+                  disabled={busyId === product.id}
+                >
+                  ✎ Edit
+                </button>
+                <button
                   style={s.rejectBtn}
                   onClick={() => openReject(product)}
                   disabled={busyId === product.id}
@@ -172,6 +222,101 @@ export default function AdminProductApprovalsPage() {
                 disabled={busyId === rejectTarget.id}
               >
                 {busyId === rejectTarget.id ? "Rejecting..." : "Confirm Reject"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editTarget && (
+        <div style={s.modalOverlay} onClick={() => setEditTarget(null)}>
+          <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalTitle}>Edit "{editTarget.name}"</div>
+            <p style={s.modalSub}>
+              Fix anything before approving — the seller isn't notified of edits, only of the approval itself.
+            </p>
+
+            {editError && <div style={s.modalError}>{editError}</div>}
+
+            <div style={s.editField}>
+              <label style={s.editLabel}>Name</label>
+              <input
+                style={s.editInput}
+                value={editForm.name}
+                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div style={s.editField}>
+              <label style={s.editLabel}>Description</label>
+              <textarea
+                style={{ ...s.editInput, minHeight: 70, resize: "vertical" }}
+                value={editForm.description}
+                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+              />
+            </div>
+            <div style={s.editRow2}>
+              <div style={s.editField}>
+                <label style={s.editLabel}>Price (₦)</label>
+                <input
+                  style={s.editInput}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))}
+                />
+              </div>
+              <div style={s.editField}>
+                <label style={s.editLabel}>Discount Price</label>
+                <input
+                  style={s.editInput}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.discount_price}
+                  onChange={(e) => setEditForm((f) => ({ ...f, discount_price: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div style={s.editRow2}>
+              <div style={s.editField}>
+                <label style={s.editLabel}>Quantity</label>
+                <input
+                  style={s.editInput}
+                  type="number"
+                  min="0"
+                  value={editForm.quantity}
+                  onChange={(e) => setEditForm((f) => ({ ...f, quantity: e.target.value }))}
+                />
+              </div>
+              <div style={s.editField}>
+                <label style={s.editLabel}>Unit</label>
+                <input
+                  style={s.editInput}
+                  value={editForm.unit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div style={s.editField}>
+              <label style={s.editLabel}>Category</label>
+              <input
+                style={s.editInput}
+                value={editForm.category}
+                onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
+              />
+            </div>
+
+            <div style={s.modalActions}>
+              <button style={s.modalCancelBtn} onClick={() => setEditTarget(null)}>
+                Cancel
+              </button>
+              <button
+                style={editSaving ? s.modalConfirmBtnDisabled : s.approveBtn}
+                onClick={handleSaveEdit}
+                disabled={editSaving}
+              >
+                {editSaving ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
@@ -278,6 +423,18 @@ const s = {
     cursor: "pointer",
     fontFamily: "inherit",
   },
+  editBtn: {
+    flex: 1,
+    padding: "10px 14px",
+    background: "#fff",
+    color: "#1f4d1f",
+    border: "1px solid #cfe8cf",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
   modalOverlay: {
     position: "fixed",
     inset: 0,
@@ -308,6 +465,18 @@ const s = {
     boxSizing: "border-box",
   },
   modalError: { color: "#cc0000", fontSize: 12, marginTop: 6 },
+  editField: { marginBottom: 12 },
+  editLabel: { display: "block", fontSize: 11.5, fontWeight: 600, color: "#555", marginBottom: 5 },
+  editInput: {
+    width: "100%",
+    padding: "9px 12px",
+    border: "1.5px solid #ddd",
+    borderRadius: 7,
+    fontSize: 13,
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+  editRow2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
   modalActions: {
     display: "flex",
     gap: 10,
