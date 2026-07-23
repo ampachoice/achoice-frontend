@@ -1188,7 +1188,14 @@ export default function ManageLoansPage() {
                               <span>{inst.due_date}</span>
                               <span>₦{Number(inst.principal_payment).toLocaleString()}</span>
                               <span>₦{Number(inst.interest_payment).toLocaleString()}</span>
-                              <span>₦{Number(inst.total_payable).toLocaleString()}</span>
+                              <span>
+                                ₦{Number(inst.total_payable).toLocaleString()}
+                                {Number(inst.penalty_applied) > 0 && (
+                                  <div style={{ color: "#cc0000", fontSize: 10.5, fontWeight: 600 }}>
+                                    +₦{Number(inst.penalty_applied).toLocaleString()} penalty
+                                  </div>
+                                )}
+                              </span>
                               <span>₦{Number(inst.amount_paid).toLocaleString()}</span>
                               <span style={{ ...getInstallmentStatusStyle(inst.status), padding: "3px 8px", borderRadius: 6, textAlign: "center", fontWeight: 600, textTransform: "capitalize" }}>{inst.status}</span>
                             </div>

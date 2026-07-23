@@ -9,6 +9,7 @@ export default function LoanSchedulePage() {
   const [loan, setLoan] = useState(null);
   const [installments, setInstallments] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [balances, setBalances] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
@@ -19,8 +20,12 @@ export default function LoanSchedulePage() {
 
     Promise.all([getInstallments(id), getLoanDetails(id)])
       .then(([instRes, loanRes]) => {
-        setInstallments(instRes.data?.installments || []);
+        setInstallments(instRes.data?.schedule || []);
         setSummary(instRes.data?.summary || null);
+        setBalances({
+          loan_balance: instRes.data?.loan_balance,
+          interest_balance: instRes.data?.interest_balance,
+        });
         setLoan(loanRes.data);
       })
       .catch((err) => {
@@ -126,6 +131,23 @@ export default function LoanSchedulePage() {
               </div>
             )}
 
+            {(balances.loan_balance != null || balances.interest_balance != null) && (
+              <div style={s.balanceRow}>
+                {balances.loan_balance != null && (
+                  <div style={s.balanceCard}>
+                    <div style={s.balanceLabel}>Loan Balance</div>
+                    <div style={s.balanceValue}>{fmt(balances.loan_balance)}</div>
+                  </div>
+                )}
+                {balances.interest_balance != null && (
+                  <div style={s.balanceCard}>
+                    <div style={s.balanceLabel}>Interest Balance</div>
+                    <div style={s.balanceValue}>{fmt(balances.interest_balance)}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {installments.length === 0 ? (
               <div style={s.emptyBox}>
                 <div style={s.emptyIcon}>📋</div>
@@ -135,32 +157,40 @@ export default function LoanSchedulePage() {
                 </p>
               </div>
             ) : (
-              <div style={s.scheduleCard}>
-                <div style={s.scheduleHeadRow}>
-                  <span>#</span>
-                  <span>Due Date</span>
-                  <span>Amount</span>
-                  <span>Status</span>
-                </div>
-                {installments.map((inst) => (
-                  <div key={inst.id || inst.installment_number} style={s.scheduleRow}>
-                    <span style={s.scheduleNum}>{inst.installment_number}</span>
-                    <span style={s.scheduleDate}>{fmtDate(inst.due_date)}</span>
-                    <span style={s.scheduleAmt}>
-                      {fmt(inst.amount_due)}
-                      {Number(inst.penalty_applied) > 0 && (
-                        <span style={s.penaltyNote}>
-                          +{fmt(inst.penalty_applied)} penalty
-                        </span>
-                      )}
-                    </span>
-                    <span>
-                      <span style={{ ...s.statusBadge, ...statusStyle(inst.status) }}>
-                        {inst.status}
-                      </span>
-                    </span>
+              <div style={s.scheduleScroll}>
+                <div style={s.scheduleCard}>
+                  <div style={s.scheduleHeadRow}>
+                    <span>#</span>
+                    <span>Due Date</span>
+                    <span>Principal</span>
+                    <span>Interest</span>
+                    <span>Total Due</span>
+                    <span>Paid</span>
+                    <span>Status</span>
                   </div>
-                ))}
+                  {installments.map((inst) => (
+                    <div key={inst.installment_number} style={s.scheduleRow}>
+                      <span style={s.scheduleNum}>{inst.installment_number}</span>
+                      <span style={s.scheduleDate}>{fmtDate(inst.due_date)}</span>
+                      <span style={s.scheduleDate}>{fmt(inst.principal_payment)}</span>
+                      <span style={s.scheduleDate}>{fmt(inst.interest_payment)}</span>
+                      <span style={s.scheduleAmt}>
+                        {fmt(inst.total_payable)}
+                        {Number(inst.penalty_applied) > 0 && (
+                          <span style={s.penaltyNote}>
+                            +{fmt(inst.penalty_applied)} penalty
+                          </span>
+                        )}
+                      </span>
+                      <span style={s.scheduleDate}>{fmt(inst.amount_paid)}</span>
+                      <span>
+                        <span style={{ ...s.statusBadge, ...statusStyle(inst.status) }}>
+                          {inst.status}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </>
@@ -174,7 +204,7 @@ const s = {
   page: { minHeight: '100vh', background: '#f7f5f0', fontFamily: 'Arial, sans-serif' },
   logoImg: { width: 32, height: 32, borderRadius: 6 },
   logoText: { fontWeight: 700, fontSize: 15 },
-  container: { maxWidth: 640, margin: '0 auto', padding: '24px 20px 60px' },
+  container: { maxWidth: 820, margin: '0 auto', padding: '24px 20px 60px' },
   backRow: {
     color: '#1f4d1f',
     fontWeight: 600,
@@ -222,6 +252,19 @@ const s = {
   },
   summaryValue: { fontSize: 20, fontWeight: 800, color: '#111' },
   summaryLabel: { fontSize: 11, color: '#888', marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  balanceRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    gap: 10,
+    marginBottom: 24,
+  },
+  balanceCard: {
+    background: '#1f4d1f',
+    borderRadius: 12,
+    padding: '14px 18px',
+  },
+  balanceValue: { fontSize: 19, fontWeight: 800, color: '#fff', marginTop: 4 },
+  balanceLabel: { fontSize: 11, color: '#a8d5a8', textTransform: 'uppercase', letterSpacing: 0.5 },
   emptyBox: {
     background: '#fff',
     borderRadius: 16,
@@ -231,15 +274,17 @@ const s = {
   emptyIcon: { fontSize: 40, marginBottom: 12 },
   emptyTitle: { fontSize: 18, fontWeight: 700, color: '#111', marginBottom: 8 },
   emptyText: { fontSize: 14, color: '#888', maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' },
+  scheduleScroll: { overflowX: 'auto' },
   scheduleCard: {
     background: '#fff',
     borderRadius: 16,
     padding: '8px 20px',
-    overflow: 'hidden',
+    minWidth: 640,
   },
   scheduleHeadRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1.3fr 1.5fr 1fr',
+    gridTemplateColumns: '0.4fr 1fr 1fr 1fr 1.1fr 1fr 1fr',
+    gap: 8,
     padding: '12px 0',
     borderBottom: '2px solid #f0f0f0',
     fontSize: 11,
@@ -250,7 +295,8 @@ const s = {
   },
   scheduleRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1.3fr 1.5fr 1fr',
+    gridTemplateColumns: '0.4fr 1fr 1fr 1fr 1.1fr 1fr 1fr',
+    gap: 8,
     padding: '14px 0',
     borderBottom: '1px solid #f5f5f5',
     fontSize: 13,
