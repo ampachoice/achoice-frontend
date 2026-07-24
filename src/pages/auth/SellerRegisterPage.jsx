@@ -7,11 +7,43 @@ import "./SellerRegisterPage.css";
 const LOGO_PATH = "/achoice logo.png";
 
 const NIGERIAN_STATES = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
-  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT",
-  "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi",
-  "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo",
-  "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
 ];
 
 // Matches the backend exactly: cac_certificate is required|file|mimes:jpg,jpeg,png,pdf|max:10240 (KB)
@@ -76,7 +108,7 @@ export default function SellerRegisterPage() {
     setOtpError(null);
     setOtpMessage(null);
     try {
-      const res = await sendOtp({ email: formData.email, purpose: "seller_signup" });
+      const res = await sendOtp(formData.email, "seller_signup");
       setOtpSent(true);
       setOtpMessage(res.data?.message || "Code sent — check your email.");
       setResendCountdown(60);
@@ -97,7 +129,7 @@ export default function SellerRegisterPage() {
     setOtpVerifying(true);
     setOtpError(null);
     try {
-      await verifyOtp({ email: formData.email, code: otpCode });
+      await verifyOtp(formData.email, otpCode);
       setEmailVerified(true);
       setVerifiedEmail(formData.email);
       setOtpMessage("Email verified!");
@@ -186,7 +218,9 @@ export default function SellerRegisterPage() {
       localStorage.setItem("session_expires_at", expiresAt);
       localStorage.setItem("isLoggedIn", "true");
 
-      setSuccess(res.data?.message || "🎉 Seller account created! Redirecting...");
+      setSuccess(
+        res.data?.message || "🎉 Seller account created! Redirecting...",
+      );
       setTimeout(() => navigate("/seller/dashboard"), 2000);
     } catch (err) {
       const message = err.response?.data?.errors
@@ -200,7 +234,9 @@ export default function SellerRegisterPage() {
         setOtpCode("");
         setOtpMessage(null);
         setResendCountdown(0);
-        setError("Your email verification expired while completing the form. Please verify again.");
+        setError(
+          "Your email verification expired while completing the form. Please verify again.",
+        );
       } else {
         setError(message || "Registration failed. Please try again.");
       }
@@ -216,7 +252,9 @@ export default function SellerRegisterPage() {
         <div className="sr-brand" onClick={() => navigate("/")}>
           <img src={LOGO_PATH} alt="ACHOICE Logo" />
         </div>
-        <Link to="/login" className="sr-nav-btn">Sign In</Link>
+        <Link to="/login" className="sr-nav-btn">
+          Sign In
+        </Link>
       </nav>
 
       {/* Body */}
@@ -239,7 +277,8 @@ export default function SellerRegisterPage() {
                 <div>
                   <div className="sr-left-feat-label">List Your Products</div>
                   <div className="sr-left-feat-text">
-                    Add what you grow or produce — reviewed and approved before going live.
+                    Add what you grow or produce — reviewed and approved before
+                    going live.
                   </div>
                 </div>
               </div>
@@ -248,7 +287,8 @@ export default function SellerRegisterPage() {
                 <div>
                   <div className="sr-left-feat-label">Get Paid Securely</div>
                   <div className="sr-left-feat-text">
-                    Track your earnings and request payouts straight from your dashboard.
+                    Track your earnings and request payouts straight from your
+                    dashboard.
                   </div>
                 </div>
               </div>
@@ -257,16 +297,17 @@ export default function SellerRegisterPage() {
                 <div>
                   <div className="sr-left-feat-label">Grow With Data</div>
                   <div className="sr-left-feat-text">
-                    See what's selling, manage orders, and build your reputation with buyers.
+                    See what's selling, manage orders, and build your reputation
+                    with buyers.
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="sr-left-note">
-              You'll need a valid CAC certificate to complete registration.
-              Your application is reviewed by our team — you can sign in
-              right away, and product listing unlocks once approved.
+              You'll need a valid CAC certificate to complete registration. Your
+              application is reviewed by our team — you can sign in right away,
+              and product listing unlocks once approved.
             </div>
           </div>
 
@@ -276,7 +317,9 @@ export default function SellerRegisterPage() {
               <img src={LOGO_PATH} alt="Logo" />
             </div>
             <h2 className="sr-card-title">
-              {emailVerified ? "Complete Your Seller Application" : "Verify Your Email"}
+              {emailVerified
+                ? "Complete Your Seller Application"
+                : "Verify Your Email"}
             </h2>
             <p className="sr-card-sub">
               {emailVerified
@@ -289,7 +332,12 @@ export default function SellerRegisterPage() {
 
             {!emailVerified ? (
               /* ── PHASE 1: email + verification only ── */
-              <form onSubmit={(e) => { e.preventDefault(); if (!otpSent) handleSendOtp(); }}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!otpSent) handleSendOtp();
+                }}
+              >
                 <div className="sr-field">
                   <label className="sr-label">Email Address</label>
                   <input
@@ -310,15 +358,29 @@ export default function SellerRegisterPage() {
                     <button
                       type="button"
                       className="sr-eye"
-                      style={{ width: "100%", borderRadius: 10, border: "1.5px solid #ddd", padding: "13px 14px", fontSize: 13, fontWeight: 700, color: "#1f4d1f", background: "#f7f5f0", cursor: otpSending ? "not-allowed" : "pointer" }}
+                      style={{
+                        width: "100%",
+                        borderRadius: 10,
+                        border: "1.5px solid #ddd",
+                        padding: "13px 14px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "#1f4d1f",
+                        background: "#f7f5f0",
+                        cursor: otpSending ? "not-allowed" : "pointer",
+                      }}
                       onClick={handleSendOtp}
                       disabled={otpSending || !formData.email}
                     >
-                      {otpSending ? "Sending code..." : "Verify Email — Send Code"}
+                      {otpSending
+                        ? "Sending code..."
+                        : "Verify Email — Send Code"}
                     </button>
                   ) : (
                     <div>
-                      <label className="sr-label">Enter the 6-digit code sent to your email</label>
+                      <label className="sr-label">
+                        Enter the 6-digit code sent to your email
+                      </label>
                       <div style={{ display: "flex", gap: 8 }}>
                         <input
                           className="sr-input"
@@ -327,33 +389,77 @@ export default function SellerRegisterPage() {
                           placeholder="123456"
                           maxLength={6}
                           value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          style={{ letterSpacing: 3, textAlign: "center", flex: 1 }}
+                          onChange={(e) =>
+                            setOtpCode(
+                              e.target.value.replace(/\D/g, "").slice(0, 6),
+                            )
+                          }
+                          style={{
+                            letterSpacing: 3,
+                            textAlign: "center",
+                            flex: 1,
+                          }}
                           autoFocus
                         />
                         <button
                           type="button"
                           onClick={handleVerifyOtp}
                           disabled={otpVerifying || otpCode.length < 4}
-                          style={{ padding: "0 20px", borderRadius: 10, border: "none", background: "#1f4d1f", color: "#fff", fontWeight: 700, fontSize: 13, cursor: otpVerifying ? "not-allowed" : "pointer" }}
+                          style={{
+                            padding: "0 20px",
+                            borderRadius: 10,
+                            border: "none",
+                            background: "#1f4d1f",
+                            color: "#fff",
+                            fontWeight: 700,
+                            fontSize: 13,
+                            cursor: otpVerifying ? "not-allowed" : "pointer",
+                          }}
                         >
                           {otpVerifying ? "Verifying..." : "Verify"}
                         </button>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: 8,
+                        }}
+                      >
                         <button
                           type="button"
                           onClick={handleSendOtp}
                           disabled={resendCountdown > 0 || otpSending}
-                          style={{ background: "none", border: "none", padding: 0, fontSize: 12, fontWeight: 600, color: resendCountdown > 0 ? "#aaa" : "#1f4d1f", textDecoration: resendCountdown > 0 ? "none" : "underline", cursor: resendCountdown > 0 ? "default" : "pointer" }}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: resendCountdown > 0 ? "#aaa" : "#1f4d1f",
+                            textDecoration:
+                              resendCountdown > 0 ? "none" : "underline",
+                            cursor: resendCountdown > 0 ? "default" : "pointer",
+                          }}
                         >
-                          {resendCountdown > 0 ? `Resend code in ${resendCountdown}s` : "Resend code"}
+                          {resendCountdown > 0
+                            ? `Resend code in ${resendCountdown}s`
+                            : "Resend code"}
                         </button>
                       </div>
                     </div>
                   )}
-                  {otpMessage && <div className="sr-pw-match" style={{ color: "#1a7a3a" }}>{otpMessage}</div>}
-                  {otpError && <div className="sr-pw-match" style={{ color: "#cc0000" }}>{otpError}</div>}
+                  {otpMessage && (
+                    <div className="sr-pw-match" style={{ color: "#1a7a3a" }}>
+                      {otpMessage}
+                    </div>
+                  )}
+                  {otpError && (
+                    <div className="sr-pw-match" style={{ color: "#cc0000" }}>
+                      {otpError}
+                    </div>
+                  )}
                 </div>
               </form>
             ) : (
@@ -378,7 +484,15 @@ export default function SellerRegisterPage() {
                   <button
                     type="button"
                     onClick={handleUseDifferentEmail}
-                    style={{ marginLeft: "auto", background: "none", border: "none", color: "#1f4d1f", fontSize: 12, textDecoration: "underline", cursor: "pointer" }}
+                    style={{
+                      marginLeft: "auto",
+                      background: "none",
+                      border: "none",
+                      color: "#1f4d1f",
+                      fontSize: 12,
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                    }}
                   >
                     Use a different email
                   </button>
@@ -403,7 +517,9 @@ export default function SellerRegisterPage() {
                     <div className="sr-field">
                       <label className="sr-label">
                         Phone Number{" "}
-                        <span style={{ color: "#aaa", fontWeight: 400 }}>(optional)</span>
+                        <span style={{ color: "#aaa", fontWeight: 400 }}>
+                          (optional)
+                        </span>
                       </label>
                       <input
                         className="sr-input"
@@ -413,7 +529,9 @@ export default function SellerRegisterPage() {
                         maxLength={11}
                         value={formData.phone}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "").slice(0, 11);
+                          const val = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 11);
                           setFormData((prev) => ({ ...prev, phone: val }));
                         }}
                       />
@@ -429,7 +547,9 @@ export default function SellerRegisterPage() {
                       >
                         <option value="">Select state</option>
                         {NIGERIAN_STATES.map((st) => (
-                          <option key={st} value={st}>{st}</option>
+                          <option key={st} value={st}>
+                            {st}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -513,7 +633,9 @@ export default function SellerRegisterPage() {
                   <div className="sr-field">
                     <label className="sr-label">CAC Certificate</label>
                     <label
-                      className={"sr-file-drop" + (cacFile ? " sr-file-has" : "")}
+                      className={
+                        "sr-file-drop" + (cacFile ? " sr-file-has" : "")
+                      }
                       htmlFor="cac-upload"
                     >
                       {cacFile
@@ -524,10 +646,16 @@ export default function SellerRegisterPage() {
                       id="cac-upload"
                       type="file"
                       accept="image/jpeg,image/png,application/pdf"
-                      onChange={(e) => handleCacFileChange(e.target.files?.[0] || null)}
+                      onChange={(e) =>
+                        handleCacFileChange(e.target.files?.[0] || null)
+                      }
                       style={{ display: "none" }}
                     />
-                    {cacError && <span className="sr-hint" style={{ color: "#cc0000" }}>{cacError}</span>}
+                    {cacError && (
+                      <span className="sr-hint" style={{ color: "#cc0000" }}>
+                        {cacError}
+                      </span>
+                    )}
                   </div>
 
                   <button
