@@ -271,11 +271,33 @@ export default function SellerRegisterPage() {
   return (
     <div className="sr-wrap">
       {/* Nav */}
-      <nav className="sr-nav">
-        <div className="sr-brand" onClick={() => navigate("/")}>
+      <nav
+        className="sr-nav"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "14px 40px",
+        }}
+      >
+        <div
+          className="sr-brand"
+          onClick={() => navigate("/")}
+          style={{ cursor: "pointer" }}
+        >
           <img src={LOGO_PATH} alt="ACHOICE Logo" />
         </div>
-        <Link to="/login" className="sr-nav-btn">
+        <Link
+          to="/login"
+          className="sr-nav-btn"
+          style={{
+            marginLeft: "auto",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
           Sign In
         </Link>
       </nav>
