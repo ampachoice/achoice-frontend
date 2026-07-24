@@ -12,6 +12,7 @@ function RedirectToLoansPreservingQuery() {
 // ── AUTH ─────────────────────────────────────────────────────────────────────
 import LoginPage          from './pages/auth/LoginPage';
 import RegisterPage       from './pages/auth/RegisterPage';
+import SellerRegisterPage from './pages/auth/SellerRegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage  from './pages/auth/ResetPasswordPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
@@ -45,6 +46,7 @@ import ManageSellersPage  from './pages/admin/ManageSellersPage';
 import ManageProductsPage from './pages/admin/ManageProductsPage';
 import AdminFlashSalesPage from './pages/admin/AdminFlashSalesPage';
 import AdminFlashSaleRequestsPage from './pages/admin/AdminFlashSaleRequestsPage';
+import AdminRemittanceRequestsPage from './pages/admin/AdminRemittanceRequestsPage';
 import AdminUserDetailPage from './pages/admin/AdminUserDetailPage';
 import ManageOrdersPage   from './pages/admin/ManageOrdersPage';
 import ManageLoansPage    from './pages/admin/ManageLoansPage';
@@ -83,6 +85,7 @@ const router = createBrowserRouter([
   { path: '/',                element: <HomePage /> },
   { path: '/login',           element: <LoginPage /> },
   { path: '/register',        element: <RegisterPage /> },
+  { path: '/become-a-seller', element: <SellerRegisterPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password',  element: <ResetPasswordPage /> },
   { path: '/change-password', element: <ChangePasswordPage /> },
@@ -209,6 +212,10 @@ const router = createBrowserRouter([
       {
         path: 'flash-sale-requests',
         element: <ProtectedRoute adminOnly><AdminFlashSaleRequestsPage /></ProtectedRoute>
+      },
+      {
+        path: 'remittance-requests',
+        element: <ProtectedRoute adminOnly><AdminRemittanceRequestsPage /></ProtectedRoute>
       },
       {
         path: 'user-details/:id',
