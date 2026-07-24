@@ -215,10 +215,6 @@ export default function SellerRegisterPage() {
       <nav className="sr-nav">
         <div className="sr-brand" onClick={() => navigate("/")}>
           <img src={LOGO_PATH} alt="ACHOICE Logo" />
-          <div>
-            <div className="sr-brand-name">ACHOICE LIMITED</div>
-            <div className="sr-brand-tag">Your needs our solutions</div>
-          </div>
         </div>
         <Link to="/login" className="sr-nav-btn">Sign In</Link>
       </nav>

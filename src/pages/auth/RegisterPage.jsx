@@ -209,10 +209,6 @@ export default function RegisterPage() {
       <nav className="rp-nav">
         <div className="rp-brand" onClick={() => navigate("/")}>
           <img src={LOGO_PATH} alt="ACHOICE" />
-          <div>
-            <div className="rp-brand-name">ACHOICE LIMITED</div>
-            <div className="rp-brand-tag">Your needs our solutions</div>
-          </div>
         </div>
         <div className="rp-nav-links">
           <Link to="/" className="rp-nav-link">

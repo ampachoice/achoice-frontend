@@ -143,26 +143,10 @@ export default function ResetPasswordPage() {
   return (
     <div className="rsp-wrap">
 
-      {/* Top Bar */}
-      <div className="rsp-topbar">
-        <div className="rsp-topbar-left" style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
-          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
-          <span>✉ support@achoice.ng</span>
-        </div>
-        <div className="rsp-topbar-right">
-          <span>📞 09067794991</span>
-          <span>Mon-Sat: 07:00am-06:00pm</span>
-        </div>
-      </div>
-
       {/* Nav */}
       <nav className="rsp-nav">
         <div className="rsp-brand" onClick={() => navigate('/')}>
           <img src={LOGO_PATH} alt="ACHOICE" />
-          <div>
-            <div className="rsp-brand-name">ACHOICE LIMITED</div>
-            <div className="rsp-brand-tag">Your needs our solutions</div>
-          </div>
         </div>
         <div className="rsp-nav-links">
           <Link to="/" className="rsp-nav-link">Home</Link>

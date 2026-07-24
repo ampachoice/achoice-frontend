@@ -129,26 +129,10 @@ export default function ChangePasswordPage() {
   return (
     <div className="cp-wrap">
 
-      {/* Top Bar */}
-      <div className="cp-topbar">
-        <div className="cp-topbar-left" style={{ display:'flex', gap:16, alignItems:'center' }}>
-          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
-          <span>✉ support@achoice.ng</span>
-        </div>
-        <div className="cp-topbar-right" style={{ display:'flex', gap:16 }}>
-          <span>📞 09067794991</span>
-          <span>Mon-Sat: 07:00am-06:00pm</span>
-        </div>
-      </div>
-
       {/* Nav */}
       <nav className="cp-nav">
         <div className="cp-brand">
           <img src={LOGO_PATH} alt="ACHOICE" />
-          <div>
-            <div className="cp-brand-name">ACHOICE LIMITED</div>
-            <div className="cp-brand-tag">Your needs our solutions</div>
-          </div>
         </div>
       </nav>
 

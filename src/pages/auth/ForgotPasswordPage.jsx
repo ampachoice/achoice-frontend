@@ -111,26 +111,10 @@ export default function ForgotPasswordPage() {
   return (
     <div className="fp-wrap">
 
-      {/* Top Bar */}
-      <div className="fp-topbar">
-        <div className="fp-topbar-left" style={{ display:'flex', gap:16, alignItems:'center' }}>
-          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
-          <span>✉ support@achoice.ng</span>
-        </div>
-        <div className="fp-topbar-right">
-          <span>📞 09067794991</span>
-          <span>Mon-Sat: 07:00am-06:00pm</span>
-        </div>
-      </div>
-
       {/* Nav */}
       <nav className="fp-nav">
         <div className="fp-brand" onClick={() => navigate('/')}>
           <img src={LOGO_PATH} alt="ACHOICE" />
-          <div>
-            <div className="fp-brand-name">ACHOICE LIMITED</div>
-            <div className="fp-brand-tag">Your needs our solutions</div>
-          </div>
         </div>
         <div className="fp-nav-links">
           <Link to="/" className="fp-nav-link">Home</Link>
