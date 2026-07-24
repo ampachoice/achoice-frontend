@@ -65,6 +65,11 @@ export default function SellerRegisterPage() {
   const [cacFile, setCacFile] = useState(null);
   const [cacError, setCacError] = useState(null);
 
+  // ── Step 2 is split into two sub-steps to avoid cramming 6 fields +
+  // a file upload into one long scroll — same "Full Name/Phone/State/
+  // Business" → "Password/CAC" pattern a real onboarding flow uses.
+  const [formStep, setFormStep] = useState(1);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState(null);
@@ -146,6 +151,7 @@ export default function SellerRegisterPage() {
     setOtpCode("");
     setOtpMessage(null);
     setOtpError(null);
+    setFormStep(1);
   };
 
   const handleCacFileChange = (file) => {
@@ -165,6 +171,23 @@ export default function SellerRegisterPage() {
       return;
     }
     setCacFile(file);
+  };
+
+  const handleNextStep = () => {
+    setError(null);
+    if (!formData.name.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!formData.state) {
+      setError("Please select your state.");
+      return;
+    }
+    if (!formData.business_name.trim()) {
+      setError("Please enter your business name.");
+      return;
+    }
+    setFormStep(2);
   };
 
   const handleSubmit = async (e) => {
@@ -317,14 +340,18 @@ export default function SellerRegisterPage() {
               <img src={LOGO_PATH} alt="Logo" />
             </div>
             <h2 className="sr-card-title">
-              {emailVerified
-                ? "Complete Your Seller Application"
-                : "Verify Your Email"}
+              {!emailVerified
+                ? "Verify Your Email"
+                : formStep === 1
+                  ? "Tell Us About Your Business"
+                  : "Secure Your Account"}
             </h2>
             <p className="sr-card-sub">
-              {emailVerified
-                ? `Almost there — just a few more details for ${verifiedEmail}`
-                : "We'll send a code to confirm it's really you."}
+              {!emailVerified
+                ? "We'll send a code to confirm it's really you."
+                : formStep === 1
+                  ? `Almost there — just a few details for ${verifiedEmail}`
+                  : "Set a password and upload your CAC certificate to finish up."}
             </p>
 
             {success && <div className="sr-success">{success}</div>}
@@ -498,177 +525,282 @@ export default function SellerRegisterPage() {
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                  <div className="sr-field">
-                    <label className="sr-label">Full Name</label>
-                    <input
-                      className="sr-input"
-                      type="text"
-                      name="name"
-                      placeholder="e.g. Chukwuemeka Okafor"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      autoFocus
-                    />
-                  </div>
-
-                  <div className="sr-row2">
-                    <div className="sr-field">
-                      <label className="sr-label">
-                        Phone Number{" "}
-                        <span style={{ color: "#aaa", fontWeight: 400 }}>
-                          (optional)
-                        </span>
-                      </label>
-                      <input
-                        className="sr-input"
-                        type="tel"
-                        name="phone"
-                        placeholder="e.g. 08012345678"
-                        maxLength={11}
-                        value={formData.phone}
-                        onChange={(e) => {
-                          const val = e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 11);
-                          setFormData((prev) => ({ ...prev, phone: val }));
-                        }}
-                      />
-                    </div>
-                    <div className="sr-field">
-                      <label className="sr-label">State</label>
-                      <select
-                        className="sr-input"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Select state</option>
-                        {NIGERIAN_STATES.map((st) => (
-                          <option key={st} value={st}>
-                            {st}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="sr-field">
-                    <label className="sr-label">Business Name</label>
-                    <input
-                      className="sr-input"
-                      type="text"
-                      name="business_name"
-                      placeholder="e.g. Green Valley Farms"
-                      value={formData.business_name}
-                      onChange={handleChange}
-                      required
-                      maxLength={150}
-                    />
-                  </div>
-
-                  <div className="sr-field">
-                    <label className="sr-label">Password</label>
-                    <div className="sr-pw-wrap">
-                      <input
-                        className="sr-pw-input"
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        placeholder="Min 8 characters"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        autoComplete="new-password"
-                      />
-                      <button
-                        type="button"
-                        className="sr-eye"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? "🙈" : "👁"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="sr-field">
-                    <label className="sr-label">Confirm Password</label>
-                    <div className="sr-pw-wrap">
-                      <input
-                        className="sr-pw-input"
-                        type={showConfirm ? "text" : "password"}
-                        name="password_confirmation"
-                        placeholder="Repeat your password"
-                        value={formData.password_confirmation}
-                        onChange={handleChange}
-                        required
-                        autoComplete="new-password"
-                      />
-                      <button
-                        type="button"
-                        className="sr-eye"
-                        onClick={() => setShowConfirm(!showConfirm)}
-                      >
-                        {showConfirm ? "🙈" : "👁"}
-                      </button>
-                    </div>
-                    {formData.password_confirmation && (
-                      <div
-                        className="sr-pw-match"
-                        style={{
-                          color:
-                            formData.password === formData.password_confirmation
-                              ? "#1a7a3a"
-                              : "#cc0000",
-                        }}
-                      >
-                        {formData.password === formData.password_confirmation
-                          ? "✓ Passwords match"
-                          : "✕ Passwords do not match"}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="sr-field">
-                    <label className="sr-label">CAC Certificate</label>
-                    <label
-                      className={
-                        "sr-file-drop" + (cacFile ? " sr-file-has" : "")
-                      }
-                      htmlFor="cac-upload"
+                {/* Step progress indicator */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 22,
+                  }}
+                >
+                  {[1, 2].map((step) => (
+                    <div
+                      key={step}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flex: step === 1 ? "0 0 auto" : 1,
+                      }}
                     >
-                      {cacFile
-                        ? `✓ ${cacFile.name} (${(cacFile.size / 1024 / 1024).toFixed(1)}MB)`
-                        : "📄 Click to upload — JPG, PNG, or PDF, max 10MB"}
-                    </label>
-                    <input
-                      id="cac-upload"
-                      type="file"
-                      accept="image/jpeg,image/png,application/pdf"
-                      onChange={(e) =>
-                        handleCacFileChange(e.target.files?.[0] || null)
-                      }
-                      style={{ display: "none" }}
-                    />
-                    {cacError && (
-                      <span className="sr-hint" style={{ color: "#cc0000" }}>
-                        {cacError}
+                      <div
+                        style={{
+                          width: 26,
+                          height: 26,
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          flexShrink: 0,
+                          background: formStep >= step ? "#1f4d1f" : "#e8e4dc",
+                          color: formStep >= step ? "#fff" : "#999",
+                          transition: "background 0.2s",
+                        }}
+                      >
+                        {formStep > step ? "✓" : step}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: formStep >= step ? "#1f4d1f" : "#999",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {step === 1 ? "Business Info" : "Password & CAC"}
                       </span>
-                    )}
-                  </div>
+                      {step === 1 && (
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 2,
+                            background: formStep > 1 ? "#1f4d1f" : "#e8e4dc",
+                            borderRadius: 2,
+                            transition: "background 0.2s",
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-                  <button
-                    type="submit"
-                    className={loading || !!success ? "sr-btn-dis" : "sr-btn"}
-                    disabled={loading || !!success}
-                  >
-                    {loading
-                      ? "Submitting Application..."
-                      : success
-                        ? "Redirecting..."
-                        : "Submit Seller Application →"}
-                  </button>
+                <form onSubmit={handleSubmit}>
+                  {formStep === 1 ? (
+                    <>
+                      <div className="sr-field">
+                        <label className="sr-label">Full Name</label>
+                        <input
+                          className="sr-input"
+                          type="text"
+                          name="name"
+                          placeholder="e.g. Chukwuemeka Okafor"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          autoFocus
+                        />
+                      </div>
+
+                      <div className="sr-row2">
+                        <div className="sr-field">
+                          <label className="sr-label">
+                            Phone Number{" "}
+                            <span style={{ color: "#aaa", fontWeight: 400 }}>
+                              (optional)
+                            </span>
+                          </label>
+                          <input
+                            className="sr-input"
+                            type="tel"
+                            name="phone"
+                            placeholder="e.g. 08012345678"
+                            maxLength={11}
+                            value={formData.phone}
+                            onChange={(e) => {
+                              const val = e.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 11);
+                              setFormData((prev) => ({ ...prev, phone: val }));
+                            }}
+                          />
+                        </div>
+                        <div className="sr-field">
+                          <label className="sr-label">State</label>
+                          <select
+                            className="sr-input"
+                            name="state"
+                            value={formData.state}
+                            onChange={handleChange}
+                            required
+                          >
+                            <option value="">Select state</option>
+                            {NIGERIAN_STATES.map((st) => (
+                              <option key={st} value={st}>
+                                {st}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="sr-field">
+                        <label className="sr-label">Business Name</label>
+                        <input
+                          className="sr-input"
+                          type="text"
+                          name="business_name"
+                          placeholder="e.g. Green Valley Farms"
+                          value={formData.business_name}
+                          onChange={handleChange}
+                          required
+                          maxLength={150}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        className="sr-btn"
+                        onClick={handleNextStep}
+                      >
+                        Next →
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="sr-field">
+                        <label className="sr-label">Password</label>
+                        <div className="sr-pw-wrap">
+                          <input
+                            className="sr-pw-input"
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            placeholder="Min 8 characters"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            autoComplete="new-password"
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className="sr-eye"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? "🙈" : "👁"}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="sr-field">
+                        <label className="sr-label">Confirm Password</label>
+                        <div className="sr-pw-wrap">
+                          <input
+                            className="sr-pw-input"
+                            type={showConfirm ? "text" : "password"}
+                            name="password_confirmation"
+                            placeholder="Repeat your password"
+                            value={formData.password_confirmation}
+                            onChange={handleChange}
+                            required
+                            autoComplete="new-password"
+                          />
+                          <button
+                            type="button"
+                            className="sr-eye"
+                            onClick={() => setShowConfirm(!showConfirm)}
+                          >
+                            {showConfirm ? "🙈" : "👁"}
+                          </button>
+                        </div>
+                        {formData.password_confirmation && (
+                          <div
+                            className="sr-pw-match"
+                            style={{
+                              color:
+                                formData.password ===
+                                formData.password_confirmation
+                                  ? "#1a7a3a"
+                                  : "#cc0000",
+                            }}
+                          >
+                            {formData.password ===
+                            formData.password_confirmation
+                              ? "✓ Passwords match"
+                              : "✕ Passwords do not match"}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="sr-field">
+                        <label className="sr-label">CAC Certificate</label>
+                        <label
+                          className={
+                            "sr-file-drop" + (cacFile ? " sr-file-has" : "")
+                          }
+                          htmlFor="cac-upload"
+                        >
+                          {cacFile
+                            ? `✓ ${cacFile.name} (${(cacFile.size / 1024 / 1024).toFixed(1)}MB)`
+                            : "📄 Click to upload — JPG, PNG, or PDF, max 10MB"}
+                        </label>
+                        <input
+                          id="cac-upload"
+                          type="file"
+                          accept="image/jpeg,image/png,application/pdf"
+                          onChange={(e) =>
+                            handleCacFileChange(e.target.files?.[0] || null)
+                          }
+                          style={{ display: "none" }}
+                        />
+                        {cacError && (
+                          <span
+                            className="sr-hint"
+                            style={{ color: "#cc0000" }}
+                          >
+                            {cacError}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <button
+                          type="button"
+                          className="sr-eye"
+                          style={{
+                            flex: "0 0 auto",
+                            borderRadius: 10,
+                            border: "1.5px solid #ddd",
+                            padding: "0 20px",
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: "#1f4d1f",
+                            background: "#f7f5f0",
+                            cursor: "pointer",
+                          }}
+                          onClick={() => setFormStep(1)}
+                        >
+                          ← Back
+                        </button>
+                        <button
+                          type="submit"
+                          className={
+                            loading || !!success ? "sr-btn-dis" : "sr-btn"
+                          }
+                          disabled={loading || !!success}
+                          style={{ flex: 1 }}
+                        >
+                          {loading
+                            ? "Submitting Application..."
+                            : success
+                              ? "Redirecting..."
+                              : "Submit Seller Application →"}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </form>
               </>
             )}
