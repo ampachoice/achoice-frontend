@@ -10,6 +10,7 @@ export default function LoanLiquidatePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [type, setType] = useState('full'); // 'full' | 'partial'
   const [partialAmount, setPartialAmount] = useState('');
@@ -76,18 +77,25 @@ export default function LoanLiquidatePage() {
   return (
     <div style={s.page}>
       <style>{`
-        .lq-nav { background:#1f4d1f; padding:12px 40px; display:flex; justify-content:space-between; align-items:center; color:#fff; position:sticky; top:0; z-index:100; }
+        .lq-nav { background:#1f4d1f; padding:12px 40px; display:flex; justify-content:space-between; align-items:center; color:#fff; position:sticky; top:0; z-index:100; gap:16px; }
         .lq-nav-left { display:flex; align-items:center; gap:12px; cursor:pointer; flex-shrink:0; }
-        .lq-nav-links { display:flex; gap:24px; align-items:center; }
+        .lq-nav-links { display:flex; gap:24px; align-items:center; flex-shrink:1; min-width:0; overflow:hidden; }
         .lq-nav-link { color:#e8e4dc; cursor:pointer; font-size:14px; white-space:nowrap; }
         .lq-nav-link:hover { color:#f0c050; }
         .lq-nav-right { display:flex; align-items:center; gap:16px; flex-shrink:0; }
         .lq-cart { position:relative; cursor:pointer; font-size:20px; }
         .lq-badge { position:absolute; top:-6px; right:-8px; background:#cc0000; color:#fff; font-size:10px; font-weight:700; padding:1px 5px; border-radius:99px; }
+        .lq-hamburger { display:none; background:none; border:none; font-size:22px; color:#fff; cursor:pointer; padding:4px; }
+        .lq-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:998; }
+        .lq-drawer { position:fixed; top:0; right:0; bottom:0; width:75%; max-width:280px; background:#fff; z-index:999; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.2); }
+        .lq-drawer-header { background:#1f4d1f; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; }
+        .lq-drawer-close { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
+        .lq-drawer-link { padding:16px 20px; font-size:15px; color:#111; cursor:pointer; border-bottom:1px solid #f0f0f0; }
 
         @media (max-width: 768px) {
           .lq-nav { padding:12px 16px; }
           .lq-nav-links { display:none; }
+          .lq-hamburger { display:block; }
         }
       `}</style>
 
@@ -105,8 +113,23 @@ export default function LoanLiquidatePage() {
         </div>
         <div className="lq-nav-right">
           <LoanHeaderActions cartCount={cartCount} />
+          <button className="lq-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">☰</button>
         </div>
       </nav>
+
+      {menuOpen && (
+        <div className="lq-drawer-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="lq-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="lq-drawer-header">
+              <span>Menu</span>
+              <button className="lq-drawer-close" onClick={() => setMenuOpen(false)}>✕</button>
+            </div>
+            <div className="lq-drawer-link" onClick={() => { setMenuOpen(false); navigate('/'); }}>Home</div>
+            <div className="lq-drawer-link" onClick={() => { setMenuOpen(false); navigate('/loans/apply'); }}>Apply for Loan</div>
+            <div className="lq-drawer-link" onClick={() => { setMenuOpen(false); navigate('/orders'); }}>My Orders</div>
+          </div>
+        </div>
+      )}
 
       <div style={s.container}>
         <div style={s.backRow} onClick={() => navigate(`/loans/${id}`)}>

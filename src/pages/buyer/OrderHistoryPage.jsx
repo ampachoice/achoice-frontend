@@ -51,6 +51,7 @@ export default function OrderHistoryPage() {
   const [error, setError] = useState(null);
   const [toast, setToast] = useState('');
   const [cartCount, setCartCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [expandedOrder, setExpandedOrder] = useState(null);
@@ -190,18 +191,6 @@ if (reference) {
       {toast && <div style={s.toast}>{toast}</div>}
       {showCancelModal && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 460, padding: 28 }}><h3 style={{ margin: "0 0 14px", fontSize: 18, color: "#111" }}>Cancel Order?</h3><p style={{ color: "#b36b00", fontWeight: 600, fontSize: 13, marginBottom: 16 }}>Please note: If payment was made, refunds take at least 14 working days to process.</p><textarea style={{ width: "100%", minHeight: 90, padding: 12, border: "1.5px solid #ddd", borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }} placeholder="Please tell us why you want to cancel this order (minimum 10 characters)..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} /><div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}><button style={{ padding: "10px 20px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={() => setShowCancelModal(null)}>Keep My Order</button><button style={{ padding: "10px 20px", background: cancelSubmitting ? "#aaa" : "#cc0000", color: "#fff", border: "none", borderRadius: 7, cursor: cancelSubmitting ? "not-allowed" : "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={submitCancellation} disabled={cancelSubmitting}>{cancelSubmitting ? "Submitting..." : "Submit Cancellation Request"}</button></div></div></div>)}
 
-      {/* Top Bar */}
-      <div className="oh-topbar">
-        <div className="oh-topbar-left">
-          <span>📍 No 6 faith avenue off ekenwan Rd Benin City</span>
-          <span>✉ support@achoice.ng</span>
-        </div>
-        <div className="oh-topbar-right">
-          <span>📞 09067794991</span>
-          <span>Mon - Sat: 07:00am to 06:00pm</span>
-        </div>
-      </div>
-
       {/* Navbar */}
       <nav className="oh-nav">
         <div className="oh-nav-brand" onClick={() => navigate('/')}>
@@ -222,12 +211,28 @@ if (reference) {
         <div className="oh-nav-actions">
           <NotificationBell />
           <BuyerDropdown cartCount={cartCount} />
+          <button className="oh-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">☰</button>
         </div>
       </nav>
 
+      {menuOpen && (
+        <div className="oh-drawer-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="oh-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="oh-drawer-header">
+              <span>Menu</span>
+              <button className="oh-drawer-close" onClick={() => setMenuOpen(false)}>✕</button>
+            </div>
+            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/'); }}>Home</div>
+            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/products'); }}>Shop</div>
+            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/loans/apply'); }}>Loans</div>
+            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/cart'); }}>
+              Cart {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        .oh-topbar { background:#1f4d1f; color:#fff; padding:8px 60px; display:flex; justify-content:space-between; font-size:12px; gap:16px; }
-        .oh-topbar-left, .oh-topbar-right { display:flex; gap:24px; flex-wrap:wrap; }
         .oh-nav { background:#1a3d1a; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:16px; }
         .oh-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; flex:1 1 auto; overflow:hidden; }
         .oh-nav-brand > div { min-width:0; overflow:hidden; }
@@ -237,15 +242,20 @@ if (reference) {
         .oh-nav-links { display:flex; gap:28px; align-items:center; flex-shrink:0; }
         .oh-nav-link { color:#fff; font-size:14px; cursor:pointer; white-space:nowrap; }
         .oh-nav-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+        .oh-hamburger { display:none; background:none; border:none; font-size:22px; color:#fff; cursor:pointer; padding:4px; }
+        .oh-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:998; }
+        .oh-drawer { position:fixed; top:0; right:0; bottom:0; width:75%; max-width:280px; background:#fff; z-index:999; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.2); }
+        .oh-drawer-header { background:#1f4d1f; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; }
+        .oh-drawer-close { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
+        .oh-drawer-link { padding:16px 20px; font-size:15px; color:#111; cursor:pointer; border-bottom:1px solid #f0f0f0; }
 
         @media (max-width:900px) {
-          .oh-topbar { padding:8px 20px; }
           .oh-nav { padding:12px 20px; }
           .oh-nav-links { gap:16px; }
         }
         @media (max-width:700px) {
-          .oh-topbar { display:none; }
           .oh-nav-links { display:none; }
+          .oh-hamburger { display:block; }
         }
         @media (max-width:420px) {
           .oh-nav { padding:10px 14px; }

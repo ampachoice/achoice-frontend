@@ -19,6 +19,7 @@ export default function LoanRepayPage() {
   const [repayAmount, setRepayAmount] = useState('');
   const [selectedQuick, setSelectedQuick] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [realSchedule, setRealSchedule] = useState([]);
   const [scheduleSummary, setScheduleSummary] = useState(null);
@@ -264,24 +265,58 @@ export default function LoanRepayPage() {
       )}
 
       {/* Navbar */}
-      <nav style={s.nav}>
-        <div style={s.navLeft} onClick={() => navigate('/products')}>
+      <style>{`
+        .lr-nav { background:#1f4d1f; padding:12px 40px; display:flex; justify-content:space-between; align-items:center; color:#fff; position:sticky; top:0; z-index:100; gap:16px; }
+        .lr-nav-left { display:flex; align-items:center; gap:12px; cursor:pointer; flex-shrink:0; }
+        .lr-nav-links { display:flex; gap:24px; align-items:center; flex-shrink:1; min-width:0; overflow:hidden; }
+        .lr-nav-link { color:#f0c050; font-size:14px; cursor:pointer; font-weight:500; white-space:nowrap; }
+        .lr-nav-right { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+        .lr-hamburger { display:none; background:none; border:none; font-size:22px; color:#fff; cursor:pointer; padding:4px; }
+        .lr-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:998; }
+        .lr-drawer { position:fixed; top:0; right:0; bottom:0; width:75%; max-width:280px; background:#fff; z-index:999; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.2); }
+        .lr-drawer-header { background:#1f4d1f; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; }
+        .lr-drawer-close { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
+        .lr-drawer-link { padding:16px 20px; font-size:15px; color:#111; cursor:pointer; border-bottom:1px solid #f0f0f0; }
+
+        @media (max-width: 768px) {
+          .lr-nav { padding:12px 16px; }
+          .lr-nav-links { display:none; }
+          .lr-hamburger { display:block; }
+        }
+      `}</style>
+      <nav className="lr-nav">
+        <div className="lr-nav-left" onClick={() => navigate('/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span></div>
         </div>
-        <div style={s.navLinks}>
-          <span style={s.navLink} onClick={() => navigate('/')}>Home</span>
-          <span style={s.navLink} onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          <span style={s.navLink} onClick={() => navigate('/orders')}>My Orders</span>
+        <div className="lr-nav-links">
+          <span className="lr-nav-link" onClick={() => navigate('/')}>Home</span>
+          <span className="lr-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
+          <span className="lr-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
-        <div style={s.navRight}>
+        <div className="lr-nav-right">
           <div style={s.cartIcon} onClick={() => navigate('/cart')}>
             🛒 {cartCount > 0 && <span style={s.badge}>{cartCount}</span>}
           </div>
           <NotificationBell />
           <BuyerDropdown cartCount={cartCount} />
+          <button className="lr-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">☰</button>
         </div>
       </nav>
+
+      {menuOpen && (
+        <div className="lr-drawer-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="lr-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="lr-drawer-header">
+              <span>Menu</span>
+              <button className="lr-drawer-close" onClick={() => setMenuOpen(false)}>✕</button>
+            </div>
+            <div className="lr-drawer-link" onClick={() => { setMenuOpen(false); navigate('/'); }}>Home</div>
+            <div className="lr-drawer-link" onClick={() => { setMenuOpen(false); navigate('/loans/apply'); }}>Apply for Loan</div>
+            <div className="lr-drawer-link" onClick={() => { setMenuOpen(false); navigate('/orders'); }}>My Orders</div>
+          </div>
+        </div>
+      )}
 
       <div style={s.container}>
         <div style={s.pageTitleRow}>

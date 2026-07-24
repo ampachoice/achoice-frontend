@@ -20,6 +20,7 @@ export default function LoanApplyPage() {
   const [ninBvnLocked, setNinBvnLocked] = useState(false);
   const [error, setError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Step 1 — Loan Details
   const [loanForm, setLoanForm] = useState({
@@ -523,8 +524,23 @@ export default function LoanApplyPage() {
         </div>
         <div className="la-nav-actions">
           <LoanHeaderActions cartCount={cartCount} />
+          <button className="la-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">☰</button>
         </div>
       </nav>
+
+      {menuOpen && (
+        <div className="la-drawer-overlay" onClick={() => setMenuOpen(false)}>
+          <div className="la-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="la-drawer-header">
+              <span>Menu</span>
+              <button className="la-drawer-close" onClick={() => setMenuOpen(false)}>✕</button>
+            </div>
+            <div className="la-drawer-link" onClick={() => { setMenuOpen(false); navigate('/'); }}>Home</div>
+            <div className="la-drawer-link" onClick={() => { setMenuOpen(false); navigate('/products'); }}>Shop</div>
+            <div className="la-drawer-link" onClick={() => { setMenuOpen(false); navigate('/loans/repay'); }}>My Loans</div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
@@ -536,6 +552,12 @@ export default function LoanApplyPage() {
         .la-nav-links { display:flex; gap:24px; flex-shrink:0; }
         .la-nav-link { color:#555; font-size:14px; cursor:pointer; white-space:nowrap; }
         .la-nav-actions { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+        .la-hamburger { display:none; background:none; border:none; font-size:22px; color:#1f4d1f; cursor:pointer; padding:4px; }
+        .la-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:998; }
+        .la-drawer { position:fixed; top:0; right:0; bottom:0; width:75%; max-width:280px; background:#fff; z-index:999; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.2); }
+        .la-drawer-header { background:#1f4d1f; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; }
+        .la-drawer-close { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
+        .la-drawer-link { padding:16px 20px; font-size:15px; color:#111; cursor:pointer; border-bottom:1px solid #f0f0f0; }
 
         @media (max-width:900px) {
           .la-nav { padding:12px 20px; }
@@ -543,6 +565,7 @@ export default function LoanApplyPage() {
         }
         @media (max-width:700px) {
           .la-nav-links { display:none; }
+          .la-hamburger { display:block; }
         }
         @media (max-width:420px) {
           .la-nav { padding:10px 14px; }
