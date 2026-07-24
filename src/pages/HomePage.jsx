@@ -2277,15 +2277,16 @@ const s = {
     fontWeight: 600,
   },
   btnSeller: {
-    padding: "8px 14px",
+    padding: "10px 20px",
     background: "#f0c050",
     color: "#1a3d1a",
     border: "none",
     borderRadius: 6,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 700,
     cursor: "pointer",
     fontFamily: "inherit",
+    whiteSpace: "nowrap",
   },
   hamburger: {
     background: "none",
