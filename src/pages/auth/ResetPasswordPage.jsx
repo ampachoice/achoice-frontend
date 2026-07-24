@@ -27,7 +27,7 @@ export default function ResetPasswordPage() {
       .rsp-topbar-right { display:flex; gap:16px; }
 
       /* Nav */
-      .rsp-nav { background:#fff; border-bottom:1px solid #e8e4dc; padding:12px 48px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+      .rsp-nav { background:#fff; border-bottom:1px solid #e8e4dc; padding:12px 48px; display:flex; justify-content:space-between; align-items:center; gap:40px; position:sticky; top:0; z-index:100; }
       .rsp-brand { display:flex; align-items:center; gap:10px; cursor:pointer; }
       .rsp-brand img { width:44px; height:44px; object-fit:contain; }
       .rsp-brand-name { font-size:15px; font-weight:700; color:#1f4d1f; }
