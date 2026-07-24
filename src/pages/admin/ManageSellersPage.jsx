@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
 
@@ -915,6 +916,7 @@ function getStatusStyle(status) {
 }
 
 export default function ManageSellersPage() {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -943,15 +945,6 @@ export default function ManageSellersPage() {
   const [remitPreview, setRemitPreview] = useState(null);
   const [remitPreviewLoading, setRemitPreviewLoading] = useState(false);
   const [remitting, setRemitting] = useState(false);
-
-  // Seller Settings panel — lives on this page (not the global admin
-  // settings gear), since commission rate is the setting admins actually
-  // need while managing sellers day-to-day.
-  const [sellerSettingsOpen, setSellerSettingsOpen] = useState(false);
-  const [commissionRate, setCommissionRate] = useState("");
-  const [commissionLoading, setCommissionLoading] = useState(false);
-  const [commissionSaving, setCommissionSaving] = useState(false);
-  const [commissionError, setCommissionError] = useState(null);
 
 
   const showToast = (msg) => {
@@ -1063,43 +1056,6 @@ export default function ManageSellersPage() {
     setRemitPreview(null);
   };
 
-  const openSellerSettings = () => {
-    setSellerSettingsOpen(true);
-    setCommissionLoading(true);
-    setCommissionError(null);
-    api
-      .get("/admin/settings/commission")
-      .then((res) => setCommissionRate(String(res.data.commission_rate)))
-      .catch(() => setCommissionError("Failed to load commission rate."))
-      .finally(() => setCommissionLoading(false));
-  };
-
-  const closeSellerSettings = () => {
-    if (commissionSaving) return;
-    setSellerSettingsOpen(false);
-    setCommissionError(null);
-  };
-
-  const saveCommissionRate = async () => {
-    const rate = Number(commissionRate);
-    if (isNaN(rate) || rate < 0 || rate > 20) {
-      setCommissionError("Commission rate must be a number between 0 and 20.");
-      return;
-    }
-    setCommissionSaving(true);
-    setCommissionError(null);
-    try {
-      await api.post("/admin/settings/commission", { commission_rate: rate });
-      showToast(`Commission rate updated to ${rate}%.`);
-      setSellerSettingsOpen(false);
-    } catch (err) {
-      const errors = err.response?.data?.errors;
-      setCommissionError(errors ? Object.values(errors)[0][0] : err.response?.data?.message || "Failed to save.");
-    } finally {
-      setCommissionSaving(false);
-    }
-  };
-
   const confirmRemit = async () => {
     if (!selectedSeller) return;
     setRemitting(true);
@@ -1146,8 +1102,8 @@ export default function ManageSellersPage() {
         subtitle={`${sellers.length} registered sellers`}
         headerActions={
           <div style={{ display: "flex", gap: 10 }}>
-            <button style={s.settingsBtn} onClick={openSellerSettings}>
-              ⚙ Seller Settings
+            <button style={s.settingsBtn} onClick={() => navigate("/admin/remittance-requests")}>
+              🧾 Remittance Requests
             </button>
             <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
               {showForm ? "Cancel" : "+ Add Seller"}
@@ -1646,87 +1602,6 @@ export default function ManageSellersPage() {
       </AdminLayout>
 
       {/* ════ REMIT CONFIRMATION MODAL ════ */}
-      {sellerSettingsOpen && (
-        <div style={s.modalOverlay} onClick={closeSellerSettings}>
-          <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
-            <div style={s.modalHeader}>
-              <div style={s.modalTitle}>Seller Settings</div>
-              <button style={s.modalCloseBtn} onClick={closeSellerSettings}>
-                ✕
-              </button>
-            </div>
-
-            {commissionLoading ? (
-              <div style={{ padding: "32px 0", textAlign: "center", color: "#888", fontSize: 13 }}>
-                Loading current rate...
-              </div>
-            ) : (
-              <>
-                <div style={s.sectionTitle}>Platform Commission Rate</div>
-                <p style={{ fontSize: 12, color: "#888", marginBottom: 14, marginTop: -6 }}>
-                  Applied whenever a seller's earnings are remitted — same rate used in the remit preview above.
-                </p>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    step="0.1"
-                    value={commissionRate}
-                    onChange={(e) => setCommissionRate(e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: "11px 14px",
-                      border: "1.5px solid #ddd",
-                      borderRadius: 8,
-                      fontSize: 15,
-                      fontFamily: "inherit",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#1f4d1f" }}>%</span>
-                </div>
-
-                {commissionError && (
-                  <div style={{ color: "#cc0000", fontSize: 12, marginBottom: 10 }}>{commissionError}</div>
-                )}
-
-                {commissionRate !== "" && !isNaN(Number(commissionRate)) && (
-                  <div style={s.remitBreakdown}>
-                    <div style={s.remitRow}>
-                      <span style={s.remitLabel}>Example: ₦100,000 gross</span>
-                      <span style={s.remitValue}>
-                        Commission: ₦{Math.round(100000 * (Number(commissionRate) / 100)).toLocaleString()}
-                      </span>
-                    </div>
-                    <div style={{ ...s.remitRow, ...s.remitRowTotal }}>
-                      <span style={s.remitLabelTotal}>Seller receives</span>
-                      <span style={s.remitValueTotal}>
-                        ₦{Math.round(100000 * (1 - Number(commissionRate) / 100)).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                <div style={s.modalActions}>
-                  <button style={s.modalCancelBtn} onClick={closeSellerSettings} disabled={commissionSaving}>
-                    Cancel
-                  </button>
-                  <button
-                    style={{ ...s.addBtn, opacity: commissionSaving ? 0.6 : 1 }}
-                    onClick={saveCommissionRate}
-                    disabled={commissionSaving}
-                  >
-                    {commissionSaving ? "Saving..." : "Save Rate"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
       {remitModalOpen && (
         <div style={s.modalOverlay} onClick={closeRemitModal}>
           <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
