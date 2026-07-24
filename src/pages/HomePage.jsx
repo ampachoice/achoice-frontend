@@ -87,8 +87,12 @@ const injectCSS = () => {
     }
     .hp-carousel-content {
       position: relative; z-index: 2;
-      padding: 0 60px; max-width: 680px;
+      padding: 0 60px; max-width: 100%;
       animation: slideUp 0.7s ease forwards;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
     }
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(24px); }
@@ -102,13 +106,13 @@ const injectCSS = () => {
     .hp-carousel-title {
       font-family: Georgia, serif; font-size: 44px; font-weight: 700;
       color: #fff; line-height: 1.15; margin-bottom: 18px;
-      white-space: pre-line;
+      white-space: pre-line; text-align: center;
     }
     .hp-carousel-subtitle {
       font-size: 15px; color: #a8d5a8; line-height: 1.7;
-      margin-bottom: 28px; max-width: 480px;
+      margin-bottom: 28px; max-width: 600px; text-align: center;
     }
-    .hp-carousel-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
+    .hp-carousel-buttons { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
     .hp-carousel-btn-primary {
       padding: 14px 28px; border: none; border-radius: 7px;
       font-size: 15px; font-weight: 700; cursor: pointer;
@@ -2210,7 +2214,7 @@ const s = {
   },
   nav: {
     background: "#fff",
-    padding: "12px 40px",
+    padding: "12px 60px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -2218,6 +2222,7 @@ const s = {
     position: "sticky",
     top: 0,
     zIndex: 100,
+    gap: 40,
   },
   navBrand: {
     display: "flex",
@@ -2248,24 +2253,28 @@ const s = {
     justifyContent: "center",
   },
   btnOutline: {
-    padding: "8px 14px",
+    padding: "10px 20px",
     border: "1px solid #1f4d1f",
     color: "#1f4d1f",
     borderRadius: 6,
-    fontSize: 13,
+    fontSize: 14,
     background: "#fff",
     cursor: "pointer",
     fontFamily: "inherit",
+    whiteSpace: "nowrap",
+    fontWeight: 600,
   },
   btnSolid: {
-    padding: "8px 14px",
+    padding: "10px 24px",
     background: "#1f4d1f",
     color: "#fff",
     border: "none",
     borderRadius: 6,
-    fontSize: 13,
+    fontSize: 14,
     cursor: "pointer",
     fontFamily: "inherit",
+    whiteSpace: "nowrap",
+    fontWeight: 600,
   },
   btnSeller: {
     padding: "8px 14px",

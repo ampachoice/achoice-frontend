@@ -12,7 +12,7 @@ const injectCSS = () => {
     * { box-sizing: border-box; }
     .lp-topbar { padding: 7px 40px !important; }
     .lp-topbar-hide { display: inline !important; }
-    .lp-nav { padding: 12px 40px !important; }
+    .lp-nav { padding: 12px 60px !important; }
     .lp-nav-right { display: flex !important; }
     .lp-footer { padding: 40px 40px 0 !important; }
     .lp-footer-grid { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)) !important; }
@@ -304,7 +304,7 @@ const s = {
   // Nav
   nav: {
     background: "#fff",
-    padding: "12px 40px",
+    padding: "12px 60px",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -312,30 +312,32 @@ const s = {
     position: "sticky",
     top: 0,
     zIndex: 100,
+    gap: 40,
   },
   navBrand: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
+    gap: 16,
     cursor: "pointer",
     flexShrink: 0,
   },
   logoImg: { width: 42, height: 42, objectFit: "contain" },
-  logoName: { fontSize: 14, fontWeight: 700, color: "#1f4d1f" },
-  logoTagline: { fontSize: 10, color: "#888" },
-  navRight: { display: "flex", alignItems: "center", gap: 20 },
+  logoName: { fontSize: 14, fontWeight: 700, color: "#1f4d1f", display: "none" },
+  logoTagline: { fontSize: 10, color: "#888", display: "none" },
+  navRight: { display: "flex", alignItems: "center", gap: 24 },
   navLink: { textDecoration: "none", color: "#333", fontSize: 14 },
   registerNavBtn: {
-    padding: "8px 16px",
+    whiteSpace: "nowrap",
+    padding: "10px 20px",
     background: "#1f4d1f",
     color: "#fff",
     border: "none",
     borderRadius: 6,
-    fontSize: 13,
+    fontSize: 14,
     cursor: "pointer",
     fontFamily: "inherit",
     textDecoration: "none",
-    fontWeight: 600,
+    fontWeight: 700,
   },
 
   // Body
