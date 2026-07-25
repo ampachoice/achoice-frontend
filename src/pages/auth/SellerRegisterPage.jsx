@@ -854,7 +854,7 @@ export default function SellerRegisterPage() {
                             ? "Submitting Application..."
                             : success
                               ? "Redirecting..."
-                              : "Submit Seller Application →"}
+                              : "Submit Application →"}
                         </button>
                       </div>
                     </>
