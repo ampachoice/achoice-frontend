@@ -103,14 +103,6 @@ export default function LoginPage() {
             <div style={s.logoTagline}>Your needs our solutions</div>
           </div>
         </div>
-        <div className="lp-nav-center" style={s.navCenter}>
-          <Link className="lp-nav-link-hide" to="/products" style={s.navLink}>
-            Marketplace
-          </Link>
-        </div>
-        <Link className="lp-nav-link-hide" to="/" style={s.navRight}>
-          Home
-        </Link>
       </nav>
 
       {/* Body */}
@@ -293,9 +285,8 @@ const s = {
   // Nav
   nav: {
     background: "#fff",
-    padding: "12px 60px",
+    padding: "12px 24px",
     display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
     borderBottom: "1px solid #e8e4dc",
     position: "sticky",
@@ -317,19 +308,6 @@ const s = {
     display: "none",
   },
   logoTagline: { fontSize: 10, color: "#888", display: "none" },
-  navCenter: {
-    position: "absolute",
-    left: "50%",
-    top: "50%",
-    transform: "translate(-50%, -50%)",
-  },
-  navRight: {
-    textDecoration: "none",
-    color: "#333",
-    fontSize: 14,
-    flexShrink: 0,
-  },
-  navLink: { textDecoration: "none", color: "#333", fontSize: 14 },
 
   // Body
   body: {
