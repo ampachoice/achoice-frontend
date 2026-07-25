@@ -5,7 +5,6 @@ import api from "../../services/api";
 import axios from "axios";
 import AdminLayout from "../../components/admin/AdminLayout";
 
-
 const BACKEND_CATEGORIES = [
   { id: 1, name: "Grains", slug: "grains" },
   { id: 2, name: "Vegetables", slug: "vegetables" },
@@ -478,7 +477,10 @@ export default function ManageProductsPage() {
         headerActions={
           <>
             {pendingCount > 0 && (
-              <button style={s.pendingBtn} onClick={() => navigate("/admin/product-approvals")}>
+              <button
+                style={s.pendingBtn}
+                onClick={() => navigate("/admin/product-approvals")}
+              >
                 🔍 Pending Review ({pendingCount})
               </button>
             )}
@@ -710,146 +712,146 @@ export default function ManageProductsPage() {
         {/* Products Table */}
         <div style={s.tableCard}>
           <div className="table-responsive">
-          <table style={s.table}>
-            <thead>
-              <tr style={s.tableHead}>
-                <th style={s.th}>Product</th>
-                <th style={s.th}>Category</th>
-                <th style={s.th}>Price</th>
-                <th style={s.th}>Total Stock</th>
-                <th style={s.th}>Sold</th>
-                <th style={s.th}>Remaining</th>
-                <th style={s.th}>Status</th>
-                <th style={s.th}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => {
-                const totalStock = Number(p.quantity || 0);
-                const sold = Number(p.items_sold || 0);
-                const remaining = Math.max(totalStock - sold, 0);
-                const stockPct =
-                  totalStock > 0
-                    ? Math.min((remaining / totalStock) * 100, 100)
-                    : 0;
-                return (
-                  <tr key={p.id} style={s.tableRow}>
-                    <td style={s.td}>
-                      <div style={s.productCell}>
-                        <img
-                          src={
-                            p.images?.[0]?.image_url ||
-                            p.images?.[0]?.url ||
-                            p.image ||
-                            "https://via.placeholder.com/40"
-                          }
-                          style={s.productThumb}
-                          alt={p.name}
-                        />
-                        <div>
-                          <div style={s.productName}>{p.name}</div>
-                          <div
-                            style={{
-                              ...s.productSeller,
-                              cursor: p.seller?.id ? "pointer" : "default",
-                              color: p.seller?.id ? "#1f4d1f" : "#888",
-                            }}
-                            onClick={() =>
-                              p.seller?.id &&
-                              navigate(`/admin/sellers/${p.seller.id}`)
+            <table style={s.table}>
+              <thead>
+                <tr style={s.tableHead}>
+                  <th style={s.th}>Product</th>
+                  <th style={s.th}>Category</th>
+                  <th style={s.th}>Price</th>
+                  <th style={s.th}>Total Stock</th>
+                  <th style={s.th}>Sold</th>
+                  <th style={s.th}>Remaining</th>
+                  <th style={s.th}>Status</th>
+                  <th style={s.th}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const totalStock = Number(p.quantity || 0);
+                  const sold = Number(p.items_sold || 0);
+                  const remaining = Math.max(totalStock - sold, 0);
+                  const stockPct =
+                    totalStock > 0
+                      ? Math.min((remaining / totalStock) * 100, 100)
+                      : 0;
+                  return (
+                    <tr key={p.id} style={s.tableRow}>
+                      <td style={s.td}>
+                        <div style={s.productCell}>
+                          <img
+                            src={
+                              p.images?.[0]?.image_url ||
+                              p.images?.[0]?.url ||
+                              p.image ||
+                              "https://via.placeholder.com/40"
                             }
-                          >
-                            {p.seller?.business_name || "—"}
+                            style={s.productThumb}
+                            alt={p.name}
+                          />
+                          <div>
+                            <div style={s.productName}>{p.name}</div>
+                            <div
+                              style={{
+                                ...s.productSeller,
+                                cursor: p.seller?.id ? "pointer" : "default",
+                                color: p.seller?.id ? "#1f4d1f" : "#888",
+                              }}
+                              onClick={() =>
+                                p.seller?.id &&
+                                navigate(`/admin/sellers/${p.seller.id}`)
+                              }
+                            >
+                              {p.seller?.business_name || "—"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td style={s.td}>
-                      <span style={s.categoryBadge}>{p.category}</span>
-                    </td>
-                    <td style={s.td}>
-                      {p.discount_price ? (
-                        <div>
-                          <div style={s.discountPrice}>
-                            ₦{Number(p.discount_price).toLocaleString()}
+                      </td>
+                      <td style={s.td}>
+                        <span style={s.categoryBadge}>{p.category}</span>
+                      </td>
+                      <td style={s.td}>
+                        {p.discount_price ? (
+                          <div>
+                            <div style={s.discountPrice}>
+                              ₦{Number(p.discount_price).toLocaleString()}
+                            </div>
+                            <div style={s.originalPrice}>
+                              ₦{Number(p.price).toLocaleString()}
+                            </div>
                           </div>
-                          <div style={s.originalPrice}>
+                        ) : (
+                          <div style={s.priceVal}>
                             ₦{Number(p.price).toLocaleString()}
                           </div>
+                        )}
+                      </td>
+                      <td style={s.td}>
+                        <div style={s.stockVal}>
+                          {totalStock} {p.unit}
                         </div>
-                      ) : (
-                        <div style={s.priceVal}>
-                          ₦{Number(p.price).toLocaleString()}
+                      </td>
+                      <td style={s.td}>
+                        <div style={s.soldVal}>{sold} sold</div>
+                      </td>
+                      <td style={s.td}>
+                        <div style={s.remainingVal}>
+                          {remaining} {p.unit}
                         </div>
-                      )}
-                    </td>
-                    <td style={s.td}>
-                      <div style={s.stockVal}>
-                        {totalStock} {p.unit}
-                      </div>
-                    </td>
-                    <td style={s.td}>
-                      <div style={s.soldVal}>{sold} sold</div>
-                    </td>
-                    <td style={s.td}>
-                      <div style={s.remainingVal}>
-                        {remaining} {p.unit}
-                      </div>
-                      <div style={s.stockBar}>
-                        <div
+                        <div style={s.stockBar}>
+                          <div
+                            style={{
+                              ...s.stockBarFill,
+                              width: `${stockPct}%`,
+                              background:
+                                stockPct > 50
+                                  ? "#1f4d1f"
+                                  : stockPct > 20
+                                    ? "#f0c050"
+                                    : "#cc0000",
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td style={s.td}>
+                        <span
                           style={{
-                            ...s.stockBarFill,
-                            width: `${stockPct}%`,
+                            ...s.statusBadge,
                             background:
-                              stockPct > 50
-                                ? "#1f4d1f"
-                                : stockPct > 20
-                                  ? "#f0c050"
-                                  : "#cc0000",
+                              p.status === "available"
+                                ? "#eafaf0"
+                                : p.status === "out_of_stock"
+                                  ? "#fff0f0"
+                                  : "#f0f0f0",
+                            color:
+                              p.status === "available"
+                                ? "#1a7a3a"
+                                : p.status === "out_of_stock"
+                                  ? "#cc0000"
+                                  : "#888",
                           }}
-                        />
-                      </div>
-                    </td>
-                    <td style={s.td}>
-                      <span
-                        style={{
-                          ...s.statusBadge,
-                          background:
-                            p.status === "available"
-                              ? "#eafaf0"
-                              : p.status === "out_of_stock"
-                                ? "#fff0f0"
-                                : "#f0f0f0",
-                          color:
-                            p.status === "available"
-                              ? "#1a7a3a"
-                              : p.status === "out_of_stock"
-                                ? "#cc0000"
-                                : "#888",
-                        }}
-                      >
-                        {p.status?.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td style={s.td}>
-                      <button
-                        style={s.editBtn}
-                        onClick={() => handleEditOpen(p)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        style={s.deleteBtn}
-                        onClick={() => handleDelete(p.id)}
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        >
+                          {p.status?.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td style={s.td}>
+                        <button
+                          style={s.editBtn}
+                          onClick={() => handleEditOpen(p)}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          style={s.deleteBtn}
+                          onClick={() => handleDelete(p.id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
           {filtered.length === 0 && (
             <div style={s.empty}>No products found.</div>
@@ -1252,5 +1254,3 @@ const s = {
   },
   empty: { padding: 40, textAlign: "center", color: "#999" },
 };
-
-
