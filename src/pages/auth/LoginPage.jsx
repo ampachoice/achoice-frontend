@@ -12,19 +12,17 @@ const injectCSS = () => {
     * { box-sizing: border-box; }
     .lp-topbar { padding: 7px 40px !important; }
     .lp-topbar-hide { display: inline !important; }
-    .lp-nav { padding: 14px 32px !important; }
-    .lp-nav-links { gap: 40px !important; }
+    .lp-nav { padding: 12px 60px !important; }
+    .lp-nav-right { display: flex !important; }
     .lp-footer { padding: 40px 40px 0 !important; }
     .lp-footer-grid { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)) !important; }
 
     @media (max-width: 768px) {
       .lp-topbar { padding: 6px 16px !important; font-size: 11px !important; }
       .lp-topbar-hide { display: none !important; }
-      .lp-nav { padding: 10px 16px !important; }
-      .lp-nav-brand-img { width: 32px !important; height: 32px !important; }
-      .lp-nav-links { gap: 18px !important; }
-      .lp-nav-link { font-size: 13px !important; white-space: nowrap !important; }
-      .lp-nav-cart { font-size: 18px !important; }
+      .lp-nav { padding: 10px 12px !important; }
+      .lp-nav-right { gap: 12px !important; }
+      .lp-nav-link-hide { display: none !important; }
       .lp-body { padding: 28px 16px !important; }
       .lp-form-card { padding: 28px 20px !important; }
       .lp-footer { padding: 32px 16px 0 !important; }
@@ -32,13 +30,8 @@ const injectCSS = () => {
       .lp-footer-bottom { font-size: 11px !important; }
     }
 
-    @media (max-width: 400px) {
+    @media (max-width: 480px) {
       .lp-footer-grid { grid-template-columns: 1fr !important; }
-      .lp-nav { padding: 8px 12px !important; }
-      .lp-nav-links { gap: 12px !important; }
-      .lp-nav-link { font-size: 12px !important; }
-      .lp-nav-brand-img { width: 28px !important; height: 28px !important; }
-      .lp-nav-cart { font-size: 17px !important; }
     }
   `;
   document.head.appendChild(style);
@@ -106,30 +99,21 @@ export default function LoginPage() {
       {/* Navbar */}
       <nav className="lp-nav" style={s.nav}>
         <div style={s.navBrand} onClick={() => navigate("/")}>
-          <img
-            className="lp-nav-brand-img"
-            src={LOGO_PATH}
-            alt="ACHOICE Logo"
-            style={s.logoImg}
-          />
+          <img src={LOGO_PATH} alt="ACHOICE Logo" style={s.logoImg} />
+          <div>
+            <div style={s.logoName}>ACHOICE LIMITED</div>
+            <div style={s.logoTagline}>Your needs our solutions</div>
+          </div>
         </div>
-
-        <div className="lp-nav-links" style={s.navLinks}>
-          <Link className="lp-nav-link" to="/" style={s.navLink}>
-            Home
-          </Link>
-          <Link className="lp-nav-link" to="/products" style={s.navLink}>
+        <div className="lp-nav-center" style={s.navCenter}>
+          <Link className="lp-nav-link-hide" to="/products" style={s.navLink}>
             Marketplace
           </Link>
         </div>
-
-        <div
-          className="lp-nav-cart"
-          style={s.navCart}
-          onClick={() => navigate("/cart")}
-          aria-label="Cart"
-        >
-          🛒
+        <div className="lp-nav-right" style={s.navRight}>
+          <Link className="lp-nav-link-hide" to="/" style={s.navLink}>
+            Home
+          </Link>
         </div>
       </nav>
 
@@ -313,53 +297,39 @@ const s = {
   // Nav
   nav: {
     background: "#fff",
-    padding: "14px 32px",
-    display: "flex",
+    padding: "12px 60px",
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
     alignItems: "center",
     borderBottom: "1px solid #e8e4dc",
     position: "sticky",
     top: 0,
     zIndex: 100,
+    gap: 24,
   },
-  // navBrand and navCart both get flex:1, so they're ALWAYS equal width to
-  // each other — each one then pushes its own content to its own edge
-  // (flex-start for the logo, flex-end for the cart) using justify-content
-  // on itself. Since both side boxes are guaranteed equal width, navLinks
-  // in between (fixed-size, not flex:1) is mathematically centered. This
-  // avoids relying on justify-self, which wasn't behaving as expected.
   navBrand: {
-    flex: 1,
     display: "flex",
     alignItems: "center",
-    justifyContent: "flex-start",
+    gap: 16,
     cursor: "pointer",
-    minWidth: 0,
+    flexShrink: 0,
   },
   logoImg: { width: 42, height: 42, objectFit: "contain" },
-  navLinks: {
-    flex: "0 0 auto",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 40,
-    whiteSpace: "nowrap",
-  },
-  navLink: {
-    textDecoration: "none",
-    color: "#333",
+  logoName: {
     fontSize: 14,
-    fontWeight: 500,
+    fontWeight: 700,
+    color: "#1f4d1f",
+    display: "none",
   },
-  navCart: {
-    flex: 1,
+  logoTagline: { fontSize: 10, color: "#888", display: "none" },
+  navCenter: { display: "flex", justifyContent: "center" },
+  navRight: {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
-    fontSize: 22,
-    cursor: "pointer",
-    color: "#333",
-    minWidth: 0,
+    gap: 24,
   },
+  navLink: { textDecoration: "none", color: "#333", fontSize: 14 },
 
   // Body
   body: {
