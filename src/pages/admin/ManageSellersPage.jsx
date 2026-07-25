@@ -906,12 +906,15 @@ function MiniBar({ data, color = "#1f4d1f" }) {
 }
 
 function getStatusStyle(status) {
+  const key = (status || "").toLowerCase();
   return (
     {
       active: { background: "#eafaf0", color: "#1a7a3a" },
       suspended: { background: "#fff0f0", color: "#cc0000" },
       pending: { background: "#fff8e7", color: "#b36b00" },
-    }[status] || { background: "#f0f0f0", color: "#555" }
+      pending_approval: { background: "#fff8e7", color: "#b36b00" },
+      rejected: { background: "#fff0f0", color: "#cc0000" },
+    }[key] || { background: "#f0f0f0", color: "#555" }
   );
 }
 
@@ -945,6 +948,10 @@ export default function ManageSellersPage() {
   const [remitPreview, setRemitPreview] = useState(null);
   const [remitPreviewLoading, setRemitPreviewLoading] = useState(false);
   const [remitting, setRemitting] = useState(false);
+
+  // Seller approval workflow
+  const [filterPending, setFilterPending] = useState(false);
+  const [actioningId, setActioningId] = useState(null);
 
 
   const showToast = (msg) => {
@@ -1083,11 +1090,66 @@ export default function ManageSellersPage() {
     }));
   };
 
-  const filtered = sellers.filter(
-    (s) =>
-      s.business_name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.owner?.toLowerCase().includes(search.toLowerCase()),
-  );
+  // Approve / reject / suspend / activate a seller account.
+  // Endpoint names follow the same PATCH convention as the existing
+  // /admin/sellers/{id}/remit route above — adjust here if your backend
+  // uses different route names.
+  const handleSellerAction = async (seller, action) => {
+    const confirmMsgs = {
+      approve: null,
+      reject: `Reject ${seller.business_name}'s seller application? This cannot be undone.`,
+      suspend: `Suspend ${seller.business_name}? They won't be able to sell until reactivated.`,
+      activate: `Reactivate ${seller.business_name}?`,
+    };
+    if (confirmMsgs[action] && !window.confirm(confirmMsgs[action])) return;
+
+    setActioningId(seller.id);
+    try {
+      const res = await api.patch(`/admin/sellers/${seller.id}/${action}`);
+      const successMsgs = {
+        approve: `${seller.business_name} approved and is now active.`,
+        reject: `${seller.business_name}'s application was rejected.`,
+        suspend: `${seller.business_name} has been suspended.`,
+        activate: `${seller.business_name} has been reactivated.`,
+      };
+      showToast(successMsgs[action]);
+      setSellers((prev) =>
+        prev.map((sItem) =>
+          sItem.id === seller.id
+            ? { ...sItem, status: res.data?.status || (action === "approve" || action === "activate" ? "active" : action === "reject" ? "rejected" : "suspended") }
+            : sItem,
+        ),
+      );
+    } catch (err) {
+      showToast(err.response?.data?.message || `Failed to ${action} seller.`);
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const isPendingStatus = (status) =>
+    (status || "").toLowerCase().includes("pending");
+
+  const pendingCount = sellers.filter((s) => isPendingStatus(s.status)).length;
+
+  const filtered = sellers
+    .filter(
+      (s) =>
+        s.business_name?.toLowerCase().includes(search.toLowerCase()) ||
+        s.owner?.toLowerCase().includes(search.toLowerCase()),
+    )
+    .filter((s) => (filterPending ? isPendingStatus(s.status) : true))
+    .sort((a, b) => {
+      // Pending approvals always float to the top...
+      const aPending = isPendingStatus(a.status) ? 1 : 0;
+      const bPending = isPendingStatus(b.status) ? 1 : 0;
+      if (aPending !== bPending) return bPending - aPending;
+      // ...then newest registrations first.
+      if (a.created_at && b.created_at) {
+        return new Date(b.created_at) - new Date(a.created_at);
+      }
+      return (b.id || 0) - (a.id || 0);
+    });
 
   const availableLgas = formData.state ? lgaData[formData.state] || [] : [];
 
@@ -1101,7 +1163,16 @@ export default function ManageSellersPage() {
         title="Sellers"
         subtitle={`${sellers.length} registered sellers`}
         headerActions={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              style={filterPending ? s.pendingBtnActive : s.pendingBtn}
+              onClick={() => setFilterPending((v) => !v)}
+            >
+              🕓 Pending Approvals
+              {pendingCount > 0 && (
+                <span style={s.pendingBadge}>{pendingCount}</span>
+              )}
+            </button>
             <button style={s.settingsBtn} onClick={() => navigate("/admin/remittance-requests")}>
               🧾 Remittance Requests
             </button>
@@ -1313,13 +1384,21 @@ export default function ManageSellersPage() {
           }}
         >
           <div style={s.tableSection}>
-            <input
-              style={s.searchInput}
-              type="text"
-              placeholder="Search sellers..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+              <input
+                style={s.searchInput}
+                type="text"
+                placeholder="Search sellers..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {filterPending && (
+                <span style={s.pendingFilterTag}>
+                  Showing pending only
+                  <button style={s.pendingFilterClear} onClick={() => setFilterPending(false)}>✕</button>
+                </span>
+              )}
+            </div>
             <div style={s.tableCard}>
               <div style={{ overflowX: "auto" }}>
                 <table style={s.table}>
@@ -1386,12 +1465,48 @@ export default function ManageSellersPage() {
                         </span>
                       </td>
                       <td style={s.td}>
-                        <button
-                          style={s.viewBtn}
-                          onClick={() => handleSelectSeller(seller)}
-                        >
-                          View Stats
-                        </button>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {isPendingStatus(seller.status) ? (
+                            <>
+                              <button
+                                style={actioningId === seller.id ? s.approveBtnDisabled : s.approveBtn}
+                                disabled={actioningId === seller.id}
+                                onClick={() => handleSellerAction(seller, "approve")}
+                              >
+                                {actioningId === seller.id ? "…" : "✓ Approve"}
+                              </button>
+                              <button
+                                style={actioningId === seller.id ? s.rejectBtnDisabled : s.rejectBtn}
+                                disabled={actioningId === seller.id}
+                                onClick={() => handleSellerAction(seller, "reject")}
+                              >
+                                ✕ Reject
+                              </button>
+                            </>
+                          ) : (seller.status || "").toLowerCase() === "suspended" ? (
+                            <button
+                              style={actioningId === seller.id ? s.approveBtnDisabled : s.approveBtn}
+                              disabled={actioningId === seller.id}
+                              onClick={() => handleSellerAction(seller, "activate")}
+                            >
+                              {actioningId === seller.id ? "…" : "Activate"}
+                            </button>
+                          ) : (
+                            <button
+                              style={actioningId === seller.id ? s.rejectBtnDisabled : s.suspendBtn}
+                              disabled={actioningId === seller.id}
+                              onClick={() => handleSellerAction(seller, "suspend")}
+                            >
+                              {actioningId === seller.id ? "…" : "Suspend"}
+                            </button>
+                          )}
+                          <button
+                            style={s.viewBtn}
+                            onClick={() => handleSelectSeller(seller)}
+                          >
+                            View Stats
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1786,6 +1901,124 @@ const s = {
     fontSize: 14,
     fontFamily: "inherit",
   },
+  pendingBtn: {
+    background: "#fff",
+    color: "#b36b00",
+    border: "1.5px solid #f0d99a",
+    padding: "12px 20px",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: 14,
+    fontFamily: "inherit",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  pendingBtnActive: {
+    background: "#fff8e7",
+    color: "#b36b00",
+    border: "1.5px solid #b36b00",
+    padding: "12px 20px",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: 14,
+    fontFamily: "inherit",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+  },
+  pendingBadge: {
+    background: "#cc0000",
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: 700,
+    padding: "2px 7px",
+    borderRadius: 99,
+  },
+  pendingFilterTag: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "#fff8e7",
+    color: "#b36b00",
+    border: "1px solid #f0d99a",
+    borderRadius: 8,
+    padding: "8px 12px",
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  pendingFilterClear: {
+    background: "none",
+    border: "none",
+    color: "#b36b00",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 700,
+    padding: 0,
+    lineHeight: 1,
+  },
+  approveBtn: {
+    background: "#1a7a3a",
+    color: "#fff",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    whiteSpace: "nowrap",
+  },
+  approveBtnDisabled: {
+    background: "#a8d5a8",
+    color: "#fff",
+    border: "none",
+    padding: "6px 12px",
+    borderRadius: 6,
+    cursor: "not-allowed",
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    whiteSpace: "nowrap",
+  },
+  rejectBtn: {
+    background: "#fff0f0",
+    color: "#cc0000",
+    border: "1px solid #ffb3b3",
+    padding: "6px 12px",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    whiteSpace: "nowrap",
+  },
+  rejectBtnDisabled: {
+    background: "#f5f5f5",
+    color: "#aaa",
+    border: "1px solid #eee",
+    padding: "6px 12px",
+    borderRadius: 6,
+    cursor: "not-allowed",
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    whiteSpace: "nowrap",
+  },
+  suspendBtn: {
+    background: "#fff8e7",
+    color: "#b36b00",
+    border: "1px solid #f0d99a",
+    padding: "6px 12px",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    whiteSpace: "nowrap",
+  },
   formCard: {
     background: "#fff",
     borderRadius: 12,
@@ -1871,13 +2104,12 @@ const s = {
   tableSection: { flex: 1, minWidth: 280 },
   searchInput: {
     width: "100%",
-    maxWidth: 400,
-    padding: "12px 18px",
+    maxWidth: 240,
+    padding: "10px 14px",
     border: "none",
     borderRadius: 10,
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-    fontSize: 14,
-    marginBottom: 16,
+    fontSize: 13,
     boxSizing: "border-box",
     fontFamily: "inherit",
     outline: "none",
