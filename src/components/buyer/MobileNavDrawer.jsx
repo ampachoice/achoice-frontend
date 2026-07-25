@@ -69,8 +69,26 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
     <>
       <style>{`
       
-        .mnd-trigger { display: none; background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; padding: 4px 6px; line-height: 1; }
-        @media (max-width: 640px) { .mnd-trigger { display: flex; align-items: center; justify-content: center; } }
+        .mnd-trigger {
+          display: none;
+          align-items: center;
+          justify-content: center;
+          background: #1f4d1f;
+          border: 1px solid rgba(255,255,255,0.25);
+          color: #fff;
+          font-size: 20px;
+          cursor: pointer;
+          width: 38px;
+          height: 38px;
+          border-radius: 8px;
+          line-height: 1;
+          flex-shrink: 0;
+          margin-left: auto;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          position: relative;
+          z-index: 500;
+        }
+        @media (max-width: 640px) { .mnd-trigger { display: flex; } }
         .mnd-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.5);
           z-index: 999; display: flex; justify-content: flex-end;
