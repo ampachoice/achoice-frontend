@@ -84,6 +84,7 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
           line-height: 1;
           flex-shrink: 0;
           margin-left: auto;
+          margin-right: 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.15);
           position: relative;
           z-index: 500;
