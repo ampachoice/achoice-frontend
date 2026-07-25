@@ -20,7 +20,7 @@ const injectCSS = () => {
     @media (max-width: 768px) {
       .lp-topbar { padding: 6px 16px !important; font-size: 11px !important; }
       .lp-topbar-hide { display: none !important; }
-      .lp-nav { padding: 10px 16px !important; }
+      .lp-nav { padding: 10px 12px !important; }
       .lp-nav-right { gap: 12px !important; }
       .lp-nav-link-hide { display: none !important; }
       .lp-body { padding: 28px 16px !important; }
@@ -322,7 +322,12 @@ const s = {
     flexShrink: 0,
   },
   logoImg: { width: 42, height: 42, objectFit: "contain" },
-  logoName: { fontSize: 14, fontWeight: 700, color: "#1f4d1f", display: "none" },
+  logoName: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#1f4d1f",
+    display: "none",
+  },
   logoTagline: { fontSize: 10, color: "#888", display: "none" },
   navRight: { display: "flex", alignItems: "center", gap: 24 },
   navLink: { textDecoration: "none", color: "#333", fontSize: 14 },
