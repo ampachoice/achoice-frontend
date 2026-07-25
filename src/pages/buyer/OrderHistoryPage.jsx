@@ -4,6 +4,7 @@ import { getMyOrders, confirmDelivery } from '../../services/orderService';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
+import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
 const LOGO_PATH = '/achoice logo.png';
 
@@ -51,7 +52,6 @@ export default function OrderHistoryPage() {
   const [error, setError] = useState(null);
   const [toast, setToast] = useState('');
   const [cartCount, setCartCount] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [expandedOrder, setExpandedOrder] = useState(null);
@@ -209,28 +209,13 @@ if (reference) {
           </span>
         </div>
         <div className="oh-nav-actions">
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
-          <button className="oh-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">☰</button>
+          <div className="oh-desktop-only">
+            <NotificationBell />
+            <BuyerDropdown cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
-
-      {menuOpen && (
-        <div className="oh-drawer-overlay" onClick={() => setMenuOpen(false)}>
-          <div className="oh-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="oh-drawer-header">
-              <span>Menu</span>
-              <button className="oh-drawer-close" onClick={() => setMenuOpen(false)}>✕</button>
-            </div>
-            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/'); }}>Home</div>
-            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/products'); }}>Shop</div>
-            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/loans/apply'); }}>Loans</div>
-            <div className="oh-drawer-link" onClick={() => { setMenuOpen(false); navigate('/cart'); }}>
-              Cart {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
-            </div>
-          </div>
-        </div>
-      )}
 
       <style>{`
         .oh-nav { background:#1a3d1a; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:16px; }
@@ -242,20 +227,15 @@ if (reference) {
         .oh-nav-links { display:flex; gap:28px; align-items:center; flex-shrink:0; }
         .oh-nav-link { color:#fff; font-size:14px; cursor:pointer; white-space:nowrap; }
         .oh-nav-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
-        .oh-hamburger { display:none; background:none; border:none; font-size:22px; color:#fff; cursor:pointer; padding:4px; }
-        .oh-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:998; }
-        .oh-drawer { position:fixed; top:0; right:0; bottom:0; width:75%; max-width:280px; background:#fff; z-index:999; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.2); }
-        .oh-drawer-header { background:#1f4d1f; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; }
-        .oh-drawer-close { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
-        .oh-drawer-link { padding:16px 20px; font-size:15px; color:#111; cursor:pointer; border-bottom:1px solid #f0f0f0; }
+        .oh-desktop-only { display:flex; align-items:center; gap:12px; }
 
         @media (max-width:900px) {
           .oh-nav { padding:12px 20px; }
           .oh-nav-links { gap:16px; }
         }
-        @media (max-width:700px) {
+        @media (max-width:640px) {
           .oh-nav-links { display:none; }
-          .oh-hamburger { display:block; }
+          .oh-desktop-only { display:none; }
         }
         @media (max-width:420px) {
           .oh-nav { padding:10px 14px; }

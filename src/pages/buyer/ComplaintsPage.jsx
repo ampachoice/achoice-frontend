@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 import NotificationBell from "../../components/buyer/NotificationBell";
+import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -111,6 +112,10 @@ export default function ComplaintsPage() {
         .cmp-nav-name  { font-weight:700; font-size:17px; color:#fff; }
         .cmp-nav-name span { color:#f0c050; }
         .cmp-nav-right { display:flex; align-items:center; gap:14px; }
+        .cmp-desktop-only { display:flex; align-items:center; gap:14px; }
+        @media(max-width:640px) {
+          .cmp-desktop-only { display:none; }
+        }
         .cmp-body  { flex:1; max-width:860px; margin:0 auto; width:100%; padding:36px 16px 60px; }
         .cmp-title { font-size:22px; font-weight:800; color:#1f4d1f; margin-bottom:6px; }
         .cmp-sub   { font-size:13px; color:#777; margin-bottom:28px; }
@@ -157,7 +162,10 @@ export default function ComplaintsPage() {
               onError={(e) => { e.target.style.display = "none"; }} />
             <div className="cmp-nav-name">ACHOICE <span>MARKET</span></div>
           </div>
-          <div className="cmp-nav-right"><NotificationBell /><BuyerDropdown /></div>
+          <div className="cmp-nav-right">
+            <div className="cmp-desktop-only"><NotificationBell /><BuyerDropdown /></div>
+            <MobileNavDrawer />
+          </div>
         </nav>
 
         <div className="cmp-body">

@@ -113,8 +113,10 @@ export default function CartPage() {
       }
 
       /* ── MOBILE ── */
-      @media (max-width:600px) {
+      @media (max-width:640px) {
         .cp-desktop-only { display:none; }
+      }
+      @media (max-width:600px) {
         .crt-nav { padding:8px 14px; }
         .crt-nav-name { font-size:15px; }
         .crt-banner { margin:12px 12px 0; padding:14px 16px; }

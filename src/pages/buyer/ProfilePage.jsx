@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
+import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
 const LOGO_PATH = '/achoice logo.png';
 
@@ -14,7 +15,6 @@ export default function ProfilePage() {
   const [toast, setToast] = useState('');
   const [activeTab, setActiveTab] = useState('profile');
   const [cartCount, setCartCount] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({
     name: '', email: '', phone: '', address: '',
   });
@@ -102,12 +102,7 @@ export default function ProfilePage() {
         .pf-nav-link { color:#fff; font-size:14px; cursor:pointer; white-space:nowrap; }
         .pf-cart-badge { background:#f0c050; color:#1a1a1a; font-size:10px; font-weight:700; border-radius:50%; padding:1px 5px; margin-left:4px; }
         .pf-nav-right { display:flex; align-items:center; gap:14px; flex-shrink:0; }
-        .pf-hamburger { display:none; background:none; border:none; font-size:22px; color:#fff; cursor:pointer; padding:4px; }
-        .pf-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:998; }
-        .pf-drawer { position:fixed; top:0; right:0; bottom:0; width:75%; max-width:280px; background:#fff; z-index:999; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.2); }
-        .pf-drawer-header { background:#1f4d1f; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; }
-        .pf-drawer-close { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
-        .pf-drawer-link { padding:16px 20px; font-size:15px; color:#111; cursor:pointer; border-bottom:1px solid #f0f0f0; }
+        .pf-desktop-only { display:flex; align-items:center; gap:14px; }
 
         /* ── Container ── */
         .pf-container { max-width:900px; margin:0 auto; padding:32px 16px; flex:1; }
@@ -140,7 +135,7 @@ export default function ProfilePage() {
         @media (max-width:640px) {
           .pf-nav { padding:10px 16px; justify-content:space-between; }
           .pf-nav-links { display:none; }
-          .pf-hamburger { display:block; }
+          .pf-desktop-only { display:none; }
           .pf-nav-logo-img { width:36px; height:36px; }
           .pf-nav-logo-name { font-size:13px; }
           .pf-nav-logo-tag { display:none; }
@@ -185,27 +180,13 @@ export default function ProfilePage() {
           </span>
         </div>
         <div className="pf-nav-right">
-          <NotificationBell />
-          <BuyerDropdown cartCount={cartCount} />
-          <button className="pf-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">☰</button>
+          <div className="pf-desktop-only">
+            <NotificationBell />
+            <BuyerDropdown cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
-
-      {menuOpen && (
-        <div className="pf-drawer-overlay" onClick={() => setMenuOpen(false)}>
-          <div className="pf-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="pf-drawer-header">
-              <span>Menu</span>
-              <button className="pf-drawer-close" onClick={() => setMenuOpen(false)}>✕</button>
-            </div>
-            <div className="pf-drawer-link" onClick={() => { setMenuOpen(false); navigate('/'); }}>Home</div>
-            <div className="pf-drawer-link" onClick={() => { setMenuOpen(false); navigate('/orders'); }}>My Orders</div>
-            <div className="pf-drawer-link" onClick={() => { setMenuOpen(false); navigate('/cart'); }}>
-              Cart {cartCount > 0 && <span className="pf-cart-badge">{cartCount}</span>}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="pf-container">
         {/* Profile Header */}

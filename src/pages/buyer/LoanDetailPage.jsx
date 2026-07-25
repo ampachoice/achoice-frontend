@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getLoanDetails } from '../../services/loanService';
 import LoanHeaderActions from '../../components/common/LoanHeaderActions';
+import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
 export default function LoanDetailPage() {
   const navigate = useNavigate();
@@ -10,7 +11,6 @@ export default function LoanDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -55,19 +55,14 @@ export default function LoanDetailPage() {
         .ld-nav-link { color:#e8e4dc; cursor:pointer; font-size:14px; white-space:nowrap; }
         .ld-nav-link:hover { color:#f0c050; }
         .ld-nav-right { display:flex; align-items:center; gap:16px; flex-shrink:0; }
+        .ld-desktop-only { display:flex; align-items:center; gap:16px; }
         .ld-cart { position:relative; cursor:pointer; font-size:20px; }
         .ld-badge { position:absolute; top:-6px; right:-8px; background:#cc0000; color:#fff; font-size:10px; font-weight:700; padding:1px 5px; border-radius:99px; }
-        .ld-hamburger { display:none; background:none; border:none; font-size:22px; color:#fff; cursor:pointer; padding:4px; }
-        .ld-drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:998; }
-        .ld-drawer { position:fixed; top:0; right:0; bottom:0; width:75%; max-width:280px; background:#fff; z-index:999; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.2); }
-        .ld-drawer-header { background:#1f4d1f; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-weight:700; }
-        .ld-drawer-close { background:none; border:none; color:#fff; font-size:20px; cursor:pointer; }
-        .ld-drawer-link { padding:16px 20px; font-size:15px; color:#111; cursor:pointer; border-bottom:1px solid #f0f0f0; }
 
-        @media (max-width: 768px) {
+        @media (max-width: 640px) {
           .ld-nav { padding:12px 16px; }
           .ld-nav-links { display:none; }
-          .ld-hamburger { display:block; }
+          .ld-desktop-only { display:none; }
         }
       `}</style>
 
@@ -85,24 +80,12 @@ export default function LoanDetailPage() {
           <span className="ld-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="ld-nav-right">
-          <LoanHeaderActions cartCount={cartCount} />
-          <button className="ld-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu">☰</button>
+          <div className="ld-desktop-only">
+            <LoanHeaderActions cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
-
-      {menuOpen && (
-        <div className="ld-drawer-overlay" onClick={() => setMenuOpen(false)}>
-          <div className="ld-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="ld-drawer-header">
-              <span>Menu</span>
-              <button className="ld-drawer-close" onClick={() => setMenuOpen(false)}>✕</button>
-            </div>
-            <div className="ld-drawer-link" onClick={() => { setMenuOpen(false); navigate('/'); }}>Home</div>
-            <div className="ld-drawer-link" onClick={() => { setMenuOpen(false); navigate('/loans/apply'); }}>Apply for Loan</div>
-            <div className="ld-drawer-link" onClick={() => { setMenuOpen(false); navigate('/orders'); }}>My Orders</div>
-          </div>
-        </div>
-      )}
 
       <div style={s.container}>
         <div style={s.backRow} onClick={() => navigate('/loans')}>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
+import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
 const LOGO_PATH = '/achoice logo.png';
 
@@ -102,17 +103,26 @@ export default function NotificationsPage() {
     <div style={s.page}>
       {toast && <div style={s.toast}>{toast}</div>}
 
+      <style>{`
+        .np-desktop-only { display: flex; align-items: center; gap: 16px; }
+        @media (max-width: 640px) {
+          .np-desktop-only { display: none; }
+        }
+      `}</style>
       <nav style={s.nav}>
         <div style={s.navLeft} onClick={() => navigate('/')}>
           <img src={LOGO_PATH} alt="Achoice" style={s.navLogo} />
           <div style={s.navName}>ACHOICE</div>
         </div>
         <div style={s.navRight}>
-          <div style={s.cartBtn} onClick={() => navigate('/cart')}>
-            Cart
-            {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
+          <div className="np-desktop-only">
+            <div style={s.cartBtn} onClick={() => navigate('/cart')}>
+              Cart
+              {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
+            </div>
+            <BuyerDropdown cartCount={cartCount} />
           </div>
-          <BuyerDropdown cartCount={cartCount} />
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
 

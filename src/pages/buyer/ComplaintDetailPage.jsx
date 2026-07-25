@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import api from "../../services/api";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 import NotificationBell from "../../components/buyer/NotificationBell";
+import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -76,6 +77,10 @@ export default function ComplaintDetailPage() {
         .cdp-nav-name  { font-weight:700; font-size:17px; color:#fff; }
         .cdp-nav-name span { color:#f0c050; }
         .cdp-nav-right { display:flex; align-items:center; gap:14px; }
+        .cdp-desktop-only { display:flex; align-items:center; gap:14px; }
+        @media(max-width:640px) {
+          .cdp-desktop-only { display:none; }
+        }
         .cdp-body  { flex:1; max-width:760px; margin:0 auto; width:100%; padding:36px 16px 60px; }
         .cdp-back  { display:inline-flex; align-items:center; gap:6px; color:#1f4d1f; font-size:13px; font-weight:600; cursor:pointer; margin-bottom:20px; }
         .cdp-card  { background:#fff; border-radius:12px; padding:24px; box-shadow:0 2px 10px rgba(0,0,0,.07); margin-bottom:20px; }
@@ -125,7 +130,10 @@ export default function ComplaintDetailPage() {
               onError={(e) => { e.target.style.display = "none"; }} />
             <div className="cdp-nav-name">ACHOICE <span>MARKET</span></div>
           </div>
-          <div className="cdp-nav-right"><NotificationBell /><BuyerDropdown /></div>
+          <div className="cdp-nav-right">
+            <div className="cdp-desktop-only"><NotificationBell /><BuyerDropdown /></div>
+            <MobileNavDrawer />
+          </div>
         </nav>
 
         <div className="cdp-body">
