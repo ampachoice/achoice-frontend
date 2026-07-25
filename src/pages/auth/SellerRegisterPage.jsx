@@ -303,7 +303,18 @@ export default function SellerRegisterPage() {
       </nav>
 
       {/* Body */}
-      <div className="sr-body">
+      <div
+        className="sr-body"
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "center",
+          paddingTop: 32,
+          paddingBottom: 40,
+          minHeight: "calc(100vh - 70px)",
+          boxSizing: "border-box",
+        }}
+      >
         <div className="sr-inner">
           {/* Left panel */}
           <div className="sr-left">
@@ -756,13 +767,38 @@ export default function SellerRegisterPage() {
                         )}
                       </div>
 
-                      <div className="sr-field">
-                        <label className="sr-label">CAC Certificate</label>
+                      <div
+                        className="sr-field"
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <label
+                          className="sr-label"
+                          style={{
+                            display: "block",
+                            marginBottom: 4,
+                            position: "relative",
+                            zIndex: 2,
+                          }}
+                        >
+                          CAC Certificate
+                        </label>
                         <label
                           className={
                             "sr-file-drop" + (cacFile ? " sr-file-has" : "")
                           }
                           htmlFor="cac-upload"
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            boxSizing: "border-box",
+                            marginTop: 0,
+                            position: "relative",
+                            zIndex: 1,
+                          }}
                         >
                           {cacFile
                             ? `✓ ${cacFile.name} (${(cacFile.size / 1024 / 1024).toFixed(1)}MB)`
