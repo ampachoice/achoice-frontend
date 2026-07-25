@@ -8,6 +8,8 @@ import NotificationBell from '../../components/buyer/NotificationBell';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
 export default function LoanRepayPage() {
+  let isSeller = false;
+  try { isSeller = JSON.parse(localStorage.getItem('user'))?.role === 'seller'; } catch {}
   const navigate = useNavigate();
   const location = useLocation();
   const [activeLoan, setActiveLoan] = useState(null);
@@ -278,20 +280,22 @@ export default function LoanRepayPage() {
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span></div>
         </div>
-        <div className="lr-nav-links">
-          <span style={s.navLink} onClick={() => navigate('/')}>Home</span>
+        <div className="lr-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
+          <span style={s.navLink} onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>
           <span style={s.navLink} onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          <span style={s.navLink} onClick={() => navigate('/orders')}>My Orders</span>
+          {!isSeller && <span style={s.navLink} onClick={() => navigate('/orders')}>My Orders</span>}
         </div>
         <div style={s.navRight}>
-          <div className="lr-desktop-only">
-            <div style={s.cartIcon} onClick={() => navigate('/cart')}>
-              🛒 {cartCount > 0 && <span style={s.badge}>{cartCount}</span>}
+          {!isSeller && (
+            <div className="lr-desktop-only">
+              <div style={s.cartIcon} onClick={() => navigate('/cart')}>
+                🛒 {cartCount > 0 && <span style={s.badge}>{cartCount}</span>}
+              </div>
+              <NotificationBell />
+              <BuyerDropdown cartCount={cartCount} />
             </div>
-            <NotificationBell />
-            <BuyerDropdown cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
+          )}
+          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
         </div>
       </nav>
 

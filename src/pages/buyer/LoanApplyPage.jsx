@@ -7,6 +7,8 @@ import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 const LOGO_PATH = "/achoice logo.png";
 
 export default function LoanApplyPage() {
+  let isSeller = false;
+  try { isSeller = JSON.parse(localStorage.getItem('user'))?.role === 'seller'; } catch {}
   const navigate = useNavigate();
 
   // Settings
@@ -338,7 +340,7 @@ export default function LoanApplyPage() {
               <div className="la-nav-tag">Your needs our solutions</div>
             </div>
           </div>
-          <MobileNavDrawer />
+          {!isSeller && <MobileNavDrawer />}
         </nav>
         <style>{`
           .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
@@ -512,22 +514,26 @@ export default function LoanApplyPage() {
             <div className="la-nav-tag">Your needs our solutions</div>
           </div>
         </div>
-        <div className="la-nav-links">
-          <span className="la-nav-link" onClick={() => navigate("/")}>
-            Home
+        <div className="la-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
+          <span className="la-nav-link" onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}>
+            {isSeller ? "Dashboard" : "Home"}
           </span>
-          <span className="la-nav-link" onClick={() => navigate("/products")}>
-            Shop
-          </span>
+          {!isSeller && (
+            <span className="la-nav-link" onClick={() => navigate("/products")}>
+              Shop
+            </span>
+          )}
           <span className="la-nav-link" onClick={() => navigate("/loans/repay")}>
             My Loans
           </span>
         </div>
         <div className="la-nav-actions">
-          <div className="la-desktop-only">
-            <LoanHeaderActions cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
+          {!isSeller && (
+            <div className="la-desktop-only">
+              <LoanHeaderActions cartCount={cartCount} />
+            </div>
+          )}
+          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
         </div>
       </nav>
 

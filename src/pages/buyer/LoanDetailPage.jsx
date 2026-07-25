@@ -5,6 +5,8 @@ import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
 export default function LoanDetailPage() {
+  let isSeller = false;
+  try { isSeller = JSON.parse(localStorage.getItem('user'))?.role === 'seller'; } catch {}
   const navigate = useNavigate();
   const { id } = useParams();
   const [loan, setLoan] = useState(null);
@@ -74,16 +76,18 @@ export default function LoanDetailPage() {
             ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span>
           </div>
         </div>
-        <div className="ld-nav-links">
-          <span className="ld-nav-link" onClick={() => navigate('/')}>Home</span>
+        <div className="ld-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
+          <span className="ld-nav-link" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>
           <span className="ld-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          <span className="ld-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
+          {!isSeller && <span className="ld-nav-link" onClick={() => navigate('/orders')}>My Orders</span>}
         </div>
         <div className="ld-nav-right">
-          <div className="ld-desktop-only">
-            <LoanHeaderActions cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
+          {!isSeller && (
+            <div className="ld-desktop-only">
+              <LoanHeaderActions cartCount={cartCount} />
+            </div>
+          )}
+          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
         </div>
       </nav>
 
