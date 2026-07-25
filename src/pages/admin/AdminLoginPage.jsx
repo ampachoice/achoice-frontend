@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { getHomePathForUser } from '../../utils/authRedirect';
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -25,9 +26,21 @@ export default function AdminLoginPage() {
         setError('Access denied. Admin accounts only.');
         return;
       }
+      // Previously only LoginPage.jsx set these two keys — an admin
+      // session here had no expiry of its own, so ProtectedRoute's
+      // expiration check (`now > Number(expiresAt)`) was silently running
+      // against whatever session_expires_at happened to already be sitting
+      // in localStorage from a completely unrelated previous login (or
+      // null, which Number(null) coerces to 0 — meaning "already expired"
+      // as far as that check is concerned). That's what made this look
+      // intermittent: it depended on what was left over from last time,
+      // not on this login at all.
+      const expiresAt = new Date().getTime() + (60 * 2 * 60 * 1000);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
-      navigate('/admin/dashboard');
+      localStorage.setItem('session_expires_at', expiresAt);
+      localStorage.setItem('isLoggedIn', 'true');
+      navigate(getHomePathForUser(res.data.user));
     } catch (err) {
       setError('Invalid email or password.');
     } finally {
