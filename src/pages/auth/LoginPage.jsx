@@ -13,7 +13,6 @@ const injectCSS = () => {
     .lp-topbar { padding: 7px 40px !important; }
     .lp-topbar-hide { display: inline !important; }
     .lp-nav { padding: 12px 60px !important; }
-    .lp-nav-right { display: flex !important; }
     .lp-footer { padding: 40px 40px 0 !important; }
     .lp-footer-grid { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)) !important; }
 
@@ -21,7 +20,6 @@ const injectCSS = () => {
       .lp-topbar { padding: 6px 16px !important; font-size: 11px !important; }
       .lp-topbar-hide { display: none !important; }
       .lp-nav { padding: 10px 12px !important; }
-      .lp-nav-right { gap: 12px !important; }
       .lp-nav-link-hide { display: none !important; }
       .lp-body { padding: 28px 16px !important; }
       .lp-form-card { padding: 28px 20px !important; }
@@ -110,11 +108,9 @@ export default function LoginPage() {
             Marketplace
           </Link>
         </div>
-        <div className="lp-nav-right" style={s.navRight}>
-          <Link className="lp-nav-link-hide" to="/" style={s.navLink}>
-            Home
-          </Link>
-        </div>
+        <Link className="lp-nav-link-hide" to="/" style={s.navRight}>
+          Home
+        </Link>
       </nav>
 
       {/* Body */}
@@ -298,14 +294,13 @@ const s = {
   nav: {
     background: "#fff",
     padding: "12px 60px",
-    display: "grid",
-    gridTemplateColumns: "1fr auto 1fr",
+    display: "flex",
+    justifyContent: "space-between",
     alignItems: "center",
     borderBottom: "1px solid #e8e4dc",
     position: "sticky",
     top: 0,
     zIndex: 100,
-    gap: 24,
   },
   navBrand: {
     display: "flex",
@@ -322,12 +317,17 @@ const s = {
     display: "none",
   },
   logoTagline: { fontSize: 10, color: "#888", display: "none" },
-  navCenter: { display: "flex", justifyContent: "center" },
+  navCenter: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    transform: "translate(-50%, -50%)",
+  },
   navRight: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 24,
+    textDecoration: "none",
+    color: "#333",
+    fontSize: 14,
+    flexShrink: 0,
   },
   navLink: { textDecoration: "none", color: "#333", fontSize: 14 },
 
