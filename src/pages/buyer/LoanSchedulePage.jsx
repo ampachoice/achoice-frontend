@@ -76,7 +76,7 @@ export default function LoanSchedulePage() {
       `}</style>
 
       <nav className="ls-nav">
-        <div className="ls-nav-left" onClick={() => navigate('/products')}>
+        <div className="ls-nav-left" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>
             ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span>

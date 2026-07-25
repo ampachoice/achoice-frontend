@@ -70,7 +70,7 @@ export default function LoanDetailPage() {
 
       {/* Navbar */}
       <nav className="ld-nav">
-        <div className="ld-nav-left" onClick={() => navigate('/products')}>
+        <div className="ld-nav-left" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>
             ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span>

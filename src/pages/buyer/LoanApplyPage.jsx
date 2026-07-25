@@ -333,7 +333,7 @@ export default function LoanApplyPage() {
     return (
       <div style={s.page}>
         <nav className="la-nav">
-          <div className="la-nav-brand" onClick={() => navigate("/")}>
+          <div className="la-nav-brand" onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}>
             <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
             <div>
               <div className="la-nav-name">ACHOICE LIMITED</div>
@@ -507,7 +507,7 @@ export default function LoanApplyPage() {
 
       {/* Navbar */}
       <nav className="la-nav">
-        <div className="la-nav-brand" onClick={() => navigate("/")}>
+        <div className="la-nav-brand" onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}>
           <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
           <div>
             <div className="la-nav-name">ACHOICE LIMITED</div>

@@ -276,7 +276,7 @@ export default function LoanRepayPage() {
         }
       `}</style>
       <nav style={s.nav}>
-        <div style={s.navLeft} onClick={() => navigate('/products')}>
+        <div style={s.navLeft} onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span></div>
         </div>
