@@ -13,7 +13,7 @@ const injectCSS = () => {
     .lp-topbar { padding: 7px 40px !important; }
     .lp-topbar-hide { display: inline !important; }
     .lp-nav { padding: 14px 32px !important; }
-    .lp-nav-links { gap: 40px !important; }
+    .lp-nav-links { gap: 40px !important; margin-left: 70px !important; }
     .lp-footer { padding: 40px 40px 0 !important; }
     .lp-footer-grid { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)) !important; }
 
@@ -22,7 +22,7 @@ const injectCSS = () => {
       .lp-topbar-hide { display: none !important; }
       .lp-nav { padding: 10px 16px !important; }
       .lp-nav-brand-img { width: 32px !important; height: 32px !important; }
-      .lp-nav-links { gap: 18px !important; }
+      .lp-nav-links { gap: 18px !important; margin-left: 24px !important; }
       .lp-nav-link { font-size: 13px !important; white-space: nowrap !important; }
       .lp-nav-cart { font-size: 18px !important; }
       .lp-body { padding: 28px 16px !important; }
@@ -35,7 +35,7 @@ const injectCSS = () => {
     @media (max-width: 400px) {
       .lp-footer-grid { grid-template-columns: 1fr !important; }
       .lp-nav { padding: 8px 12px !important; }
-      .lp-nav-links { gap: 12px !important; }
+      .lp-nav-links { gap: 12px !important; margin-left: 10px !important; }
       .lp-nav-link { font-size: 12px !important; }
       .lp-nav-brand-img { width: 28px !important; height: 28px !important; }
       .lp-nav-cart { font-size: 17px !important; }
