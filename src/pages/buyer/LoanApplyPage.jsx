@@ -338,10 +338,11 @@ export default function LoanApplyPage() {
               <div className="la-nav-tag">Your needs our solutions</div>
             </div>
           </div>
+          <MobileNavDrawer />
         </nav>
         <style>{`
           .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
-          .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; }
+          .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; flex:1 1 auto; }
           .la-nav-brand > div { min-width:0; overflow:hidden; }
           .la-nav-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
           .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
