@@ -314,8 +314,8 @@ const s = {
   nav: {
     background: "#fff",
     padding: "14px 32px",
-    display: "flex",
-    justifyContent: "space-between",
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
     alignItems: "center",
     borderBottom: "1px solid #e8e4dc",
     position: "sticky",
@@ -327,19 +327,20 @@ const s = {
     alignItems: "center",
     cursor: "pointer",
     flexShrink: 0,
+    justifySelf: "start",
   },
   logoImg: { width: 42, height: 42, objectFit: "contain" },
-  // Absolutely positioned at the exact horizontal center of the nav,
-  // independent of how wide the logo or cart icon happen to be — this
-  // guarantees true centering instead of guessing at margin offsets.
+  // Middle grid column is sized to fit its content (auto) and sits between
+  // two EQUAL-fraction (1fr, 1fr) side columns — since both side columns
+  // always compute to the same width as each other, the middle column is
+  // mathematically centered regardless of logo/cart width. Pure grid flow,
+  // no absolute positioning, so it can't visually detach from its siblings.
   navLinks: {
-    position: "absolute",
-    left: "50%",
-    top: "50%",
-    transform: "translate(-50%, -50%)",
     display: "flex",
     alignItems: "center",
+    justifyContent: "center",
     gap: 40,
+    whiteSpace: "nowrap",
   },
   navLink: {
     textDecoration: "none",
@@ -352,6 +353,7 @@ const s = {
     cursor: "pointer",
     color: "#333",
     flexShrink: 0,
+    justifySelf: "end",
   },
 
   // Body
