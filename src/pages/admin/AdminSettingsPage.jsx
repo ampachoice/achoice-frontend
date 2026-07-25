@@ -54,7 +54,6 @@ export default function AdminSettingsPage() {
   const [loadingCommission, setLoadingCommission] = useState(true);
   const [savingCommission, setSavingCommission] = useState(false);
 
-
   const [profile, setProfile] = useState({ name: "", email: "" });
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
@@ -731,11 +730,7 @@ export default function AdminSettingsPage() {
             </button>
 
             <div style={s.infoBox}>
-              💡 <strong>Note:</strong> After saving, these settings will appear
-              on the landing page automatically. Ask Sherif to add the GET/POST
-              endpoints for <code>/api/settings/banner</code>,{" "}
-              <code>/api/settings/video</code>, and{" "}
-              <code>/api/settings/site</code>.
+              💡 <strong>Note:</strong> Handle all settings carefully
             </div>
           </div>
         )}
@@ -751,7 +746,9 @@ export default function AdminSettingsPage() {
             </p>
 
             {loadingCommission ? (
-              <p style={{ fontSize: 13, color: "#888" }}>Loading current rate...</p>
+              <p style={{ fontSize: 13, color: "#888" }}>
+                Loading current rate...
+              </p>
             ) : (
               <>
                 <div style={s.formGrid}>
@@ -767,12 +764,15 @@ export default function AdminSettingsPage() {
                       onChange={(e) => setCommissionRate(e.target.value)}
                     />
                     <span style={s.hint}>
-                      Current live rate: {commissionDisplay} · Allowed range: 0%–20%
+                      Current live rate: {commissionDisplay} · Allowed range:
+                      0%–20%
                     </span>
                   </div>
                 </div>
 
-                <div style={s.sectionDivider}>Live Preview (₦100,000 in sales)</div>
+                <div style={s.sectionDivider}>
+                  Live Preview (₦100,000 in sales)
+                </div>
                 <div style={s.commissionPreview}>
                   <div style={s.commissionRow}>
                     <span style={s.commissionLabel}>Gross Earnings</span>
@@ -787,17 +787,25 @@ export default function AdminSettingsPage() {
                       {(
                         100000 *
                         ((parseFloat(commissionRate) || 0) / 100)
-                      ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
-                  <div style={{ ...s.commissionRow, ...s.commissionRowHighlight }}>
+                  <div
+                    style={{ ...s.commissionRow, ...s.commissionRowHighlight }}
+                  >
                     <span style={s.commissionLabel}>Seller Receives</span>
                     <span style={s.commissionValueHighlight}>
                       ₦
                       {(
                         100000 *
                         (1 - (parseFloat(commissionRate) || 0) / 100)
-                      ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   </div>
                 </div>
@@ -807,7 +815,9 @@ export default function AdminSettingsPage() {
                   onClick={handleSaveCommission}
                   disabled={savingCommission}
                 >
-                  {savingCommission ? "⏳ Saving..." : "💾 Save Commission Rate"}
+                  {savingCommission
+                    ? "⏳ Saving..."
+                    : "💾 Save Commission Rate"}
                 </button>
 
                 <div style={s.infoBox}>
@@ -821,146 +831,146 @@ export default function AdminSettingsPage() {
           </div>
         )}
 
-      {/* ════ MY PROFILE TAB ════ */}
-      {activeTab === "profile" && (
-        <div style={s.card}>
-          <div style={s.cardTitle}>👤 My Profile</div>
-          <p style={s.cardDesc}>
-            Update your name, email and change your password.
-          </p>
+        {/* ════ MY PROFILE TAB ════ */}
+        {activeTab === "profile" && (
+          <div style={s.card}>
+            <div style={s.cardTitle}>👤 My Profile</div>
+            <p style={s.cardDesc}>
+              Update your name, email and change your password.
+            </p>
 
-          {/* Profile Info */}
-          <div style={s.sectionDivider}>Personal Information</div>
-          <div style={s.formGrid}>
-            <div style={s.field}>
-              <label style={s.label}>Full Name</label>
-              <input
-                style={s.input}
-                type="text"
-                value={profile.name}
-                onChange={(e) =>
-                  setProfile((p) => ({ ...p, name: e.target.value }))
-                }
-              />
+            {/* Profile Info */}
+            <div style={s.sectionDivider}>Personal Information</div>
+            <div style={s.formGrid}>
+              <div style={s.field}>
+                <label style={s.label}>Full Name</label>
+                <input
+                  style={s.input}
+                  type="text"
+                  value={profile.name}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, name: e.target.value }))
+                  }
+                />
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>Email Address</label>
+                <input
+                  style={s.input}
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, email: e.target.value }))
+                  }
+                />
+              </div>
             </div>
-            <div style={s.field}>
-              <label style={s.label}>Email Address</label>
-              <input
-                style={s.input}
-                type="email"
-                value={profile.email}
-                onChange={(e) =>
-                  setProfile((p) => ({ ...p, email: e.target.value }))
+            <button
+              style={savingProfile ? s.saveBtnDisabled : s.saveBtn}
+              disabled={savingProfile}
+              onClick={async () => {
+                setSavingProfile(true);
+                try {
+                  await api.put("/admin/profile", profile);
+                  showToast("✅ Profile updated successfully!");
+                } catch (err) {
+                  showToast(
+                    err.response?.data?.message || "Failed to update profile.",
+                  );
+                } finally {
+                  setSavingProfile(false);
                 }
-              />
-            </div>
-          </div>
-          <button
-            style={savingProfile ? s.saveBtnDisabled : s.saveBtn}
-            disabled={savingProfile}
-            onClick={async () => {
-              setSavingProfile(true);
-              try {
-                await api.put("/admin/profile", profile);
-                showToast("✅ Profile updated successfully!");
-              } catch (err) {
-                showToast(
-                  err.response?.data?.message || "Failed to update profile.",
-                );
-              } finally {
-                setSavingProfile(false);
-              }
-            }}
-          >
-            {savingProfile ? "⏳ Saving..." : "💾 Save Profile"}
-          </button>
+              }}
+            >
+              {savingProfile ? "⏳ Saving..." : "💾 Save Profile"}
+            </button>
 
-          {/* Change Password */}
-          <div style={{ ...s.sectionDivider, marginTop: 32 }}>
-            Change Password
+            {/* Change Password */}
+            <div style={{ ...s.sectionDivider, marginTop: 32 }}>
+              Change Password
+            </div>
+            <div style={s.formGrid}>
+              <div style={s.field}>
+                <label style={s.label}>Current Password</label>
+                <input
+                  style={s.input}
+                  type="password"
+                  value={passwordForm.current_password}
+                  onChange={(e) =>
+                    setPasswordForm((p) => ({
+                      ...p,
+                      current_password: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>New Password</label>
+                <input
+                  style={s.input}
+                  type="password"
+                  value={passwordForm.new_password}
+                  onChange={(e) =>
+                    setPasswordForm((p) => ({
+                      ...p,
+                      new_password: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>Confirm New Password</label>
+                <input
+                  style={s.input}
+                  type="password"
+                  value={passwordForm.new_password_confirmation}
+                  onChange={(e) =>
+                    setPasswordForm((p) => ({
+                      ...p,
+                      new_password_confirmation: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <button
+              style={savingPassword ? s.saveBtnDisabled : s.saveBtn}
+              disabled={savingPassword}
+              onClick={async () => {
+                if (
+                  passwordForm.new_password !==
+                  passwordForm.new_password_confirmation
+                ) {
+                  showToast("New passwords do not match.");
+                  return;
+                }
+                setSavingPassword(true);
+                try {
+                  await api.post("/auth/change-password", {
+                    current_password: passwordForm.current_password,
+                    new_password: passwordForm.new_password,
+                    new_password_confirmation:
+                      passwordForm.new_password_confirmation,
+                  });
+                  showToast("✅ Password changed successfully!");
+                  setPasswordForm({
+                    current_password: "",
+                    new_password: "",
+                    new_password_confirmation: "",
+                  });
+                } catch (err) {
+                  showToast(
+                    err.response?.data?.message || "Failed to change password.",
+                  );
+                } finally {
+                  setSavingPassword(false);
+                }
+              }}
+            >
+              {savingPassword ? "⏳ Saving..." : "🔒 Change Password"}
+            </button>
           </div>
-          <div style={s.formGrid}>
-            <div style={s.field}>
-              <label style={s.label}>Current Password</label>
-              <input
-                style={s.input}
-                type="password"
-                value={passwordForm.current_password}
-                onChange={(e) =>
-                  setPasswordForm((p) => ({
-                    ...p,
-                    current_password: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div style={s.field}>
-              <label style={s.label}>New Password</label>
-              <input
-                style={s.input}
-                type="password"
-                value={passwordForm.new_password}
-                onChange={(e) =>
-                  setPasswordForm((p) => ({
-                    ...p,
-                    new_password: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div style={s.field}>
-              <label style={s.label}>Confirm New Password</label>
-              <input
-                style={s.input}
-                type="password"
-                value={passwordForm.new_password_confirmation}
-                onChange={(e) =>
-                  setPasswordForm((p) => ({
-                    ...p,
-                    new_password_confirmation: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          </div>
-          <button
-            style={savingPassword ? s.saveBtnDisabled : s.saveBtn}
-            disabled={savingPassword}
-            onClick={async () => {
-              if (
-                passwordForm.new_password !==
-                passwordForm.new_password_confirmation
-              ) {
-                showToast("New passwords do not match.");
-                return;
-              }
-              setSavingPassword(true);
-              try {
-                await api.post("/auth/change-password", {
-                  current_password: passwordForm.current_password,
-                  new_password: passwordForm.new_password,
-                  new_password_confirmation:
-                    passwordForm.new_password_confirmation,
-                });
-                showToast("✅ Password changed successfully!");
-                setPasswordForm({
-                  current_password: "",
-                  new_password: "",
-                  new_password_confirmation: "",
-                });
-              } catch (err) {
-                showToast(
-                  err.response?.data?.message || "Failed to change password.",
-                );
-              } finally {
-                setSavingPassword(false);
-              }
-            }}
-          >
-            {savingPassword ? "⏳ Saving..." : "🔒 Change Password"}
-          </button>
-        </div>
-      )}
+        )}
       </AdminLayout>
     </>
   );
