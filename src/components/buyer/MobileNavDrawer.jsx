@@ -82,14 +82,22 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
           height: 38px;
           border-radius: 8px;
           line-height: 1;
-          flex-shrink: 0;
-          margin-left: auto;
-          margin-right: 8px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-          position: relative;
-          z-index: 500;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.25);
         }
-        @media (max-width: 640px) { .mnd-trigger { display: flex; } }
+        /* Fixed to the viewport corner — same deliberate pattern BuyerDropdown
+           uses: guarantees the hamburger always renders in the same top-right
+           spot on every page, regardless of that page's own nav layout,
+           flex-shrink settings, padding, or overflow behavior. This is what
+           makes it reliable across pages that each define their own nav CSS. */
+        @media (max-width: 640px) {
+          .mnd-trigger {
+            display: flex;
+            position: fixed;
+            top: 12px;
+            right: 14px;
+            z-index: 2100;
+          }
+        }
         .mnd-overlay {
           position: fixed; inset: 0; background: rgba(0,0,0,0.5);
           z-index: 999; display: flex; justify-content: flex-end;
