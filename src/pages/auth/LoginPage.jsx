@@ -12,20 +12,19 @@ const injectCSS = () => {
     * { box-sizing: border-box; }
     .lp-topbar { padding: 7px 40px !important; }
     .lp-topbar-hide { display: inline !important; }
-    .lp-nav { padding: 12px 60px !important; }
-    .lp-nav-right { display: flex !important; }
+    .lp-nav { padding: 14px 32px !important; }
+    .lp-nav-links { gap: 40px !important; }
     .lp-footer { padding: 40px 40px 0 !important; }
     .lp-footer-grid { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)) !important; }
 
     @media (max-width: 768px) {
       .lp-topbar { padding: 6px 16px !important; font-size: 11px !important; }
       .lp-topbar-hide { display: none !important; }
-      .lp-nav { padding: 8px 12px !important; gap: 0 !important; }
-      .lp-nav-brand-img { width: 30px !important; height: 30px !important; }
-      .lp-nav-right { gap: 10px !important; }
-      .lp-nav-link-hide { font-size: 12px !important; white-space: nowrap !important; }
-      .lp-nav-cart { font-size: 16px !important; }
-      .lp-nav-register-btn { padding: 7px 10px !important; font-size: 11px !important; }
+      .lp-nav { padding: 10px 16px !important; }
+      .lp-nav-brand-img { width: 32px !important; height: 32px !important; }
+      .lp-nav-links { gap: 18px !important; }
+      .lp-nav-link { font-size: 13px !important; white-space: nowrap !important; }
+      .lp-nav-cart { font-size: 18px !important; }
       .lp-body { padding: 28px 16px !important; }
       .lp-form-card { padding: 28px 20px !important; }
       .lp-footer { padding: 32px 16px 0 !important; }
@@ -33,13 +32,13 @@ const injectCSS = () => {
       .lp-footer-bottom { font-size: 11px !important; }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 400px) {
       .lp-footer-grid { grid-template-columns: 1fr !important; }
-      .lp-nav-right { gap: 6px !important; }
-      .lp-nav-link-hide { font-size: 11px !important; }
-      .lp-nav-brand-img { width: 26px !important; height: 26px !important; }
-      .lp-nav-cart { font-size: 15px !important; }
-      .lp-nav-register-btn { padding: 6px 8px !important; font-size: 10px !important; }
+      .lp-nav { padding: 8px 12px !important; }
+      .lp-nav-links { gap: 12px !important; }
+      .lp-nav-link { font-size: 12px !important; }
+      .lp-nav-brand-img { width: 28px !important; height: 28px !important; }
+      .lp-nav-cart { font-size: 17px !important; }
     }
   `;
   document.head.appendChild(style);
@@ -113,37 +112,24 @@ export default function LoginPage() {
             alt="ACHOICE Logo"
             style={s.logoImg}
           />
-          <div>
-            <div style={s.logoName}>ACHOICE LIMITED</div>
-            <div style={s.logoTagline}>Your needs our solutions</div>
-          </div>
         </div>
-        <div className="lp-nav-right" style={s.navRight}>
-          <Link className="lp-nav-link-hide" to="/" style={s.navLink}>
+
+        <div className="lp-nav-links" style={s.navLinks}>
+          <Link className="lp-nav-link" to="/" style={s.navLink}>
             Home
           </Link>
-          <Link className="lp-nav-link-hide" to="/products" style={s.navLink}>
+          <Link className="lp-nav-link" to="/products" style={s.navLink}>
             Marketplace
           </Link>
-          <div
-            className="lp-nav-cart"
-            style={{
-              fontSize: 20,
-              cursor: "pointer",
-              color: "#333",
-              flexShrink: 0,
-            }}
-            onClick={() => navigate("/cart")}
-          >
-            🛒
-          </div>
-          <Link
-            className="lp-nav-register-btn"
-            to="/register"
-            style={s.registerNavBtn}
-          >
-            Create Account
-          </Link>
+        </div>
+
+        <div
+          className="lp-nav-cart"
+          style={s.navCart}
+          onClick={() => navigate("/cart")}
+          aria-label="Cart"
+        >
+          🛒
         </div>
       </nav>
 
@@ -327,45 +313,41 @@ const s = {
   // Nav
   nav: {
     background: "#fff",
-    padding: "12px 60px",
-    display: "flex",
-    justifyContent: "space-between",
+    padding: "14px 32px",
+    display: "grid",
+    gridTemplateColumns: "auto 1fr auto",
     alignItems: "center",
     borderBottom: "1px solid #e8e4dc",
     position: "sticky",
     top: 0,
     zIndex: 100,
-    gap: 40,
+    gap: 16,
   },
   navBrand: {
     display: "flex",
     alignItems: "center",
-    gap: 16,
     cursor: "pointer",
     flexShrink: 0,
   },
   logoImg: { width: 42, height: 42, objectFit: "contain" },
-  logoName: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#1f4d1f",
-    display: "none",
+  navLinks: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 40,
   },
-  logoTagline: { fontSize: 10, color: "#888", display: "none" },
-  navRight: { display: "flex", alignItems: "center", gap: 24 },
-  navLink: { textDecoration: "none", color: "#333", fontSize: 14 },
-  registerNavBtn: {
-    whiteSpace: "nowrap",
-    padding: "10px 20px",
-    background: "#1f4d1f",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    fontSize: 14,
-    cursor: "pointer",
-    fontFamily: "inherit",
+  navLink: {
     textDecoration: "none",
-    fontWeight: 700,
+    color: "#333",
+    fontSize: 14,
+    fontWeight: 500,
+  },
+  navCart: {
+    fontSize: 22,
+    cursor: "pointer",
+    color: "#333",
+    flexShrink: 0,
+    justifySelf: "end",
   },
 
   // Body
