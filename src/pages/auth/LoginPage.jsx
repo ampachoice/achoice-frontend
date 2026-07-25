@@ -20,9 +20,12 @@ const injectCSS = () => {
     @media (max-width: 768px) {
       .lp-topbar { padding: 6px 16px !important; font-size: 11px !important; }
       .lp-topbar-hide { display: none !important; }
-      .lp-nav { padding: 10px 12px !important; }
-      .lp-nav-right { gap: 12px !important; }
-      .lp-nav-link-hide { display: none !important; }
+      .lp-nav { padding: 8px 12px !important; gap: 0 !important; }
+      .lp-nav-brand-img { width: 30px !important; height: 30px !important; }
+      .lp-nav-right { gap: 10px !important; }
+      .lp-nav-link-hide { font-size: 12px !important; white-space: nowrap !important; }
+      .lp-nav-cart { font-size: 16px !important; }
+      .lp-nav-register-btn { padding: 7px 10px !important; font-size: 11px !important; }
       .lp-body { padding: 28px 16px !important; }
       .lp-form-card { padding: 28px 20px !important; }
       .lp-footer { padding: 32px 16px 0 !important; }
@@ -32,6 +35,11 @@ const injectCSS = () => {
 
     @media (max-width: 480px) {
       .lp-footer-grid { grid-template-columns: 1fr !important; }
+      .lp-nav-right { gap: 6px !important; }
+      .lp-nav-link-hide { font-size: 11px !important; }
+      .lp-nav-brand-img { width: 26px !important; height: 26px !important; }
+      .lp-nav-cart { font-size: 15px !important; }
+      .lp-nav-register-btn { padding: 6px 8px !important; font-size: 10px !important; }
     }
   `;
   document.head.appendChild(style);
@@ -99,7 +107,12 @@ export default function LoginPage() {
       {/* Navbar */}
       <nav className="lp-nav" style={s.nav}>
         <div style={s.navBrand} onClick={() => navigate("/")}>
-          <img src={LOGO_PATH} alt="ACHOICE Logo" style={s.logoImg} />
+          <img
+            className="lp-nav-brand-img"
+            src={LOGO_PATH}
+            alt="ACHOICE Logo"
+            style={s.logoImg}
+          />
           <div>
             <div style={s.logoName}>ACHOICE LIMITED</div>
             <div style={s.logoTagline}>Your needs our solutions</div>
@@ -113,12 +126,22 @@ export default function LoginPage() {
             Marketplace
           </Link>
           <div
-            style={{ fontSize: 20, cursor: "pointer", color: "#333" }}
+            className="lp-nav-cart"
+            style={{
+              fontSize: 20,
+              cursor: "pointer",
+              color: "#333",
+              flexShrink: 0,
+            }}
             onClick={() => navigate("/cart")}
           >
             🛒
           </div>
-          <Link to="/register" style={s.registerNavBtn}>
+          <Link
+            className="lp-nav-register-btn"
+            to="/register"
+            style={s.registerNavBtn}
+          >
             Create Account
           </Link>
         </div>
