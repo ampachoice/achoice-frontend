@@ -8,7 +8,9 @@ const LOGO_PATH = "/achoice logo.png";
 
 export default function LoanApplyPage() {
   let isSeller = false;
-  try { isSeller = JSON.parse(localStorage.getItem('user'))?.role === 'seller'; } catch {}
+  try {
+    isSeller = JSON.parse(localStorage.getItem("user"))?.role === "seller";
+  } catch {}
   const navigate = useNavigate();
 
   // Settings
@@ -146,7 +148,8 @@ export default function LoanApplyPage() {
   // skips documents the backend would actually reject an approval over.
   const documentsRequired =
     !!loanConfig?.require_documents &&
-    Number(loanForm.amount) >= Number(loanConfig?.document_threshold ?? Infinity);
+    Number(loanForm.amount) >=
+      Number(loanConfig?.document_threshold ?? Infinity);
 
   const minTierRate = tiers.length
     ? Math.min(...tiers.map((t) => t.rate))
@@ -162,7 +165,8 @@ export default function LoanApplyPage() {
   const calcWeekly =
     calcBreakdown && loanForm.duration_months
       ? Math.ceil(
-          calcBreakdown.total_repayable / (Number(loanForm.duration_months) * 4),
+          calcBreakdown.total_repayable /
+            (Number(loanForm.duration_months) * 4),
         )
       : 0;
 
@@ -200,7 +204,10 @@ export default function LoanApplyPage() {
       setError("Please enter your bank name.");
       return false;
     }
-    if (!identityForm.account_number || identityForm.account_number.length !== 10) {
+    if (
+      !identityForm.account_number ||
+      identityForm.account_number.length !== 10
+    ) {
       setError("Please enter a valid 10-digit account number.");
       return false;
     }
@@ -333,7 +340,10 @@ export default function LoanApplyPage() {
     return (
       <div style={s.page}>
         <nav className="la-nav">
-          <div className="la-nav-brand" onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}>
+          <div
+            className="la-nav-brand"
+            onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}
+          >
             <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
             <div>
               <div className="la-nav-name">ACHOICE LIMITED</div>
@@ -344,7 +354,7 @@ export default function LoanApplyPage() {
         </nav>
         <style>{`
           .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
-          .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; flex:1 1 auto; }
+          .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; flex:0 1 auto; }
           .la-nav-brand > div { min-width:0; overflow:hidden; }
           .la-nav-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
           .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -507,15 +517,24 @@ export default function LoanApplyPage() {
 
       {/* Navbar */}
       <nav className="la-nav">
-        <div className="la-nav-brand" onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}>
+        <div
+          className="la-nav-brand"
+          onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}
+        >
           <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
           <div>
             <div className="la-nav-name">ACHOICE LIMITED</div>
             <div className="la-nav-tag">Your needs our solutions</div>
           </div>
         </div>
-        <div className="la-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
-          <span className="la-nav-link" onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}>
+        <div
+          className="la-nav-links"
+          style={isSeller ? { display: "flex", flexWrap: "wrap" } : undefined}
+        >
+          <span
+            className="la-nav-link"
+            onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}
+          >
             {isSeller ? "Dashboard" : "Home"}
           </span>
           {!isSeller && (
@@ -523,7 +542,10 @@ export default function LoanApplyPage() {
               Shop
             </span>
           )}
-          <span className="la-nav-link" onClick={() => navigate("/loans/repay")}>
+          <span
+            className="la-nav-link"
+            onClick={() => navigate("/loans/repay")}
+          >
             My Loans
           </span>
         </div>
@@ -539,7 +561,7 @@ export default function LoanApplyPage() {
 
       <style>{`
         .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
-        .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; flex:1 1 auto; }
+        .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:pointer; min-width:0; overflow:hidden; flex:0 1 auto; }
         .la-nav-brand > div { min-width:0; overflow:hidden; }
         .la-nav-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
         .la-nav-name { font-size:15px; font-weight:700; color:#1f4d1f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -588,13 +610,11 @@ export default function LoanApplyPage() {
               <div key={stat.label} className="la-hero-stat-group">
                 <div style={s.heroStatVal}>{stat.val}</div>
                 <div style={s.heroStatLabel}>{stat.label}</div>
-                {i < arr.length - 1 && (
-                  <div className="la-hero-stat-divider" />
-                )}
+                {i < arr.length - 1 && <div className="la-hero-stat-divider" />}
               </div>
             ))}
           </div>
-      <style>{`
+          <style>{`
         .la-hero { background:#1a3d1a; padding:48px 60px; }
         .la-hero-title { font-size:32px; font-weight:700; color:#fff; margin:0 0 10px; line-height:1.2; }
         .la-hero-subtitle { font-size:15px; color:#a8d5a8; margin:0 0 28px; }
@@ -804,13 +824,25 @@ export default function LoanApplyPage() {
                     <div style={s.summaryTitle}>📊 Loan Summary Preview</div>
 
                     {calcLoading && !calcBreakdown && (
-                      <div style={{ fontSize: 13, color: "#888", padding: "8px 0" }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "#888",
+                          padding: "8px 0",
+                        }}
+                      >
                         Calculating your rate...
                       </div>
                     )}
 
                     {calcError && (
-                      <div style={{ fontSize: 13, color: "#cc0000", padding: "8px 0" }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "#cc0000",
+                          padding: "8px 0",
+                        }}
+                      >
                         ⚠️ {calcError}
                       </div>
                     )}
@@ -877,7 +909,13 @@ export default function LoanApplyPage() {
                     )}
 
                     {!calcBreakdown && !calcLoading && !calcError && (
-                      <div style={{ fontSize: 13, color: "#888", padding: "8px 0" }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "#888",
+                          padding: "8px 0",
+                        }}
+                      >
                         Select a duration to see your rate and repayment plan.
                       </div>
                     )}
@@ -912,7 +950,9 @@ export default function LoanApplyPage() {
                     <span style={s.req}>*</span>
                   </label>
                   <input
-                    style={ninBvnLocked ? { ...s.input, ...s.inputLocked } : s.input}
+                    style={
+                      ninBvnLocked ? { ...s.input, ...s.inputLocked } : s.input
+                    }
                     type="text"
                     value={identityForm.nin_number}
                     onChange={(e) =>
@@ -946,7 +986,9 @@ export default function LoanApplyPage() {
                     Bank Verification Number (BVN) <span style={s.req}>*</span>
                   </label>
                   <input
-                    style={ninBvnLocked ? { ...s.input, ...s.inputLocked } : s.input}
+                    style={
+                      ninBvnLocked ? { ...s.input, ...s.inputLocked } : s.input
+                    }
                     type="text"
                     value={identityForm.bvn_number}
                     onChange={(e) =>
@@ -1068,99 +1110,100 @@ export default function LoanApplyPage() {
                     {Number(
                       loanConfig?.document_threshold ?? 0,
                     ).toLocaleString()}{" "}
-                    don't require supporting documents. You can skip straight
-                    to review — nothing to upload here.
+                    don't require supporting documents. You can skip straight to
+                    review — nothing to upload here.
                   </div>
                 ) : (
                   <div style={s.infoNotice}>
-                    📎 NIN document, BVN document and bank statement are required.
-                    Collateral is optional but increases your chances of approval.
+                    📎 NIN document, BVN document and bank statement are
+                    required. Collateral is optional but increases your chances
+                    of approval.
                   </div>
                 )}
 
                 {documentsRequired && (
                   <>
-                {[
-                  {
-                    key: "nin_document",
-                    label: "NIN Document",
-                    req: true,
-                    desc: "Upload a clear photo or scan of your National ID card, NIMC slip or NIN slip",
-                    icon: "🪪",
-                  },
-                  {
-                    key: "bvn_document",
-                    label: "BVN Document",
-                    req: true,
-                    desc: "Bank verification letter or statement header showing your BVN",
-                    icon: "🏦",
-                  },
-                  {
-                    key: "bank_statement",
-                    label: "Bank Statement",
-                    req: true,
-                    desc: "3-6 months bank statement from your primary bank account",
-                    icon: "📊",
-                  },
-                  {
-                    key: "collateral_document",
-                    label: "Collateral Document",
-                    req: false,
-                    desc: "Property deed, vehicle papers, or any asset document (optional)",
-                    icon: "🏠",
-                  },
-                  {
-                    key: "other",
-                    label: "Other Supporting Document",
-                    req: false,
-                    desc: "Any other document that supports your application (optional)",
-                    icon: "📄",
-                  },
-                ].map((doc) => (
-                  <div key={doc.key} style={s.docField}>
-                    <div style={s.docFieldHeader}>
-                      <span style={s.docFieldIcon}>{doc.icon}</span>
-                      <div style={s.docFieldInfo}>
-                        <div style={s.docFieldLabel}>
-                          {doc.label}
-                          {doc.req && <span style={s.req}> *</span>}
-                          {!doc.req && (
-                            <span style={s.optional}> (optional)</span>
-                          )}
+                    {[
+                      {
+                        key: "nin_document",
+                        label: "NIN Document",
+                        req: true,
+                        desc: "Upload a clear photo or scan of your National ID card, NIMC slip or NIN slip",
+                        icon: "🪪",
+                      },
+                      {
+                        key: "bvn_document",
+                        label: "BVN Document",
+                        req: true,
+                        desc: "Bank verification letter or statement header showing your BVN",
+                        icon: "🏦",
+                      },
+                      {
+                        key: "bank_statement",
+                        label: "Bank Statement",
+                        req: true,
+                        desc: "3-6 months bank statement from your primary bank account",
+                        icon: "📊",
+                      },
+                      {
+                        key: "collateral_document",
+                        label: "Collateral Document",
+                        req: false,
+                        desc: "Property deed, vehicle papers, or any asset document (optional)",
+                        icon: "🏠",
+                      },
+                      {
+                        key: "other",
+                        label: "Other Supporting Document",
+                        req: false,
+                        desc: "Any other document that supports your application (optional)",
+                        icon: "📄",
+                      },
+                    ].map((doc) => (
+                      <div key={doc.key} style={s.docField}>
+                        <div style={s.docFieldHeader}>
+                          <span style={s.docFieldIcon}>{doc.icon}</span>
+                          <div style={s.docFieldInfo}>
+                            <div style={s.docFieldLabel}>
+                              {doc.label}
+                              {doc.req && <span style={s.req}> *</span>}
+                              {!doc.req && (
+                                <span style={s.optional}> (optional)</span>
+                              )}
+                            </div>
+                            <div style={s.docFieldDesc}>{doc.desc}</div>
+                          </div>
                         </div>
-                        <div style={s.docFieldDesc}>{doc.desc}</div>
-                      </div>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/jpg,application/pdf"
-                      style={s.fileInput}
-                      onChange={(e) =>
-                        setDocuments((p) => ({
-                          ...p,
-                          [doc.key]: e.target.files[0],
-                        }))
-                      }
-                    />
-                    {documents[doc.key] && (
-                      <div style={s.fileSelected}>
-                        ✅ {documents[doc.key].name}
-                        <span style={s.fileSize}>
-                          {" "}
-                          ({(documents[doc.key].size / 1024).toFixed(1)} KB)
-                        </span>
-                        <button
-                          style={s.fileRemove}
-                          onClick={() =>
-                            setDocuments((p) => ({ ...p, [doc.key]: null }))
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/jpg,application/pdf"
+                          style={s.fileInput}
+                          onChange={(e) =>
+                            setDocuments((p) => ({
+                              ...p,
+                              [doc.key]: e.target.files[0],
+                            }))
                           }
-                        >
-                          ✕
-                        </button>
+                        />
+                        {documents[doc.key] && (
+                          <div style={s.fileSelected}>
+                            ✅ {documents[doc.key].name}
+                            <span style={s.fileSize}>
+                              {" "}
+                              ({(documents[doc.key].size / 1024).toFixed(1)} KB)
+                            </span>
+                            <button
+                              style={s.fileRemove}
+                              onClick={() =>
+                                setDocuments((p) => ({ ...p, [doc.key]: null }))
+                              }
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    ))}
                   </>
                 )}
 
@@ -1278,7 +1321,10 @@ export default function LoanApplyPage() {
                     <span
                       style={
                         agreedToTerms
-                          ? { ...s.termsCheckboxCircle, ...s.termsCheckboxCircleChecked }
+                          ? {
+                              ...s.termsCheckboxCircle,
+                              ...s.termsCheckboxCircleChecked,
+                            }
                           : s.termsCheckboxCircle
                       }
                     >
@@ -1352,7 +1398,9 @@ export default function LoanApplyPage() {
               {[
                 [
                   "Interest Rate",
-                  minTierRate ? `${minTierRate}% – ${maxTierRate}% /month` : "—",
+                  minTierRate
+                    ? `${minTierRate}% – ${maxTierRate}% /month`
+                    : "—",
                 ],
                 ["Min Amount", `₦${minAmount.toLocaleString()}`],
                 ["Max Amount", `₦${maxAmount.toLocaleString()}`],
