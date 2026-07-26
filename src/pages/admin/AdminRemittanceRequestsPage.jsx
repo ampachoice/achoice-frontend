@@ -2,22 +2,30 @@ import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../services/api";
 
+const COMMISSION_RATE = 1.5; // mirrors backend platform_commission_rate default
+
 export default function AdminRemittanceRequestsPage() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("pending");
+
+  // Reject modal state
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
+
+  // Confirm remittance modal state
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3500);
   };
 
-  const toMoney = (val) => `₦${Number(val || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  const toMoney = (val) =>
+    `₦${Number(val || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
   const fetchRequests = () => {
     setLoading(true);
@@ -33,13 +41,24 @@ export default function AdminRemittanceRequestsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  const handleApprove = async (reqRow) => {
+  // Step 1 — open confirmation modal instead of calling API directly
+  const openConfirm = (reqRow) => {
+    setConfirmTarget(reqRow);
+  };
+
+  // Step 2 — admin confirmed, now call the API
+  const handleApprove = async () => {
+    if (!confirmTarget) return;
+    const reqRow = confirmTarget;
+    setConfirmTarget(null);
     setBusyId(reqRow.id);
     try {
       const res = await api.patch(`/admin/remittance-requests/${reqRow.id}/approve`);
       setRequests((prev) => prev.filter((r) => r.id !== reqRow.id));
       showToast(
-        `Approved — ₦${Number(res.data?.net_to_remit || 0).toLocaleString()} processed for ${reqRow.seller?.business_name || "seller"}.`
+        `Approved — ${toMoney(res.data?.net_to_remit || 0)} processed for ${
+          reqRow.seller?.business_name || "seller"
+        }.`
       );
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to approve request.");
@@ -74,10 +93,22 @@ export default function AdminRemittanceRequestsPage() {
     }
   };
 
+  // Derive commission breakdown for the confirm modal
+  const confirmBreakdown = confirmTarget
+    ? (() => {
+        const gross = Number(confirmTarget.requested_amount || 0);
+        const commission = Math.round(gross * (COMMISSION_RATE / 100) * 100) / 100;
+        const net = Math.round((gross - commission) * 100) / 100;
+        return { gross, commission, net };
+      })()
+    : null;
+
   return (
     <AdminLayout
       title="Remittance Requests"
-      subtitle={`${requests.length} request${requests.length === 1 ? "" : "s"} ${statusFilter || "shown"}`}
+      subtitle={`${requests.length} request${requests.length === 1 ? "" : "s"} ${
+        statusFilter || "shown"
+      }`}
     >
       {toast && <div style={s.toast}>{toast}</div>}
 
@@ -116,9 +147,17 @@ export default function AdminRemittanceRequestsPage() {
               </div>
 
               <div style={s.metaRow}>
-                <span>Requested {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</span>
+                <span>
+                  Requested{" "}
+                  {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}
+                </span>
                 {r.status !== "pending" && (
-                  <span style={{ ...s.statusBadge, ...(r.status === "approved" ? s.statusApproved : s.statusRejected) }}>
+                  <span
+                    style={{
+                      ...s.statusBadge,
+                      ...(r.status === "approved" ? s.statusApproved : s.statusRejected),
+                    }}
+                  >
                     {r.status}
                   </span>
                 )}
@@ -132,7 +171,7 @@ export default function AdminRemittanceRequestsPage() {
                 <div style={s.actions}>
                   <button
                     style={busyId === r.id ? s.approveBtnDisabled : s.approveBtn}
-                    onClick={() => handleApprove(r)}
+                    onClick={() => openConfirm(r)}
                     disabled={busyId === r.id}
                   >
                     {busyId === r.id ? "Processing..." : "✓ Approve & Pay"}
@@ -151,11 +190,83 @@ export default function AdminRemittanceRequestsPage() {
         </div>
       )}
 
+      {/* ════ CONFIRM REMITTANCE MODAL ════ */}
+      {confirmTarget && confirmBreakdown && (
+        <div style={s.modalOverlay} onClick={() => setConfirmTarget(null)}>
+          <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <div style={s.modalTitle}>Confirm Remittance</div>
+              <button style={s.modalCloseBtn} onClick={() => setConfirmTarget(null)}>
+                ✕
+              </button>
+            </div>
+
+            <div style={s.modalSellerName}>
+              {confirmTarget.seller?.business_name}
+            </div>
+
+            {/* Breakdown */}
+            <div style={s.breakdownBox}>
+              <div style={s.breakdownRow}>
+                <span style={s.breakdownLabel}>Gross amount</span>
+                <span style={s.breakdownValue}>{toMoney(confirmBreakdown.gross)}</span>
+              </div>
+              <div style={s.breakdownRow}>
+                <span style={s.breakdownLabel}>
+                  Platform commission ({COMMISSION_RATE}%)
+                </span>
+                <span style={{ ...s.breakdownValue, color: "#cc0000" }}>
+                  − {toMoney(confirmBreakdown.commission)}
+                </span>
+              </div>
+              <div style={{ ...s.breakdownRow, ...s.breakdownNetRow }}>
+                <span style={s.breakdownNetLabel}>Net amount to pay seller</span>
+                <span style={s.breakdownNet}>{toMoney(confirmBreakdown.net)}</span>
+              </div>
+            </div>
+
+            {/* Bank details */}
+            <div style={s.bankBox}>
+              <div style={s.bankBoxTitle}>Bank Details</div>
+              <div style={s.bankGrid}>
+                <div>
+                  <div style={s.bankLabel}>BANK</div>
+                  <div style={s.bankValue}>{confirmTarget.seller?.bank_name || "—"}</div>
+                </div>
+                <div>
+                  <div style={s.bankLabel}>ACCOUNT</div>
+                  <div style={s.bankValue}>{confirmTarget.seller?.account_number || "—"}</div>
+                </div>
+                <div>
+                  <div style={s.bankLabel}>NAME</div>
+                  <div style={s.bankValue}>{confirmTarget.seller?.account_name || "—"}</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={s.modalActions}>
+              <button style={s.modalCancelBtn} onClick={() => setConfirmTarget(null)}>
+                Cancel
+              </button>
+              <button style={s.modalConfirmBtn} onClick={handleApprove}>
+                Remit {toMoney(confirmBreakdown.net)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════ REJECT MODAL ════ */}
       {rejectTarget && (
         <div style={s.modalOverlay} onClick={() => setRejectTarget(null)}>
           <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
-            <div style={s.modalTitle}>
-              Reject payout request for "{rejectTarget.seller?.business_name}"
+            <div style={s.modalHeader}>
+              <div style={s.modalTitle}>
+                Reject payout for "{rejectTarget.seller?.business_name}"
+              </div>
+              <button style={s.modalCloseBtn} onClick={() => setRejectTarget(null)}>
+                ✕
+              </button>
             </div>
             <p style={s.modalSub}>
               This reason is shown to the seller — no money moves.
@@ -173,7 +284,11 @@ export default function AdminRemittanceRequestsPage() {
                 Cancel
               </button>
               <button
-                style={busyId === rejectTarget.id ? s.modalConfirmBtnDisabled : s.modalConfirmBtn}
+                style={
+                  busyId === rejectTarget.id
+                    ? s.modalRejectBtnDisabled
+                    : s.modalRejectBtn
+                }
                 onClick={submitReject}
                 disabled={busyId === rejectTarget.id}
               >
@@ -190,7 +305,7 @@ export default function AdminRemittanceRequestsPage() {
 const s = {
   toast: {
     position: "fixed", top: 20, right: 20, background: "#1f4d1f", color: "#fff",
-    padding: "12px 24px", borderRadius: 8, fontSize: 14, zIndex: 999,
+    padding: "12px 24px", borderRadius: 8, fontSize: 14, zIndex: 9999,
   },
   tabs: { display: "flex", gap: 8, marginBottom: 20 },
   tab: {
@@ -216,7 +331,8 @@ const s = {
     background: "#fff", borderRadius: 12, border: "1px solid #e8e4dc", padding: 18,
   },
   cardTop: {
-    display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 8,
+    display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+    gap: 10, marginBottom: 8,
   },
   sellerName: { fontSize: 16, fontWeight: 700, color: "#111" },
   subMeta: { fontSize: 12, color: "#888", marginTop: 2 },
@@ -227,7 +343,8 @@ const s = {
     borderBottom: "1px solid #f0ece4",
   },
   statusBadge: {
-    fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99, textTransform: "capitalize",
+    fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99,
+    textTransform: "capitalize",
   },
   statusApproved: { background: "#eafaf0", color: "#1a7a3a" },
   statusRejected: { background: "#fdecec", color: "#cc0000" },
@@ -242,32 +359,77 @@ const s = {
     borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit",
   },
   rejectBtn: {
-    flex: 1, padding: "10px 14px", background: "#fff", color: "#cc0000", border: "1px solid #ffcccc",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    flex: 1, padding: "10px 14px", background: "#fff", color: "#cc0000",
+    border: "1px solid #ffcccc", borderRadius: 7, fontSize: 13, fontWeight: 600,
+    cursor: "pointer", fontFamily: "inherit",
   },
+  // Modal shared
   modalOverlay: {
     position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000,
     display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
   },
-  modalBox: { background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 440 },
-  modalTitle: { fontSize: 17, fontWeight: 700, color: "#111", marginBottom: 6 },
+  modalBox: {
+    background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 460,
+  },
+  modalHeader: {
+    display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
+  },
+  modalTitle: { fontSize: 17, fontWeight: 700, color: "#111" },
+  modalCloseBtn: {
+    background: "none", border: "none", fontSize: 18, cursor: "pointer",
+    color: "#888", padding: 0, lineHeight: 1,
+  },
+  modalSellerName: {
+    fontSize: 15, fontWeight: 600, color: "#1f4d1f", marginBottom: 16,
+  },
+  // Confirm modal breakdown
+  breakdownBox: {
+    background: "#f9f7f3", borderRadius: 8, padding: "14px 16px", marginBottom: 16,
+  },
+  breakdownRow: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    fontSize: 14, color: "#444", marginBottom: 10,
+  },
+  breakdownLabel: { color: "#666" },
+  breakdownValue: { fontWeight: 500 },
+  breakdownNetRow: {
+    borderTop: "1px solid #e8e4dc", paddingTop: 10, marginBottom: 0,
+  },
+  breakdownNetLabel: { fontSize: 14, fontWeight: 600, color: "#111" },
+  breakdownNet: { fontSize: 16, fontWeight: 700, color: "#1f4d1f" },
+  // Bank box
+  bankBox: {
+    border: "1px solid #e8e4dc", borderRadius: 8, padding: "12px 16px", marginBottom: 20,
+  },
+  bankBoxTitle: { fontSize: 12, fontWeight: 600, color: "#888", marginBottom: 10 },
+  bankGrid: { display: "flex", gap: 20 },
+  bankLabel: { fontSize: 10, color: "#aaa", fontWeight: 600, textTransform: "uppercase" },
+  bankValue: { fontSize: 13, fontWeight: 600, color: "#111", marginTop: 2 },
+  // Modal actions
+  modalActions: {
+    display: "flex", gap: 10, justifyContent: "flex-end",
+  },
+  modalCancelBtn: {
+    padding: "10px 20px", background: "#f0f0f0", color: "#333", border: "none",
+    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+  },
+  modalConfirmBtn: {
+    padding: "10px 20px", background: "#1f4d1f", color: "#fff", border: "none",
+    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+  },
+  // Reject modal
   modalSub: { fontSize: 13, color: "#888", marginBottom: 14 },
   modalTextarea: {
     width: "100%", padding: "11px 14px", border: "1.5px solid #ddd", borderRadius: 8,
     fontSize: 14, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box",
   },
   modalError: { color: "#cc0000", fontSize: 12, marginTop: 6 },
-  modalActions: { display: "flex", gap: 10, marginTop: 16, justifyContent: "flex-end" },
-  modalCancelBtn: {
-    padding: "10px 18px", background: "#f0f0f0", color: "#333", border: "none",
+  modalRejectBtn: {
+    padding: "10px 20px", background: "#cc0000", color: "#fff", border: "none",
     borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
   },
-  modalConfirmBtn: {
-    padding: "10px 18px", background: "#cc0000", color: "#fff", border: "none",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-  },
-  modalConfirmBtnDisabled: {
-    padding: "10px 18px", background: "#aaa", color: "#fff", border: "none",
+  modalRejectBtnDisabled: {
+    padding: "10px 20px", background: "#aaa", color: "#fff", border: "none",
     borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit",
   },
 };
