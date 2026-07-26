@@ -3,7 +3,6 @@ import { getAdminOrders, updateOrderStatus } from "../../services/adminService";
 import api from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
 
-
 export default function ManageOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +90,7 @@ export default function ManageOrdersPage() {
     ({
       pending: { background: "#fff8e7", color: "#b36b00" },
       processing: { background: "#e7f0ff", color: "#1a4fa0" },
+      ready_to_ship: { background: "#f3e9ff", color: "#7a4fa0" },
       shipped: { background: "#e7f7ff", color: "#0077aa" },
       delivered: { background: "#eafaf0", color: "#1a7a3a" },
       cancelled: { background: "#fff0f0", color: "#cc0000" },
@@ -154,6 +154,11 @@ export default function ManageOrdersPage() {
               color: "#1a4fa0",
             },
             {
+              label: "Ready to Ship",
+              value: orders.filter((o) => o.status === "ready_to_ship").length,
+              color: "#7a4fa0",
+            },
+            {
               label: "Shipped",
               value: orders.filter((o) => o.status === "shipped").length,
               color: "#0077aa",
@@ -180,6 +185,7 @@ export default function ManageOrdersPage() {
               "all",
               "pending",
               "processing",
+              "ready_to_ship",
               "shipped",
               "delivered",
               "cancelled",
@@ -189,7 +195,10 @@ export default function ManageOrdersPage() {
                 style={filter === tab ? s.filterTabActive : s.filterTab}
                 onClick={() => setFilter(tab)}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab
+                  .split("_")
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                  .join(" ")}
                 {tab !== "all" &&
                   orders.filter((o) => o.status === tab).length > 0 && (
                     <span style={s.tabCount}>
@@ -378,6 +387,17 @@ export default function ManageOrdersPage() {
                     </button>
                   )}
                 {order.status === "processing" && (
+                  <button
+                    style={
+                      updating === order.id ? s.actionBtnDisabled : s.actionBtn
+                    }
+                    onClick={() => handleUpdateStatus(order.id, "shipped")}
+                    disabled={updating === order.id}
+                  >
+                    {updating === order.id ? "Updating..." : "Mark as Shipped"}
+                  </button>
+                )}
+                {order.status === "ready_to_ship" && (
                   <button
                     style={
                       updating === order.id ? s.actionBtnDisabled : s.actionBtn
