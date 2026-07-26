@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import AdminLayout from "../../components/admin/AdminLayout";
 import api from "../../services/api";
 
-const COMMISSION_RATE = 1.5; // mirrors backend platform_commission_rate default
+const DEFAULT_COMMISSION_RATE = 1.0; // fallback only — matches Setting::get('platform_commission_rate', 1.0)'s own default, used only if the live fetch fails
 
 export default function AdminRemittanceRequestsPage() {
   const [requests, setRequests] = useState([]);
@@ -10,6 +10,7 @@ export default function AdminRemittanceRequestsPage() {
   const [toast, setToast] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("pending");
+  const [commissionRate, setCommissionRate] = useState(DEFAULT_COMMISSION_RATE);
 
   // Reject modal state
   const [rejectTarget, setRejectTarget] = useState(null);
@@ -30,7 +31,9 @@ export default function AdminRemittanceRequestsPage() {
   const fetchRequests = () => {
     setLoading(true);
     api
-      .get("/admin/remittance-requests", { params: { status: statusFilter || undefined } })
+      .get("/admin/remittance-requests", {
+        params: { status: statusFilter || undefined },
+      })
       .then((res) => setRequests(res.data?.data || res.data || []))
       .catch(() => showToast("Failed to load remittance requests."))
       .finally(() => setLoading(false));
@@ -40,6 +43,18 @@ export default function AdminRemittanceRequestsPage() {
     fetchRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
+
+  // Live commission rate for the confirm-modal preview — was previously
+  // hardcoded and could silently drift from the real Site Settings value.
+  useEffect(() => {
+    api
+      .get("/admin/settings/commission")
+      .then((res) => {
+        if (res.data?.commission_rate != null)
+          setCommissionRate(res.data.commission_rate);
+      })
+      .catch(() => {}); // keep the fallback default if this fails
+  }, []);
 
   // Step 1 — open confirmation modal instead of calling API directly
   const openConfirm = (reqRow) => {
@@ -53,12 +68,14 @@ export default function AdminRemittanceRequestsPage() {
     setConfirmTarget(null);
     setBusyId(reqRow.id);
     try {
-      const res = await api.patch(`/admin/remittance-requests/${reqRow.id}/approve`);
+      const res = await api.patch(
+        `/admin/remittance-requests/${reqRow.id}/approve`,
+      );
       setRequests((prev) => prev.filter((r) => r.id !== reqRow.id));
       showToast(
         `Approved — ${toMoney(res.data?.net_to_remit || 0)} processed for ${
           reqRow.seller?.business_name || "seller"
-        }.`
+        }.`,
       );
     } catch (err) {
       showToast(err?.response?.data?.message || "Failed to approve request.");
@@ -84,10 +101,14 @@ export default function AdminRemittanceRequestsPage() {
         reason: rejectReason.trim(),
       });
       setRequests((prev) => prev.filter((r) => r.id !== rejectTarget.id));
-      showToast(`Request declined for ${rejectTarget.seller?.business_name || "seller"}.`);
+      showToast(
+        `Request declined for ${rejectTarget.seller?.business_name || "seller"}.`,
+      );
       setRejectTarget(null);
     } catch (err) {
-      setRejectError(err?.response?.data?.message || "Failed to reject request.");
+      setRejectError(
+        err?.response?.data?.message || "Failed to reject request.",
+      );
     } finally {
       setBusyId(null);
     }
@@ -97,7 +118,8 @@ export default function AdminRemittanceRequestsPage() {
   const confirmBreakdown = confirmTarget
     ? (() => {
         const gross = Number(confirmTarget.requested_amount || 0);
-        const commission = Math.round(gross * (COMMISSION_RATE / 100) * 100) / 100;
+        const commission =
+          Math.round(gross * (commissionRate / 100) * 100) / 100;
         const net = Math.round((gross - commission) * 100) / 100;
         return { gross, commission, net };
       })()
@@ -130,7 +152,9 @@ export default function AdminRemittanceRequestsPage() {
         <div style={s.empty}>
           <div style={s.emptyIcon}>💸</div>
           <div style={s.emptyTitle}>Nothing here</div>
-          <p style={s.emptyText}>No {statusFilter || ""} remittance requests right now.</p>
+          <p style={s.emptyText}>
+            No {statusFilter || ""} remittance requests right now.
+          </p>
         </div>
       ) : (
         <div style={s.grid}>
@@ -138,7 +162,9 @@ export default function AdminRemittanceRequestsPage() {
             <div key={r.id} style={s.card}>
               <div style={s.cardTop}>
                 <div>
-                  <div style={s.sellerName}>{r.seller?.business_name || "Unknown seller"}</div>
+                  <div style={s.sellerName}>
+                    {r.seller?.business_name || "Unknown seller"}
+                  </div>
                   <div style={s.subMeta}>
                     {r.seller?.bank_name} · {r.seller?.account_number}
                   </div>
@@ -149,13 +175,17 @@ export default function AdminRemittanceRequestsPage() {
               <div style={s.metaRow}>
                 <span>
                   Requested{" "}
-                  {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}
+                  {r.created_at
+                    ? new Date(r.created_at).toLocaleDateString()
+                    : "—"}
                 </span>
                 {r.status !== "pending" && (
                   <span
                     style={{
                       ...s.statusBadge,
-                      ...(r.status === "approved" ? s.statusApproved : s.statusRejected),
+                      ...(r.status === "approved"
+                        ? s.statusApproved
+                        : s.statusRejected),
                     }}
                   >
                     {r.status}
@@ -170,7 +200,9 @@ export default function AdminRemittanceRequestsPage() {
               {r.status === "pending" && (
                 <div style={s.actions}>
                   <button
-                    style={busyId === r.id ? s.approveBtnDisabled : s.approveBtn}
+                    style={
+                      busyId === r.id ? s.approveBtnDisabled : s.approveBtn
+                    }
                     onClick={() => openConfirm(r)}
                     disabled={busyId === r.id}
                   >
@@ -196,7 +228,10 @@ export default function AdminRemittanceRequestsPage() {
           <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
             <div style={s.modalHeader}>
               <div style={s.modalTitle}>Confirm Remittance</div>
-              <button style={s.modalCloseBtn} onClick={() => setConfirmTarget(null)}>
+              <button
+                style={s.modalCloseBtn}
+                onClick={() => setConfirmTarget(null)}
+              >
                 ✕
               </button>
             </div>
@@ -209,19 +244,25 @@ export default function AdminRemittanceRequestsPage() {
             <div style={s.breakdownBox}>
               <div style={s.breakdownRow}>
                 <span style={s.breakdownLabel}>Gross amount</span>
-                <span style={s.breakdownValue}>{toMoney(confirmBreakdown.gross)}</span>
+                <span style={s.breakdownValue}>
+                  {toMoney(confirmBreakdown.gross)}
+                </span>
               </div>
               <div style={s.breakdownRow}>
                 <span style={s.breakdownLabel}>
-                  Platform commission ({COMMISSION_RATE}%)
+                  Platform commission ({commissionRate}%)
                 </span>
                 <span style={{ ...s.breakdownValue, color: "#cc0000" }}>
                   − {toMoney(confirmBreakdown.commission)}
                 </span>
               </div>
               <div style={{ ...s.breakdownRow, ...s.breakdownNetRow }}>
-                <span style={s.breakdownNetLabel}>Net amount to pay seller</span>
-                <span style={s.breakdownNet}>{toMoney(confirmBreakdown.net)}</span>
+                <span style={s.breakdownNetLabel}>
+                  Net amount to pay seller
+                </span>
+                <span style={s.breakdownNet}>
+                  {toMoney(confirmBreakdown.net)}
+                </span>
               </div>
             </div>
 
@@ -231,21 +272,30 @@ export default function AdminRemittanceRequestsPage() {
               <div style={s.bankGrid}>
                 <div>
                   <div style={s.bankLabel}>BANK</div>
-                  <div style={s.bankValue}>{confirmTarget.seller?.bank_name || "—"}</div>
+                  <div style={s.bankValue}>
+                    {confirmTarget.seller?.bank_name || "—"}
+                  </div>
                 </div>
                 <div>
                   <div style={s.bankLabel}>ACCOUNT</div>
-                  <div style={s.bankValue}>{confirmTarget.seller?.account_number || "—"}</div>
+                  <div style={s.bankValue}>
+                    {confirmTarget.seller?.account_number || "—"}
+                  </div>
                 </div>
                 <div>
                   <div style={s.bankLabel}>NAME</div>
-                  <div style={s.bankValue}>{confirmTarget.seller?.account_name || "—"}</div>
+                  <div style={s.bankValue}>
+                    {confirmTarget.seller?.account_name || "—"}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div style={s.modalActions}>
-              <button style={s.modalCancelBtn} onClick={() => setConfirmTarget(null)}>
+              <button
+                style={s.modalCancelBtn}
+                onClick={() => setConfirmTarget(null)}
+              >
                 Cancel
               </button>
               <button style={s.modalConfirmBtn} onClick={handleApprove}>
@@ -264,7 +314,10 @@ export default function AdminRemittanceRequestsPage() {
               <div style={s.modalTitle}>
                 Reject payout for "{rejectTarget.seller?.business_name}"
               </div>
-              <button style={s.modalCloseBtn} onClick={() => setRejectTarget(null)}>
+              <button
+                style={s.modalCloseBtn}
+                onClick={() => setRejectTarget(null)}
+              >
                 ✕
               </button>
             </div>
@@ -280,7 +333,10 @@ export default function AdminRemittanceRequestsPage() {
             />
             {rejectError && <div style={s.modalError}>{rejectError}</div>}
             <div style={s.modalActions}>
-              <button style={s.modalCancelBtn} onClick={() => setRejectTarget(null)}>
+              <button
+                style={s.modalCancelBtn}
+                onClick={() => setRejectTarget(null)}
+              >
                 Cancel
               </button>
               <button
@@ -304,46 +360,90 @@ export default function AdminRemittanceRequestsPage() {
 
 const s = {
   toast: {
-    position: "fixed", top: 20, right: 20, background: "#1f4d1f", color: "#fff",
-    padding: "12px 24px", borderRadius: 8, fontSize: 14, zIndex: 9999,
+    position: "fixed",
+    top: 20,
+    right: 20,
+    background: "#1f4d1f",
+    color: "#fff",
+    padding: "12px 24px",
+    borderRadius: 8,
+    fontSize: 14,
+    zIndex: 9999,
   },
   tabs: { display: "flex", gap: 8, marginBottom: 20 },
   tab: {
-    padding: "8px 16px", background: "#fff", border: "1px solid #e8e4dc", borderRadius: 20,
-    fontSize: 13, color: "#555", cursor: "pointer", fontFamily: "inherit",
+    padding: "8px 16px",
+    background: "#fff",
+    border: "1px solid #e8e4dc",
+    borderRadius: 20,
+    fontSize: 13,
+    color: "#555",
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   tabActive: {
-    padding: "8px 16px", background: "#1f4d1f", border: "1px solid #1f4d1f", borderRadius: 20,
-    fontSize: 13, color: "#fff", fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    padding: "8px 16px",
+    background: "#1f4d1f",
+    border: "1px solid #1f4d1f",
+    borderRadius: 20,
+    fontSize: 13,
+    color: "#fff",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   loading: { textAlign: "center", color: "#888", padding: 40 },
   empty: {
-    textAlign: "center", padding: "60px 20px", background: "#fff", borderRadius: 10,
+    textAlign: "center",
+    padding: "60px 20px",
+    background: "#fff",
+    borderRadius: 10,
     border: "1px solid #e8e4dc",
   },
   emptyIcon: { fontSize: 36, marginBottom: 10 },
   emptyTitle: { fontSize: 16, fontWeight: 700, color: "#333", marginBottom: 6 },
   emptyText: { fontSize: 13, color: "#888" },
   grid: {
-    display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16,
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gap: 16,
   },
   card: {
-    background: "#fff", borderRadius: 12, border: "1px solid #e8e4dc", padding: 18,
+    background: "#fff",
+    borderRadius: 12,
+    border: "1px solid #e8e4dc",
+    padding: 18,
   },
   cardTop: {
-    display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-    gap: 10, marginBottom: 8,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+    marginBottom: 8,
   },
   sellerName: { fontSize: 16, fontWeight: 700, color: "#111" },
   subMeta: { fontSize: 12, color: "#888", marginTop: 2 },
-  amount: { fontSize: 18, fontWeight: 700, color: "#1f4d1f", whiteSpace: "nowrap" },
+  amount: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#1f4d1f",
+    whiteSpace: "nowrap",
+  },
   metaRow: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    fontSize: 12, color: "#888", marginBottom: 10, paddingBottom: 10,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    fontSize: 12,
+    color: "#888",
+    marginBottom: 10,
+    paddingBottom: 10,
     borderBottom: "1px solid #f0ece4",
   },
   statusBadge: {
-    fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99,
+    fontSize: 11,
+    fontWeight: 700,
+    padding: "3px 9px",
+    borderRadius: 99,
     textTransform: "capitalize",
   },
   statusApproved: { background: "#eafaf0", color: "#1a7a3a" },
@@ -351,85 +451,187 @@ const s = {
   rejectionNote: { fontSize: 12, color: "#cc0000", marginBottom: 10 },
   actions: { display: "flex", gap: 10 },
   approveBtn: {
-    flex: 1, padding: "10px 14px", background: "#1f4d1f", color: "#fff", border: "none",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    flex: 1,
+    padding: "10px 14px",
+    background: "#1f4d1f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   approveBtnDisabled: {
-    flex: 1, padding: "10px 14px", background: "#aaa", color: "#fff", border: "none",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit",
+    flex: 1,
+    padding: "10px 14px",
+    background: "#aaa",
+    color: "#fff",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "not-allowed",
+    fontFamily: "inherit",
   },
   rejectBtn: {
-    flex: 1, padding: "10px 14px", background: "#fff", color: "#cc0000",
-    border: "1px solid #ffcccc", borderRadius: 7, fontSize: 13, fontWeight: 600,
-    cursor: "pointer", fontFamily: "inherit",
+    flex: 1,
+    padding: "10px 14px",
+    background: "#fff",
+    color: "#cc0000",
+    border: "1px solid #ffcccc",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   // Modal shared
   modalOverlay: {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000,
-    display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.5)",
+    zIndex: 1000,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
   },
   modalBox: {
-    background: "#fff", borderRadius: 12, padding: 24, width: "100%", maxWidth: 460,
+    background: "#fff",
+    borderRadius: 12,
+    padding: 24,
+    width: "100%",
+    maxWidth: 460,
   },
   modalHeader: {
-    display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
   },
   modalTitle: { fontSize: 17, fontWeight: 700, color: "#111" },
   modalCloseBtn: {
-    background: "none", border: "none", fontSize: 18, cursor: "pointer",
-    color: "#888", padding: 0, lineHeight: 1,
+    background: "none",
+    border: "none",
+    fontSize: 18,
+    cursor: "pointer",
+    color: "#888",
+    padding: 0,
+    lineHeight: 1,
   },
   modalSellerName: {
-    fontSize: 15, fontWeight: 600, color: "#1f4d1f", marginBottom: 16,
+    fontSize: 15,
+    fontWeight: 600,
+    color: "#1f4d1f",
+    marginBottom: 16,
   },
   // Confirm modal breakdown
   breakdownBox: {
-    background: "#f9f7f3", borderRadius: 8, padding: "14px 16px", marginBottom: 16,
+    background: "#f9f7f3",
+    borderRadius: 8,
+    padding: "14px 16px",
+    marginBottom: 16,
   },
   breakdownRow: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    fontSize: 14, color: "#444", marginBottom: 10,
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    fontSize: 14,
+    color: "#444",
+    marginBottom: 10,
   },
   breakdownLabel: { color: "#666" },
   breakdownValue: { fontWeight: 500 },
   breakdownNetRow: {
-    borderTop: "1px solid #e8e4dc", paddingTop: 10, marginBottom: 0,
+    borderTop: "1px solid #e8e4dc",
+    paddingTop: 10,
+    marginBottom: 0,
   },
   breakdownNetLabel: { fontSize: 14, fontWeight: 600, color: "#111" },
   breakdownNet: { fontSize: 16, fontWeight: 700, color: "#1f4d1f" },
   // Bank box
   bankBox: {
-    border: "1px solid #e8e4dc", borderRadius: 8, padding: "12px 16px", marginBottom: 20,
+    border: "1px solid #e8e4dc",
+    borderRadius: 8,
+    padding: "12px 16px",
+    marginBottom: 20,
   },
-  bankBoxTitle: { fontSize: 12, fontWeight: 600, color: "#888", marginBottom: 10 },
+  bankBoxTitle: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#888",
+    marginBottom: 10,
+  },
   bankGrid: { display: "flex", gap: 20 },
-  bankLabel: { fontSize: 10, color: "#aaa", fontWeight: 600, textTransform: "uppercase" },
+  bankLabel: {
+    fontSize: 10,
+    color: "#aaa",
+    fontWeight: 600,
+    textTransform: "uppercase",
+  },
   bankValue: { fontSize: 13, fontWeight: 600, color: "#111", marginTop: 2 },
   // Modal actions
   modalActions: {
-    display: "flex", gap: 10, justifyContent: "flex-end",
+    display: "flex",
+    gap: 10,
+    justifyContent: "flex-end",
   },
   modalCancelBtn: {
-    padding: "10px 20px", background: "#f0f0f0", color: "#333", border: "none",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    padding: "10px 20px",
+    background: "#f0f0f0",
+    color: "#333",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   modalConfirmBtn: {
-    padding: "10px 20px", background: "#1f4d1f", color: "#fff", border: "none",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    padding: "10px 20px",
+    background: "#1f4d1f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   // Reject modal
   modalSub: { fontSize: 13, color: "#888", marginBottom: 14 },
   modalTextarea: {
-    width: "100%", padding: "11px 14px", border: "1.5px solid #ddd", borderRadius: 8,
-    fontSize: 14, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box",
+    width: "100%",
+    padding: "11px 14px",
+    border: "1.5px solid #ddd",
+    borderRadius: 8,
+    fontSize: 14,
+    fontFamily: "inherit",
+    resize: "vertical",
+    boxSizing: "border-box",
   },
   modalError: { color: "#cc0000", fontSize: 12, marginTop: 6 },
   modalRejectBtn: {
-    padding: "10px 20px", background: "#cc0000", color: "#fff", border: "none",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+    padding: "10px 20px",
+    background: "#cc0000",
+    color: "#fff",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   modalRejectBtnDisabled: {
-    padding: "10px 20px", background: "#aaa", color: "#fff", border: "none",
-    borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "not-allowed", fontFamily: "inherit",
+    padding: "10px 20px",
+    background: "#aaa",
+    color: "#fff",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "not-allowed",
+    fontFamily: "inherit",
   },
 };
