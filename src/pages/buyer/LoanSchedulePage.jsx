@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getInstallments, getLoanDetails } from '../../services/loanService';
 import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import SellerLayout from '../../components/seller/SellerLayout';
 
 export default function LoanSchedulePage() {
   let isSeller = false;
@@ -55,6 +56,129 @@ export default function LoanSchedulePage() {
       pending: { background: '#f0f0f0', color: '#666' },
     })[status] || { background: '#f0f0f0', color: '#666' };
 
+  // Shared between the buyer and seller renders below — only the shell
+  // around it differs (buyer navbar vs. SellerLayout sidebar).
+  const body = (
+    <>
+      {loading && <div style={s.loadingText}>Loading repayment schedule...</div>}
+
+      {error && (
+        <div style={s.errorBox}>
+          ⚠️ {error}
+          <button style={s.retryBtn} onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          {!isSeller && <h1 style={s.title}>Repayment schedule</h1>}
+          {loan && <div style={s.subtitle}>{loan.label} · {fmt(loan.amount)}</div>}
+
+          {summary && (
+            <div style={s.summaryRow}>
+              <div style={s.summaryItem}>
+                <div style={s.summaryValue}>{summary.total}</div>
+                <div style={s.summaryLabel}>Total</div>
+              </div>
+              <div style={s.summaryItem}>
+                <div style={{ ...s.summaryValue, color: '#1a7a3a' }}>{summary.paid}</div>
+                <div style={s.summaryLabel}>Paid</div>
+              </div>
+              <div style={s.summaryItem}>
+                <div style={{ ...s.summaryValue, color: summary.overdue > 0 ? '#cc0000' : '#111' }}>
+                  {summary.overdue}
+                </div>
+                <div style={s.summaryLabel}>Overdue</div>
+              </div>
+              <div style={s.summaryItem}>
+                <div style={s.summaryValue}>{summary.remaining}</div>
+                <div style={s.summaryLabel}>Remaining</div>
+              </div>
+            </div>
+          )}
+
+          {(balances.loan_balance != null || balances.interest_balance != null) && (
+            <div style={s.balanceRow}>
+              {balances.loan_balance != null && (
+                <div style={s.balanceCard}>
+                  <div style={s.balanceLabel}>Loan Balance</div>
+                  <div style={s.balanceValue}>{fmt(balances.loan_balance)}</div>
+                </div>
+              )}
+              {balances.interest_balance != null && (
+                <div style={s.balanceCard}>
+                  <div style={s.balanceLabel}>Interest Balance</div>
+                  <div style={s.balanceValue}>{fmt(balances.interest_balance)}</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {installments.length === 0 ? (
+            <div style={s.emptyBox}>
+              <div style={s.emptyIcon}>📋</div>
+              <h2 style={s.emptyTitle}>No schedule yet</h2>
+              <p style={s.emptyText}>
+                Your repayment schedule appears here once the loan has been disbursed.
+              </p>
+            </div>
+          ) : (
+            <div style={s.scheduleScroll}>
+              <div style={s.scheduleCard}>
+                <div style={s.scheduleHeadRow}>
+                  <span>#</span>
+                  <span>Due Date</span>
+                  <span>Principal</span>
+                  <span>Interest</span>
+                  <span>Total Due</span>
+                  <span>Paid</span>
+                  <span>Status</span>
+                </div>
+                {installments.map((inst) => (
+                  <div key={inst.installment_number} style={s.scheduleRow}>
+                    <span style={s.scheduleNum}>{inst.installment_number}</span>
+                    <span style={s.scheduleDate}>{fmtDate(inst.due_date)}</span>
+                    <span style={s.scheduleDate}>{fmt(inst.principal_payment)}</span>
+                    <span style={s.scheduleDate}>{fmt(inst.interest_payment)}</span>
+                    <span style={s.scheduleAmt}>
+                      {fmt(inst.total_payable)}
+                      {Number(inst.penalty_applied) > 0 && (
+                        <span style={s.penaltyNote}>
+                          +{fmt(inst.penalty_applied)} penalty
+                        </span>
+                      )}
+                    </span>
+                    <span style={s.scheduleDate}>{fmt(inst.amount_paid)}</span>
+                    <span>
+                      <span style={{ ...s.statusBadge, ...statusStyle(inst.status) }}>
+                        {inst.status}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  if (isSeller) {
+    return (
+      <SellerLayout title="Repayment Schedule" subtitle="Track each installment for this loan.">
+        <div style={{ ...s.container, margin: 0, maxWidth: 820 }}>
+          <div style={s.backRow} onClick={() => navigate(`/loans/${id}`)}>
+            ← Back
+          </div>
+          {body}
+        </div>
+      </SellerLayout>
+    );
+  }
+
   return (
     <div style={s.page}>
       <style>{`
@@ -76,24 +200,22 @@ export default function LoanSchedulePage() {
       `}</style>
 
       <nav className="ls-nav">
-        <div className="ls-nav-left" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
+        <div className="ls-nav-left" onClick={() => navigate('/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>
             ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span>
           </div>
         </div>
-        <div className="ls-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
-          <span className="ls-nav-link" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>
+        <div className="ls-nav-links">
+          <span className="ls-nav-link" onClick={() => navigate('/')}>Home</span>
           <span className="ls-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          {!isSeller && <span className="ls-nav-link" onClick={() => navigate('/orders')}>My Orders</span>}
+          <span className="ls-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="ls-nav-right">
-          {!isSeller && (
-            <div className="ls-desktop-only">
-              <LoanHeaderActions cartCount={cartCount} />
-            </div>
-          )}
-          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
+          <div className="ls-desktop-only">
+            <LoanHeaderActions cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
 
@@ -101,110 +223,7 @@ export default function LoanSchedulePage() {
         <div style={s.backRow} onClick={() => navigate(`/loans/${id}`)}>
           ← Back
         </div>
-
-        {loading && <div style={s.loadingText}>Loading repayment schedule...</div>}
-
-        {error && (
-          <div style={s.errorBox}>
-            ⚠️ {error}
-            <button style={s.retryBtn} onClick={() => window.location.reload()}>
-              Retry
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            <h1 style={s.title}>Repayment schedule</h1>
-            {loan && <div style={s.subtitle}>{loan.label} · {fmt(loan.amount)}</div>}
-
-            {summary && (
-              <div style={s.summaryRow}>
-                <div style={s.summaryItem}>
-                  <div style={s.summaryValue}>{summary.total}</div>
-                  <div style={s.summaryLabel}>Total</div>
-                </div>
-                <div style={s.summaryItem}>
-                  <div style={{ ...s.summaryValue, color: '#1a7a3a' }}>{summary.paid}</div>
-                  <div style={s.summaryLabel}>Paid</div>
-                </div>
-                <div style={s.summaryItem}>
-                  <div style={{ ...s.summaryValue, color: summary.overdue > 0 ? '#cc0000' : '#111' }}>
-                    {summary.overdue}
-                  </div>
-                  <div style={s.summaryLabel}>Overdue</div>
-                </div>
-                <div style={s.summaryItem}>
-                  <div style={s.summaryValue}>{summary.remaining}</div>
-                  <div style={s.summaryLabel}>Remaining</div>
-                </div>
-              </div>
-            )}
-
-            {(balances.loan_balance != null || balances.interest_balance != null) && (
-              <div style={s.balanceRow}>
-                {balances.loan_balance != null && (
-                  <div style={s.balanceCard}>
-                    <div style={s.balanceLabel}>Loan Balance</div>
-                    <div style={s.balanceValue}>{fmt(balances.loan_balance)}</div>
-                  </div>
-                )}
-                {balances.interest_balance != null && (
-                  <div style={s.balanceCard}>
-                    <div style={s.balanceLabel}>Interest Balance</div>
-                    <div style={s.balanceValue}>{fmt(balances.interest_balance)}</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {installments.length === 0 ? (
-              <div style={s.emptyBox}>
-                <div style={s.emptyIcon}>📋</div>
-                <h2 style={s.emptyTitle}>No schedule yet</h2>
-                <p style={s.emptyText}>
-                  Your repayment schedule appears here once the loan has been disbursed.
-                </p>
-              </div>
-            ) : (
-              <div style={s.scheduleScroll}>
-                <div style={s.scheduleCard}>
-                  <div style={s.scheduleHeadRow}>
-                    <span>#</span>
-                    <span>Due Date</span>
-                    <span>Principal</span>
-                    <span>Interest</span>
-                    <span>Total Due</span>
-                    <span>Paid</span>
-                    <span>Status</span>
-                  </div>
-                  {installments.map((inst) => (
-                    <div key={inst.installment_number} style={s.scheduleRow}>
-                      <span style={s.scheduleNum}>{inst.installment_number}</span>
-                      <span style={s.scheduleDate}>{fmtDate(inst.due_date)}</span>
-                      <span style={s.scheduleDate}>{fmt(inst.principal_payment)}</span>
-                      <span style={s.scheduleDate}>{fmt(inst.interest_payment)}</span>
-                      <span style={s.scheduleAmt}>
-                        {fmt(inst.total_payable)}
-                        {Number(inst.penalty_applied) > 0 && (
-                          <span style={s.penaltyNote}>
-                            +{fmt(inst.penalty_applied)} penalty
-                          </span>
-                        )}
-                      </span>
-                      <span style={s.scheduleDate}>{fmt(inst.amount_paid)}</span>
-                      <span>
-                        <span style={{ ...s.statusBadge, ...statusStyle(inst.status) }}>
-                          {inst.status}
-                        </span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        {body}
       </div>
     </div>
   );

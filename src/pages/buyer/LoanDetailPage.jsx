@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getLoanDetails } from '../../services/loanService';
 import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import SellerLayout from '../../components/seller/SellerLayout';
 
 export default function LoanDetailPage() {
   let isSeller = false;
@@ -48,6 +49,194 @@ export default function LoanDetailPage() {
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - progressFraction);
 
+  // Shared between the buyer and seller renders below — only the shell
+  // around it differs (buyer navbar vs. SellerLayout sidebar).
+  const body = (
+    <>
+      {!isSeller && (
+        <div style={s.backRow} onClick={() => navigate('/loans')}>
+          ← Back to Loans
+        </div>
+      )}
+
+      {loading && <div style={s.loadingText}>Loading loan details...</div>}
+
+      {error && (
+        <div style={s.errorBox}>
+          ⚠️ {error}
+          <button style={s.retryBtn} onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && loan && (
+        <>
+          {/* Header: amount + label */}
+          <div style={s.headerRow}>
+            <div>
+              <div style={s.headerAmount}>{fmt(loan.amount).replace('.00', '')}</div>
+              <div style={s.headerLabel}>{loan.label}</div>
+            </div>
+            <div style={s.headerIcon}>🌾</div>
+          </div>
+
+          {/* Status banner — shown for every stage that isn't yet disbursed,
+              so a pending/approved/rejected loan never just looks "empty" */}
+          {!loan.is_disbursed && (
+            <div
+              style={{
+                ...s.statusBanner,
+                ...(loan.status === 'rejected' ? s.statusBannerRejected : s.statusBannerPending),
+              }}
+            >
+              <div style={s.statusBannerLabel}>{loan.status_label}</div>
+              {loan.status === 'pending' && (
+                <div style={s.statusBannerText}>
+                  Your application is being reviewed. You'll be notified once a decision is made.
+                </div>
+              )}
+              {loan.status === 'approved' && (
+                <div style={s.statusBannerText}>
+                  Your loan has been approved and will be disbursed shortly.
+                </div>
+              )}
+              {loan.status === 'rejected' && (
+                <div style={s.statusBannerText}>
+                  {loan.rejection_reason || 'This application was not approved.'}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Action buttons — repaying/liquidating only makes sense once
+              money has actually moved */}
+          {loan.is_disbursed && (
+            <div style={s.actionRow}>
+              <button
+                style={s.liquidateBtn}
+                onClick={() => navigate(`/loans/${id}/liquidate`)}
+              >
+                ⚡ Liquidate
+              </button>
+              <button
+                style={s.scheduleBtn}
+                onClick={() => navigate(`/loans/${id}/schedule`)}
+              >
+                📋 Schedule
+              </button>
+            </div>
+          )}
+
+          {/* Next payment + progress ring — only relevant once disbursed */}
+          {loan.is_disbursed && (
+          <div style={s.progressCard}>
+            <div style={s.nextPaymentAmount}>
+              {loan.next_payment ? fmt(loan.next_payment.amount) : '—'}
+            </div>
+            <div style={s.nextPaymentLabel}>
+              {loan.next_payment
+                ? `Next payment on ${fmtShortDate(loan.next_payment.due_date)}`
+                : 'No upcoming payment'}
+            </div>
+
+            <div style={s.ringWrap}>
+              <svg width="180" height="180" viewBox="0 0 180 180">
+                <circle
+                  cx="90"
+                  cy="90"
+                  r={radius}
+                  fill="none"
+                  stroke="#e8e4dc"
+                  strokeWidth="14"
+                />
+                <circle
+                  cx="90"
+                  cy="90"
+                  r={radius}
+                  fill="none"
+                  stroke="#1f4d1f"
+                  strokeWidth="14"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  strokeLinecap="round"
+                  transform="rotate(-90 90 90)"
+                />
+              </svg>
+              <div style={s.ringCenter}>
+                <div style={s.ringFraction}>
+                  {paid}/{total}
+                </div>
+                <div style={s.ringSub}>
+                  {remaining > 0 ? 'Payments left' : 'All paid up'}
+                </div>
+              </div>
+            </div>
+          </div>
+          )}
+
+          {/* Details */}
+          <div style={s.detailsCard}>
+            <div style={s.detailsTitle}>Details</div>
+            {[
+              ['Loan balance', fmt(loan.balance)],
+              ['Interest rate', `${loan.interest_rate}%`],
+              ['Loan interest', fmt(loan.total_interest)],
+              ['Total repayable', fmt(loan.total_repayable)],
+              ['Loan opening date', fmtDate(loan.opening_date)],
+              ['Loan maturity date', fmtDate(loan.maturity_date)],
+            ].map(([label, value]) => (
+              <div key={label} style={s.detailRow}>
+                <span style={s.detailLabel}>{label}</span>
+                <span style={s.detailValue}>{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Payment history preview */}
+          <div style={s.historyCard}>
+            <div style={s.historyHeader}>
+              <div style={s.detailsTitle}>Payment history</div>
+              <span
+                style={s.seeMore}
+                onClick={() => navigate(`/loans/${id}/schedule`)}
+              >
+                See more →
+              </span>
+            </div>
+
+            {(!loan.payment_history || loan.payment_history.length === 0) ? (
+              <div style={s.noHistory}>No payments made yet.</div>
+            ) : (
+              loan.payment_history.map((p) => (
+                <div key={p.id} style={s.historyRow}>
+                  <div>
+                    <div style={s.historyAmount}>{fmt(p.amount)}</div>
+                    <div style={s.historySub}>Installment #{p.instalment_number}</div>
+                  </div>
+                  <div style={s.historyDate}>{fmtDate(p.paid_at)}</div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </>
+  );
+
+  if (isSeller) {
+    return (
+      <SellerLayout title="Loan Details" subtitle="View your loan status, repayment progress, and history.">
+        <div style={{ ...s.container, margin: 0, maxWidth: 560 }}>
+          <div style={s.backRow} onClick={() => navigate('/loans')}>
+            ← Back to Loans
+          </div>
+          {body}
+        </div>
+      </SellerLayout>
+    );
+  }
+
   return (
     <div style={s.page}>
       <style>{`
@@ -70,195 +259,26 @@ export default function LoanDetailPage() {
 
       {/* Navbar */}
       <nav className="ld-nav">
-        <div className="ld-nav-left" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
+        <div className="ld-nav-left" onClick={() => navigate('/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>
             ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span>
           </div>
         </div>
-        <div className="ld-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
-          <span className="ld-nav-link" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>
+        <div className="ld-nav-links">
+          <span className="ld-nav-link" onClick={() => navigate('/')}>Home</span>
           <span className="ld-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          {!isSeller && <span className="ld-nav-link" onClick={() => navigate('/orders')}>My Orders</span>}
+          <span className="ld-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="ld-nav-right">
-          {!isSeller && (
-            <div className="ld-desktop-only">
-              <LoanHeaderActions cartCount={cartCount} />
-            </div>
-          )}
-          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
+          <div className="ld-desktop-only">
+            <LoanHeaderActions cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
 
-      <div style={s.container}>
-        <div style={s.backRow} onClick={() => navigate('/loans')}>
-          ← Back to Loans
-        </div>
-
-        {loading && <div style={s.loadingText}>Loading loan details...</div>}
-
-        {error && (
-          <div style={s.errorBox}>
-            ⚠️ {error}
-            <button style={s.retryBtn} onClick={() => window.location.reload()}>
-              Retry
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && loan && (
-          <>
-            {/* Header: amount + label */}
-            <div style={s.headerRow}>
-              <div>
-                <div style={s.headerAmount}>{fmt(loan.amount).replace('.00', '')}</div>
-                <div style={s.headerLabel}>{loan.label}</div>
-              </div>
-              <div style={s.headerIcon}>🌾</div>
-            </div>
-
-            {/* Status banner — shown for every stage that isn't yet disbursed,
-                so a pending/approved/rejected loan never just looks "empty" */}
-            {!loan.is_disbursed && (
-              <div
-                style={{
-                  ...s.statusBanner,
-                  ...(loan.status === 'rejected' ? s.statusBannerRejected : s.statusBannerPending),
-                }}
-              >
-                <div style={s.statusBannerLabel}>{loan.status_label}</div>
-                {loan.status === 'pending' && (
-                  <div style={s.statusBannerText}>
-                    Your application is being reviewed. You'll be notified once a decision is made.
-                  </div>
-                )}
-                {loan.status === 'approved' && (
-                  <div style={s.statusBannerText}>
-                    Your loan has been approved and will be disbursed shortly.
-                  </div>
-                )}
-                {loan.status === 'rejected' && (
-                  <div style={s.statusBannerText}>
-                    {loan.rejection_reason || 'This application was not approved.'}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Action buttons — repaying/liquidating only makes sense once
-                money has actually moved */}
-            {loan.is_disbursed && (
-              <div style={s.actionRow}>
-                <button
-                  style={s.liquidateBtn}
-                  onClick={() => navigate(`/loans/${id}/liquidate`)}
-                >
-                  ⚡ Liquidate
-                </button>
-                <button
-                  style={s.scheduleBtn}
-                  onClick={() => navigate(`/loans/${id}/schedule`)}
-                >
-                  📋 Schedule
-                </button>
-              </div>
-            )}
-
-            {/* Next payment + progress ring — only relevant once disbursed */}
-            {loan.is_disbursed && (
-            <div style={s.progressCard}>
-              <div style={s.nextPaymentAmount}>
-                {loan.next_payment ? fmt(loan.next_payment.amount) : '—'}
-              </div>
-              <div style={s.nextPaymentLabel}>
-                {loan.next_payment
-                  ? `Next payment on ${fmtShortDate(loan.next_payment.due_date)}`
-                  : 'No upcoming payment'}
-              </div>
-
-              <div style={s.ringWrap}>
-                <svg width="180" height="180" viewBox="0 0 180 180">
-                  <circle
-                    cx="90"
-                    cy="90"
-                    r={radius}
-                    fill="none"
-                    stroke="#e8e4dc"
-                    strokeWidth="14"
-                  />
-                  <circle
-                    cx="90"
-                    cy="90"
-                    r={radius}
-                    fill="none"
-                    stroke="#1f4d1f"
-                    strokeWidth="14"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={dashOffset}
-                    strokeLinecap="round"
-                    transform="rotate(-90 90 90)"
-                  />
-                </svg>
-                <div style={s.ringCenter}>
-                  <div style={s.ringFraction}>
-                    {paid}/{total}
-                  </div>
-                  <div style={s.ringSub}>
-                    {remaining > 0 ? 'Payments left' : 'All paid up'}
-                  </div>
-                </div>
-              </div>
-            </div>
-            )}
-
-            {/* Details */}
-            <div style={s.detailsCard}>
-              <div style={s.detailsTitle}>Details</div>
-              {[
-                ['Loan balance', fmt(loan.balance)],
-                ['Interest rate', `${loan.interest_rate}%`],
-                ['Loan interest', fmt(loan.total_interest)],
-                ['Total repayable', fmt(loan.total_repayable)],
-                ['Loan opening date', fmtDate(loan.opening_date)],
-                ['Loan maturity date', fmtDate(loan.maturity_date)],
-              ].map(([label, value]) => (
-                <div key={label} style={s.detailRow}>
-                  <span style={s.detailLabel}>{label}</span>
-                  <span style={s.detailValue}>{value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Payment history preview */}
-            <div style={s.historyCard}>
-              <div style={s.historyHeader}>
-                <div style={s.detailsTitle}>Payment history</div>
-                <span
-                  style={s.seeMore}
-                  onClick={() => navigate(`/loans/${id}/schedule`)}
-                >
-                  See more →
-                </span>
-              </div>
-
-              {(!loan.payment_history || loan.payment_history.length === 0) ? (
-                <div style={s.noHistory}>No payments made yet.</div>
-              ) : (
-                loan.payment_history.map((p) => (
-                  <div key={p.id} style={s.historyRow}>
-                    <div>
-                      <div style={s.historyAmount}>{fmt(p.amount)}</div>
-                      <div style={s.historySub}>Installment #{p.instalment_number}</div>
-                    </div>
-                    <div style={s.historyDate}>{fmtDate(p.paid_at)}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          </>
-        )}
-      </div>
+      <div style={s.container}>{body}</div>
     </div>
   );
 }
