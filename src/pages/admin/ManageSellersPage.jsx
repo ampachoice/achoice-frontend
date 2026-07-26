@@ -953,7 +953,6 @@ export default function ManageSellersPage() {
   const [filterPending, setFilterPending] = useState(false);
   const [actioningId, setActioningId] = useState(null);
 
-
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(""), 4000);
@@ -1091,9 +1090,20 @@ export default function ManageSellersPage() {
   };
 
   // Approve / reject / suspend / activate a seller account.
-  // Endpoint names follow the same PATCH convention as the existing
-  // /admin/sellers/{id}/remit route above — adjust here if your backend
-  // uses different route names.
+  // These four actions map to FOUR DIFFERENT backend routes with
+  // inconsistent naming/prefixing — do not naively interpolate the
+  // action name into the URL, it doesn't match any of them:
+  //   approve  -> PATCH /admin/sellers/{id}/approve-registration
+  //   reject   -> PATCH /admin/sellers/{id}/reject-registration
+  //   suspend  -> PATCH /sellers/{id}/suspend        (no /admin prefix)
+  //   activate -> PATCH /sellers/{id}/activate        (no /admin prefix)
+  const actionRoutes = {
+    approve: (id) => `/admin/sellers/${id}/approve-registration`,
+    reject: (id) => `/admin/sellers/${id}/reject-registration`,
+    suspend: (id) => `/sellers/${id}/suspend`,
+    activate: (id) => `/sellers/${id}/activate`,
+  };
+
   const handleSellerAction = async (seller, action) => {
     const confirmMsgs = {
       approve: null,
@@ -1105,7 +1115,7 @@ export default function ManageSellersPage() {
 
     setActioningId(seller.id);
     try {
-      const res = await api.patch(`/admin/sellers/${seller.id}/${action}`);
+      const res = await api.patch(actionRoutes[action](seller.id));
       const successMsgs = {
         approve: `${seller.business_name} approved and is now active.`,
         reject: `${seller.business_name}'s application was rejected.`,
@@ -1116,7 +1126,16 @@ export default function ManageSellersPage() {
       setSellers((prev) =>
         prev.map((sItem) =>
           sItem.id === seller.id
-            ? { ...sItem, status: res.data?.status || (action === "approve" || action === "activate" ? "active" : action === "reject" ? "rejected" : "suspended") }
+            ? {
+                ...sItem,
+                status:
+                  res.data?.status ||
+                  (action === "approve" || action === "activate"
+                    ? "active"
+                    : action === "reject"
+                      ? "rejected"
+                      : "suspended"),
+              }
             : sItem,
         ),
       );
@@ -1173,7 +1192,10 @@ export default function ManageSellersPage() {
                 <span style={s.pendingBadge}>{pendingCount}</span>
               )}
             </button>
-            <button style={s.settingsBtn} onClick={() => navigate("/admin/remittance-requests")}>
+            <button
+              style={s.settingsBtn}
+              onClick={() => navigate("/admin/remittance-requests")}
+            >
               🧾 Remittance Requests
             </button>
             <button style={s.addBtn} onClick={() => setShowForm(!showForm)}>
@@ -1384,7 +1406,15 @@ export default function ManageSellersPage() {
           }}
         >
           <div style={s.tableSection}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 16,
+                flexWrap: "wrap",
+              }}
+            >
               <input
                 style={s.searchInput}
                 type="text"
@@ -1395,123 +1425,163 @@ export default function ManageSellersPage() {
               {filterPending && (
                 <span style={s.pendingFilterTag}>
                   Showing pending only
-                  <button style={s.pendingFilterClear} onClick={() => setFilterPending(false)}>✕</button>
+                  <button
+                    style={s.pendingFilterClear}
+                    onClick={() => setFilterPending(false)}
+                  >
+                    ✕
+                  </button>
                 </span>
               )}
             </div>
             <div style={s.tableCard}>
               <div style={{ overflowX: "auto" }}>
                 <table style={s.table}>
-                <thead>
-                  <tr style={s.tableHead}>
-                    <th style={s.th}>Seller</th>
-                    <th style={s.th}>Contact</th>
-                    <th style={s.th}>State</th>
-                    <th style={s.th}>Products</th>
-                    <th style={s.th}>Sold</th>
-                    <th style={s.th}>Revenue</th>
-                    <th style={s.th}>Balance</th>
-                    <th style={s.th}>Status</th>
-                    <th style={s.th}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((seller) => (
-                    <tr
-                      key={seller.id}
-                      style={{
-                        ...s.tableRow,
-                        background:
-                          selectedSeller?.id === seller.id ? "#f0f7ec" : "#fff",
-                      }}
-                    >
-                      <td style={s.td}>
-                        <div style={s.sellerName}>{seller.business_name}</div>
-                        <div style={s.sellerOwner}>{seller.owner}</div>
-                      </td>
-                      <td style={s.td}>
-                        <div style={s.sellerContactEmail}>
-                          {seller.user?.email || seller.email || "—"}
-                        </div>
-                        <div style={s.sellerContactPhone}>
-                          {seller.user?.phone || seller.phone || "—"}
-                        </div>
-                      </td>
-                      <td style={s.td}>{seller.state}</td>
-                      <td style={s.td}>{seller.total_products}</td>
-                      <td style={s.td}>{seller.items_sold}</td>
-                      <td style={s.td}>
-                        ₦{Number(seller.total_revenue).toLocaleString()}
-                      </td>
-                      <td style={s.td}>
-                        <span
-                          style={{
-                            color:
-                              seller.current_balance > 0 ? "#cc0000" : "#888",
-                            fontWeight: 600,
-                          }}
-                        >
-                          ₦{Number(seller.current_balance).toLocaleString()}
-                        </span>
-                      </td>
-                      <td style={s.td}>
-                        <span
-                          style={{
-                            ...s.statusBadge,
-                            ...getStatusStyle(seller.status),
-                          }}
-                        >
-                          {seller.status}
-                        </span>
-                      </td>
-                      <td style={s.td}>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {isPendingStatus(seller.status) ? (
-                            <>
-                              <button
-                                style={actioningId === seller.id ? s.approveBtnDisabled : s.approveBtn}
-                                disabled={actioningId === seller.id}
-                                onClick={() => handleSellerAction(seller, "approve")}
-                              >
-                                {actioningId === seller.id ? "…" : "✓ Approve"}
-                              </button>
-                              <button
-                                style={actioningId === seller.id ? s.rejectBtnDisabled : s.rejectBtn}
-                                disabled={actioningId === seller.id}
-                                onClick={() => handleSellerAction(seller, "reject")}
-                              >
-                                ✕ Reject
-                              </button>
-                            </>
-                          ) : (seller.status || "").toLowerCase() === "suspended" ? (
-                            <button
-                              style={actioningId === seller.id ? s.approveBtnDisabled : s.approveBtn}
-                              disabled={actioningId === seller.id}
-                              onClick={() => handleSellerAction(seller, "activate")}
-                            >
-                              {actioningId === seller.id ? "…" : "Activate"}
-                            </button>
-                          ) : (
-                            <button
-                              style={actioningId === seller.id ? s.rejectBtnDisabled : s.suspendBtn}
-                              disabled={actioningId === seller.id}
-                              onClick={() => handleSellerAction(seller, "suspend")}
-                            >
-                              {actioningId === seller.id ? "…" : "Suspend"}
-                            </button>
-                          )}
-                          <button
-                            style={s.viewBtn}
-                            onClick={() => handleSelectSeller(seller)}
-                          >
-                            View Stats
-                          </button>
-                        </div>
-                      </td>
+                  <thead>
+                    <tr style={s.tableHead}>
+                      <th style={s.th}>Seller</th>
+                      <th style={s.th}>Contact</th>
+                      <th style={s.th}>State</th>
+                      <th style={s.th}>Products</th>
+                      <th style={s.th}>Sold</th>
+                      <th style={s.th}>Revenue</th>
+                      <th style={s.th}>Balance</th>
+                      <th style={s.th}>Status</th>
+                      <th style={s.th}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filtered.map((seller) => (
+                      <tr
+                        key={seller.id}
+                        style={{
+                          ...s.tableRow,
+                          background:
+                            selectedSeller?.id === seller.id
+                              ? "#f0f7ec"
+                              : "#fff",
+                        }}
+                      >
+                        <td style={s.td}>
+                          <div style={s.sellerName}>{seller.business_name}</div>
+                          <div style={s.sellerOwner}>{seller.owner}</div>
+                        </td>
+                        <td style={s.td}>
+                          <div style={s.sellerContactEmail}>
+                            {seller.user?.email || seller.email || "—"}
+                          </div>
+                          <div style={s.sellerContactPhone}>
+                            {seller.user?.phone || seller.phone || "—"}
+                          </div>
+                        </td>
+                        <td style={s.td}>{seller.state}</td>
+                        <td style={s.td}>{seller.total_products}</td>
+                        <td style={s.td}>{seller.items_sold}</td>
+                        <td style={s.td}>
+                          ₦{Number(seller.total_revenue).toLocaleString()}
+                        </td>
+                        <td style={s.td}>
+                          <span
+                            style={{
+                              color:
+                                seller.current_balance > 0 ? "#cc0000" : "#888",
+                              fontWeight: 600,
+                            }}
+                          >
+                            ₦{Number(seller.current_balance).toLocaleString()}
+                          </span>
+                        </td>
+                        <td style={s.td}>
+                          <span
+                            style={{
+                              ...s.statusBadge,
+                              ...getStatusStyle(seller.status),
+                            }}
+                          >
+                            {seller.status}
+                          </span>
+                        </td>
+                        <td style={s.td}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 6,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {isPendingStatus(seller.status) ? (
+                              <>
+                                <button
+                                  style={
+                                    actioningId === seller.id
+                                      ? s.approveBtnDisabled
+                                      : s.approveBtn
+                                  }
+                                  disabled={actioningId === seller.id}
+                                  onClick={() =>
+                                    handleSellerAction(seller, "approve")
+                                  }
+                                >
+                                  {actioningId === seller.id
+                                    ? "…"
+                                    : "✓ Approve"}
+                                </button>
+                                <button
+                                  style={
+                                    actioningId === seller.id
+                                      ? s.rejectBtnDisabled
+                                      : s.rejectBtn
+                                  }
+                                  disabled={actioningId === seller.id}
+                                  onClick={() =>
+                                    handleSellerAction(seller, "reject")
+                                  }
+                                >
+                                  ✕ Reject
+                                </button>
+                              </>
+                            ) : (seller.status || "").toLowerCase() ===
+                              "suspended" ? (
+                              <button
+                                style={
+                                  actioningId === seller.id
+                                    ? s.approveBtnDisabled
+                                    : s.approveBtn
+                                }
+                                disabled={actioningId === seller.id}
+                                onClick={() =>
+                                  handleSellerAction(seller, "activate")
+                                }
+                              >
+                                {actioningId === seller.id ? "…" : "Activate"}
+                              </button>
+                            ) : (
+                              <button
+                                style={
+                                  actioningId === seller.id
+                                    ? s.rejectBtnDisabled
+                                    : s.suspendBtn
+                                }
+                                disabled={actioningId === seller.id}
+                                onClick={() =>
+                                  handleSellerAction(seller, "suspend")
+                                }
+                              >
+                                {actioningId === seller.id ? "…" : "Suspend"}
+                              </button>
+                            )}
+                            <button
+                              style={s.viewBtn}
+                              onClick={() => handleSelectSeller(seller)}
+                            >
+                              View Stats
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
               {filtered.length === 0 && (
                 <div style={s.empty}>No sellers found.</div>
@@ -1611,10 +1681,7 @@ export default function ManageSellersPage() {
                       </div>
                     </div>
                     {sellerStats.earnings.can_remit && (
-                      <button
-                        style={s.remitBtn}
-                        onClick={handleRemit}
-                      >
+                      <button style={s.remitBtn} onClick={handleRemit}>
                         Remit — ₦
                         {Number(
                           sellerStats.earnings.current_balance,
@@ -1728,7 +1795,14 @@ export default function ManageSellersPage() {
             </div>
 
             {remitPreviewLoading || !remitPreview ? (
-              <div style={{ padding: "32px 0", textAlign: "center", color: "#888", fontSize: 13 }}>
+              <div
+                style={{
+                  padding: "32px 0",
+                  textAlign: "center",
+                  color: "#888",
+                  fontSize: 13,
+                }}
+              >
                 Loading breakdown...
               </div>
             ) : (
@@ -1753,7 +1827,9 @@ export default function ManageSellersPage() {
                     </span>
                   </div>
                   <div style={{ ...s.remitRow, ...s.remitRowTotal }}>
-                    <span style={s.remitLabelTotal}>Net amount to pay seller</span>
+                    <span style={s.remitLabelTotal}>
+                      Net amount to pay seller
+                    </span>
                     <span style={s.remitValueTotal}>
                       ₦{remitPreview.net_to_remit.toLocaleString()}
                     </span>
@@ -1793,7 +1869,9 @@ export default function ManageSellersPage() {
                     Cancel
                   </button>
                   <button
-                    style={remitting ? s.modalConfirmBtnDisabled : s.modalConfirmBtn}
+                    style={
+                      remitting ? s.modalConfirmBtnDisabled : s.modalConfirmBtn
+                    }
                     onClick={confirmRemit}
                     disabled={remitting}
                   >
@@ -2416,6 +2494,3 @@ const s = {
     fontFamily: "inherit",
   },
 };
-
-
-
