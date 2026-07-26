@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getLoanDetails, liquidateLoan } from '../../services/loanService';
 import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import SellerLayout from '../../components/seller/SellerLayout';
 
 export default function LoanLiquidatePage() {
   let isSeller = false;
@@ -76,6 +77,118 @@ export default function LoanLiquidatePage() {
     }
   };
 
+  // Shared between the buyer and seller renders below — only the shell
+  // around it differs (buyer navbar vs. SellerLayout sidebar).
+  const body = (
+    <>
+      {loading && <div style={s.loadingText}>Loading loan details...</div>}
+
+      {error && (
+        <div style={s.errorBox}>
+          ⚠️ {error}
+          <button style={s.retryBtn} onClick={() => window.location.reload()}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && loan && (
+        <>
+          {!isSeller && <h1 style={s.title}>Liquidate loan</h1>}
+
+          {/* Fully / Partially toggle */}
+          <div style={s.toggleRow}>
+            <button
+              style={type === 'full' ? s.toggleBtnActive : s.toggleBtn}
+              onClick={() => setType('full')}
+            >
+              Fully
+            </button>
+            <button
+              style={type === 'partial' ? s.toggleBtnActive : s.toggleBtn}
+              onClick={() => setType('partial')}
+            >
+              Partially
+            </button>
+          </div>
+
+          {/* Partial amount input */}
+          {type === 'partial' && (
+            <div style={s.partialField}>
+              <label style={s.partialLabel}>Amount to pay (₦)</label>
+              <input
+                type="number"
+                style={s.partialInput}
+                value={partialAmount}
+                onChange={(e) => setPartialAmount(e.target.value)}
+                placeholder={`Max ${fmt(balance)}`}
+                max={balance}
+                min={1}
+              />
+              {amountToPay > balance && (
+                <div style={s.partialWarning}>
+                  Amount can't exceed your loan balance of {fmt(balance)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Payment method — honest framing: this redirects to Paystack, */}
+          {/* there's no real "source account" selector like a bank app has */}
+          <div style={s.sectionLabel}>Payment Method</div>
+          <div style={s.sourceCard}>
+            <div style={s.sourceLeft}>
+              <div style={s.sourceIcon}>₦</div>
+              <div>
+                <div style={s.sourceAccount}>Pay via Paystack</div>
+                <div style={s.sourceSub}>Card, bank transfer or USSD</div>
+              </div>
+            </div>
+            <div style={s.sourceAmount}>- {fmt(amountToPay)}</div>
+          </div>
+
+          {/* Details */}
+          <div style={s.sectionLabel}>Details</div>
+          <div style={s.detailsCard}>
+            {[
+              ['Loan type', loan.label],
+              ['Loan balance', fmt(loan.balance)],
+              ['Loan amount', fmt(loan.amount)],
+            ].map(([label, value]) => (
+              <div key={label} style={s.detailRow}>
+                <span style={s.detailLabel}>{label}</span>
+                <span style={s.detailValue}>{value}</span>
+              </div>
+            ))}
+          </div>
+
+          {submitError && <div style={s.errorBox}>⚠️ {submitError}</div>}
+
+          <button
+            style={canSubmit ? s.repayBtn : s.repayBtnDisabled}
+            onClick={handleRepay}
+            disabled={!canSubmit}
+          >
+            {submitting ? '⏳ Starting payment...' : `Repay ${fmt(amountToPay)}`}
+          </button>
+        </>
+      )}
+    </>
+  );
+
+  if (isSeller) {
+    return (
+      <SellerLayout title="Liquidate Loan" subtitle="Pay off part or all of your loan balance.">
+        <div style={{ ...s.container, margin: 0, maxWidth: 560 }}>
+          <div style={s.backRow} onClick={() => navigate(`/loans/${id}`)}>
+            ← Back
+          </div>
+          {body}
+        </div>
+      </SellerLayout>
+    );
+  }
+
   return (
     <div style={s.page}>
       <style>{`
@@ -97,24 +210,22 @@ export default function LoanLiquidatePage() {
       `}</style>
 
       <nav className="lq-nav">
-        <div className="lq-nav-left" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
+        <div className="lq-nav-left" onClick={() => navigate('/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
           <div style={s.logoText}>
             ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span>
           </div>
         </div>
-        <div className="lq-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
-          <span className="lq-nav-link" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>
+        <div className="lq-nav-links">
+          <span className="lq-nav-link" onClick={() => navigate('/')}>Home</span>
           <span className="lq-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          {!isSeller && <span className="lq-nav-link" onClick={() => navigate('/orders')}>My Orders</span>}
+          <span className="lq-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
         </div>
         <div className="lq-nav-right">
-          {!isSeller && (
-            <div className="lq-desktop-only">
-              <LoanHeaderActions cartCount={cartCount} />
-            </div>
-          )}
-          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
+          <div className="lq-desktop-only">
+            <LoanHeaderActions cartCount={cartCount} />
+          </div>
+          <MobileNavDrawer cartCount={cartCount} />
         </div>
       </nav>
 
@@ -122,99 +233,7 @@ export default function LoanLiquidatePage() {
         <div style={s.backRow} onClick={() => navigate(`/loans/${id}`)}>
           ← Back
         </div>
-
-        {loading && <div style={s.loadingText}>Loading loan details...</div>}
-
-        {error && (
-          <div style={s.errorBox}>
-            ⚠️ {error}
-            <button style={s.retryBtn} onClick={() => window.location.reload()}>
-              Retry
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && loan && (
-          <>
-            <h1 style={s.title}>Liquidate loan</h1>
-
-            {/* Fully / Partially toggle */}
-            <div style={s.toggleRow}>
-              <button
-                style={type === 'full' ? s.toggleBtnActive : s.toggleBtn}
-                onClick={() => setType('full')}
-              >
-                Fully
-              </button>
-              <button
-                style={type === 'partial' ? s.toggleBtnActive : s.toggleBtn}
-                onClick={() => setType('partial')}
-              >
-                Partially
-              </button>
-            </div>
-
-            {/* Partial amount input */}
-            {type === 'partial' && (
-              <div style={s.partialField}>
-                <label style={s.partialLabel}>Amount to pay (₦)</label>
-                <input
-                  type="number"
-                  style={s.partialInput}
-                  value={partialAmount}
-                  onChange={(e) => setPartialAmount(e.target.value)}
-                  placeholder={`Max ${fmt(balance)}`}
-                  max={balance}
-                  min={1}
-                />
-                {amountToPay > balance && (
-                  <div style={s.partialWarning}>
-                    Amount can't exceed your loan balance of {fmt(balance)}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Payment method — honest framing: this redirects to Paystack, */}
-            {/* there's no real "source account" selector like a bank app has */}
-            <div style={s.sectionLabel}>Payment Method</div>
-            <div style={s.sourceCard}>
-              <div style={s.sourceLeft}>
-                <div style={s.sourceIcon}>₦</div>
-                <div>
-                  <div style={s.sourceAccount}>Pay via Paystack</div>
-                  <div style={s.sourceSub}>Card, bank transfer or USSD</div>
-                </div>
-              </div>
-              <div style={s.sourceAmount}>- {fmt(amountToPay)}</div>
-            </div>
-
-            {/* Details */}
-            <div style={s.sectionLabel}>Details</div>
-            <div style={s.detailsCard}>
-              {[
-                ['Loan type', loan.label],
-                ['Loan balance', fmt(loan.balance)],
-                ['Loan amount', fmt(loan.amount)],
-              ].map(([label, value]) => (
-                <div key={label} style={s.detailRow}>
-                  <span style={s.detailLabel}>{label}</span>
-                  <span style={s.detailValue}>{value}</span>
-                </div>
-              ))}
-            </div>
-
-            {submitError && <div style={s.errorBox}>⚠️ {submitError}</div>}
-
-            <button
-              style={canSubmit ? s.repayBtn : s.repayBtnDisabled}
-              onClick={handleRepay}
-              disabled={!canSubmit}
-            >
-              {submitting ? '⏳ Starting payment...' : `Repay ${fmt(amountToPay)}`}
-            </button>
-          </>
-        )}
+        {body}
       </div>
     </div>
   );
