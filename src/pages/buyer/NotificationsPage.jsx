@@ -4,7 +4,7 @@ import api from '../../services/api';
 import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
-const LOGO_PATH = '/achoice logo.png';
+const LOGO_PATH = '/android-chrome-192x192.png';
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
@@ -112,7 +112,6 @@ export default function NotificationsPage() {
       <nav style={s.nav}>
         <div style={s.navLeft} onClick={() => navigate('/')}>
           <img src={LOGO_PATH} alt="Achoice" style={s.navLogo} />
-          <div style={s.navName}>ACHOICE</div>
         </div>
         <div style={s.navRight}>
           <div className="np-desktop-only">

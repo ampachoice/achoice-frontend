@@ -5,7 +5,7 @@ import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
-const LOGO_PATH = '/achoice logo.png';
+const LOGO_PATH = '/android-chrome-192x192.png';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -167,10 +167,6 @@ export default function ProfilePage() {
       <nav className="pf-nav">
         <div className="pf-nav-brand" onClick={() => navigate('/')}>
           <img src={LOGO_PATH} alt="Achoice Logo" className="pf-nav-logo-img" />
-          <div>
-            <div className="pf-nav-logo-name">ACHOICE LIMITED</div>
-            <div className="pf-nav-logo-tag">Your needs our solutions</div>
-          </div>
         </div>
         <div className="pf-nav-links">
           <span className="pf-nav-link" onClick={() => navigate('/')}>Home</span>

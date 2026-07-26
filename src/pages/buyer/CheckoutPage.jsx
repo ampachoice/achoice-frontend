@@ -391,12 +391,6 @@ export default function CheckoutPage() {
             alt="Logo"
             className="ckp-nav-logo"
           />
-          <div>
-            <div className="ckp-nav-name">
-              ACHOICE <span>MARKET</span>
-            </div>
-            <div className="ckp-nav-motto">Your needs our solutions</div>
-          </div>
         </div>
         <span className="ckp-nav-back" onClick={() => navigate("/cart")}>
           ← Return to Cart

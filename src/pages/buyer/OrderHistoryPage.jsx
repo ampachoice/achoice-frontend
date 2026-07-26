@@ -6,7 +6,7 @@ import BuyerDropdown from '../../components/buyer/BuyerDropdown';
 import NotificationBell from '../../components/buyer/NotificationBell';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 
-const LOGO_PATH = '/achoice logo.png';
+const LOGO_PATH = '/android-chrome-192x192.png';
 
 const statusSteps = ['pending', 'processing', 'shipped', 'delivered'];
 
@@ -195,10 +195,6 @@ if (reference) {
       <nav className="oh-nav">
         <div className="oh-nav-brand" onClick={() => navigate('/')}>
           <img src={LOGO_PATH} alt="Achoice Logo" className="oh-nav-logo-img" />
-          <div>
-            <div className="oh-nav-logo-name">ACHOICE LIMITED</div>
-            <div className="oh-nav-logo-tag">Your needs our solutions</div>
-          </div>
         </div>
         <div className="oh-nav-links">
           <span className="oh-nav-link" onClick={() => navigate('/')}>Home</span>

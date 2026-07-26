@@ -278,7 +278,6 @@ export default function LoanRepayPage() {
       <nav style={s.nav}>
         <div style={s.navLeft} onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
-          <div style={s.logoText}>ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span></div>
         </div>
         <div className="lr-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
           <span style={s.navLink} onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>

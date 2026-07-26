@@ -143,13 +143,15 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 }
 
 const s = {
-  // Fixed to the viewport corner — this is deliberate: it guarantees the
-  // account menu always renders in the same top-right spot on every page,
-  // regardless of that page's own nav layout, padding, or overflow issues.
+  // Was position:'fixed' — that glued this to the exact same viewport
+  // corner on every page regardless of that page's own nav layout, which
+  // is what caused it to visually collide with whatever else a page also
+  // placed near the top-right (NotificationBell, a cart icon, etc). Now it
+  // just sits inline wherever the page's own nav-right container puts it,
+  // like a normal flex item — the dropdown menu below still anchors
+  // correctly since it's position:absolute relative to this wrapper.
   wrapper: {
-    position: "fixed",
-    top: 12,
-    right: 14,
+    position: "relative",
     zIndex: 2000,
   },
 

@@ -437,16 +437,6 @@ export default function ProductPage() {
               e.target.style.display = "none";
             }}
           />
-          <div
-            style={{
-              fontWeight: 700,
-              fontSize: 17,
-              color: "#fff",
-              whiteSpace: "nowrap",
-            }}
-          >
-            ACHOICE <span style={{ color: "#f0c050" }}>MARKET</span>
-          </div>
         </div>
 
         {/* Desktop search — hidden on mobile via CSS */}

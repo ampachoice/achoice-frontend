@@ -5,7 +5,7 @@ import BuyerDropdown from "../../components/buyer/BuyerDropdown";
 import NotificationBell from "../../components/buyer/NotificationBell";
 import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
-const LOGO_PATH = "/achoice logo.png";
+const LOGO_PATH = "/android-chrome-192x192.png";
 
 
 export default function ComplaintsPage() {
@@ -160,7 +160,6 @@ export default function ComplaintsPage() {
           <div className="cmp-nav-left" onClick={() => navigate("/products")}>
             <img src={LOGO_PATH} alt="Logo" className="cmp-nav-logo"
               onError={(e) => { e.target.style.display = "none"; }} />
-            <div className="cmp-nav-name">ACHOICE <span>MARKET</span></div>
           </div>
           <div className="cmp-nav-right">
             <div className="cmp-desktop-only"><NotificationBell /><BuyerDropdown /></div>

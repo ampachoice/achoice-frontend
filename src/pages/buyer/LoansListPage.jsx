@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getLoanSummary, verifyLoanPayment, payAllDue, liquidateAll } from '../../services/loanService';
 import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
-import SellerLayout from '../../components/seller/SellerLayout';
 
 export default function LoansListPage() {
   let isSeller = false;
@@ -132,149 +131,6 @@ export default function LoansListPage() {
       active:    { background: '#eafaf0', color: '#1a7a3a' },
     })[status] || { background: '#f0f0f0', color: '#555' };
 
-  // Shared between the buyer and seller renders below — only the shell
-  // around it differs (buyer navbar vs. SellerLayout sidebar).
-  const body = (
-    <>
-      {verifying && (
-        <div style={s.verifyingBanner}>⏳ Confirming your payment...</div>
-      )}
-
-      {!isSeller && (
-        <div style={s.headerRow}>
-          <h1 style={s.title}>Loans</h1>
-          <span style={s.openNew} onClick={() => navigate('/loans/apply')}>
-            Open new
-          </span>
-        </div>
-      )}
-
-      {loading && <div style={s.loadingText}>Loading your loans...</div>}
-
-      {error && (
-        <div style={s.errorBox}>
-          ⚠️ {error}
-          <button style={s.retryBtn} onClick={() => window.location.reload()}>
-            Retry
-          </button>
-        </div>
-      )}
-
-      {!loading && !error && (
-        <>
-          {/* Total due this month — the big headline figure */}
-          <div style={s.totalCard}>
-            <div style={s.totalLabel}>Left to repay this month</div>
-            <div style={s.totalCardRow}>
-              <div style={s.totalAmount}>
-                ₦
-                {Number(summary?.total_due_this_month || 0).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              {Number(summary?.total_due_this_month || 0) > 0 && (
-                <button
-                  style={payingAll ? s.payAllBtnDisabled : s.payAllBtn}
-                  onClick={handlePayAll}
-                  disabled={payingAll}
-                >
-                  {payingAll ? '⏳ Starting...' : 'Pay All'}
-                </button>
-              )}
-              {loans.filter((l) => Number(l.balance) > 0).length > 1 && (
-                <button
-                  style={liquidatingAll ? s.payAllBtnDisabled : s.liquidateAllBtn}
-                  onClick={handleLiquidateAll}
-                  disabled={liquidatingAll}
-                  title="Pay off the full remaining balance of every loan at once"
-                >
-                  {liquidatingAll ? '⏳ Starting...' : '💳 Liquidate All'}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Loan cards */}
-          {loans.length === 0 ? (
-            <div style={s.emptyBox}>
-              <div style={s.emptyIcon}>💳</div>
-              <h2 style={s.emptyTitle}>You have no active loans</h2>
-              <p style={s.emptyText}>
-                Apply for a quick, affordable loan to grow your farm or business.
-              </p>
-              <button style={s.applyBtn} onClick={() => navigate('/loans/apply')}>
-                Apply for a Loan
-              </button>
-            </div>
-          ) : (
-            <div style={s.loanList}>
-              {loans.map((loan) => (
-                <div
-                  key={loan.id}
-                  style={s.loanCard}
-                  onClick={() => navigate(`/loans/${loan.id}`)}
-                >
-                  <div style={s.loanCardLeft}>
-                    <div style={s.loanIcon}>🌾</div>
-                    <div>
-                      <div style={s.loanLabel}>{loan.label}</div>
-                      <div style={s.loanSub}>
-                        {loan.is_disbursed ? 'Loan balance' : loan.status_label}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={s.loanCardRight}>
-                    <div style={s.loanAmount}>
-                      ₦{Number(loan.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </div>
-                    {loan.is_disbursed ? (
-                      <div style={s.loanBalance}>
-                        ₦{Number(loan.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </div>
-                    ) : (
-                      <div style={{ ...s.statusBadge, ...statusStyle(loan.status) }}>
-                        {loan.status_label}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </>
-  );
-
-  const toastNode = toast && (
-    <div
-      style={{
-        ...s.toast,
-        ...(toast.type === 'error' ? s.toastError : {}),
-      }}
-    >
-      {toast.message}
-    </div>
-  );
-
-  if (isSeller) {
-    return (
-      <SellerLayout
-        title="Loans"
-        subtitle="Loans are shared with the buyer side of ACHOICE — apply, repay, and track everything in one place."
-        headerActions={
-          <button style={s.applyBtn} onClick={() => navigate('/loans/apply')}>
-            + Apply for a Loan
-          </button>
-        }
-      >
-        <div style={s.container}>{body}</div>
-        {toastNode}
-      </SellerLayout>
-    );
-  }
-
   return (
     <div style={s.page}>
       <style>{`
@@ -297,27 +153,142 @@ export default function LoansListPage() {
 
       {/* Navbar */}
       <nav className="ll-nav">
-        <div className="ll-nav-left" onClick={() => navigate('/products')}>
+        <div className="ll-nav-left" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
-          <div style={s.logoText}>
-            ACHOICE <span style={{ color: '#f0c050' }}>LOANS</span>
-          </div>
         </div>
-        <div className="ll-nav-links">
-          <span className="ll-nav-link" onClick={() => navigate('/')}>Home</span>
+        <div className="ll-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
+          <span className="ll-nav-link" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>
           <span className="ll-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          <span className="ll-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
+          {!isSeller && <span className="ll-nav-link" onClick={() => navigate('/orders')}>My Orders</span>}
         </div>
         <div className="ll-nav-right">
-          <div className="ll-desktop-only">
-            <LoanHeaderActions cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
+          {!isSeller && (
+            <div className="ll-desktop-only">
+              <LoanHeaderActions cartCount={cartCount} />
+            </div>
+          )}
+          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
         </div>
       </nav>
 
-      <div style={s.container}>{body}</div>
-      {toastNode}
+      <div style={s.container}>
+        {verifying && (
+          <div style={s.verifyingBanner}>⏳ Confirming your payment...</div>
+        )}
+
+        <div style={s.headerRow}>
+          <h1 style={s.title}>Loans</h1>
+          <span style={s.openNew} onClick={() => navigate('/loans/apply')}>
+            Open new
+          </span>
+        </div>
+
+        {loading && <div style={s.loadingText}>Loading your loans...</div>}
+
+        {error && (
+          <div style={s.errorBox}>
+            ⚠️ {error}
+            <button style={s.retryBtn} onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* Total due this month — the big headline figure */}
+            <div style={s.totalCard}>
+              <div style={s.totalLabel}>Left to repay this month</div>
+              <div style={s.totalCardRow}>
+                <div style={s.totalAmount}>
+                  ₦
+                  {Number(summary?.total_due_this_month || 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </div>
+                {Number(summary?.total_due_this_month || 0) > 0 && (
+                  <button
+                    style={payingAll ? s.payAllBtnDisabled : s.payAllBtn}
+                    onClick={handlePayAll}
+                    disabled={payingAll}
+                  >
+                    {payingAll ? '⏳ Starting...' : 'Pay All'}
+                  </button>
+                )}
+                {loans.filter((l) => Number(l.balance) > 0).length > 1 && (
+                  <button
+                    style={liquidatingAll ? s.payAllBtnDisabled : s.liquidateAllBtn}
+                    onClick={handleLiquidateAll}
+                    disabled={liquidatingAll}
+                    title="Pay off the full remaining balance of every loan at once"
+                  >
+                    {liquidatingAll ? '⏳ Starting...' : '💳 Liquidate All'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Loan cards */}
+            {loans.length === 0 ? (
+              <div style={s.emptyBox}>
+                <div style={s.emptyIcon}>💳</div>
+                <h2 style={s.emptyTitle}>You have no active loans</h2>
+                <p style={s.emptyText}>
+                  Apply for a quick, affordable loan to grow your farm or business.
+                </p>
+                <button style={s.applyBtn} onClick={() => navigate('/loans/apply')}>
+                  Apply for a Loan
+                </button>
+              </div>
+            ) : (
+              <div style={s.loanList}>
+                {loans.map((loan) => (
+                  <div
+                    key={loan.id}
+                    style={s.loanCard}
+                    onClick={() => navigate(`/loans/${loan.id}`)}
+                  >
+                    <div style={s.loanCardLeft}>
+                      <div style={s.loanIcon}>🌾</div>
+                      <div>
+                        <div style={s.loanLabel}>{loan.label}</div>
+                        <div style={s.loanSub}>
+                          {loan.is_disbursed ? 'Loan balance' : loan.status_label}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={s.loanCardRight}>
+                      <div style={s.loanAmount}>
+                        ₦{Number(loan.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </div>
+                      {loan.is_disbursed ? (
+                        <div style={s.loanBalance}>
+                          ₦{Number(loan.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </div>
+                      ) : (
+                        <div style={{ ...s.statusBadge, ...statusStyle(loan.status) }}>
+                          {loan.status_label}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      {toast && (
+        <div
+          style={{
+            ...s.toast,
+            ...(toast.type === 'error' ? s.toastError : {}),
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }

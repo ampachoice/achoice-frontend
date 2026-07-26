@@ -222,10 +222,6 @@ export default function CartPage() {
       <nav className="crt-nav">
         <div className="crt-nav-left" onClick={() => navigate('/products')}>
           <img src="/android-chrome-192x192.png" alt="Logo" className="crt-nav-logo" />
-          <div>
-            <div className="crt-nav-name">ACHOICE <span>MARKET</span></div>
-            <div className="crt-nav-motto">Your needs our solutions</div>
-          </div>
         </div>
         <span className="crt-nav-back" onClick={() => navigate('/products')}>← Back to Marketplace</span>
         <div className="crt-nav-right">
