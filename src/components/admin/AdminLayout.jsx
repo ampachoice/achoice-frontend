@@ -103,6 +103,42 @@ export default function AdminLayout({
         }));
       })
       .catch(() => {});
+
+    // Same pagination pattern as complaints — these three endpoints all
+    // return a Laravel paginator, which serializes with a "total" key.
+    api
+      .get("/admin/sellers/pending-approval")
+      .then((res) => {
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/sellers": res.data?.total,
+        }));
+      })
+      .catch(() => {});
+
+    api
+      .get("/admin/products/pending-review")
+      .then((res) => {
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/products": res.data?.total,
+        }));
+      })
+      .catch(() => {});
+
+    api
+      .get("/admin/flash-sale-requests")
+      .then((res) => {
+        const total =
+          res.data?.total ??
+          (Array.isArray(res.data) ? res.data.length : res.data?.data?.length) ??
+          0;
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/flash-sale-requests": total,
+        }));
+      })
+      .catch(() => {});
   }, []);
 
   const mergedBadges = { ...autoBadges, ...badges };
