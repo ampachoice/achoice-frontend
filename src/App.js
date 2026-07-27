@@ -32,6 +32,10 @@ import ProfilePage      from './pages/buyer/ProfilePage';
 import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
 import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
+import WishlistPage         from './pages/buyer/WishlistPage';
+import SellerStorefrontPage from './pages/buyer/SellerStorefrontPage';
+import ContentPage     from './pages/ContentPage';
+import HelpCenterPage  from './pages/HelpCenterPage';
 
 // ── STAFF ────────────────────────────────────────────────────────────────────
 import AgroStaffDashboard from './pages/staff/AgroStaffDashboard';
@@ -111,6 +115,12 @@ const router = createBrowserRouter([
   { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
   { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
+  { path: '/wishlist',        element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
+  { path: '/sellers/:id',     element: <SellerStorefrontPage /> },
+  { path: '/help',            element: <HelpCenterPage /> },
+  { path: '/pages/:slug',     element: <ContentPage /> },
+  { path: '/help',          element: <HelpCenterPage /> },
+  { path: '/pages/:slug',   element: <ContentPage /> },
 
   // ── Staff ────────────────────────────────────────────────────────────────────
   {
