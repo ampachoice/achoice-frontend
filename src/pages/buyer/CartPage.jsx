@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
-import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import BuyerNav from '../../components/buyer/BuyerNav';
 
 export default function CartPage() {
   const navigate  = useNavigate();
@@ -219,23 +217,7 @@ export default function CartPage() {
     <div className="crt-wrap">
 
       {/* Nav */}
-      <nav className="crt-nav">
-        <div className="crt-nav-left" onClick={() => navigate('/products')}>
-          <img src="/android-chrome-192x192.png" alt="Logo" className="crt-nav-logo" />
-        </div>
-        <span className="crt-nav-back" onClick={() => navigate('/products')}>← Back to Marketplace</span>
-        <div className="crt-nav-right">
-          <div className="crt-cart-icon" onClick={() => navigate('/cart')}>
-            🛒
-            {cartCount > 0 && <span className="crt-cart-badge">{cartCount}</span>}
-          </div>
-          <div className="cp-desktop-only">
-            <NotificationBell />
-            <BuyerDropdown cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
-        </div>
-      </nav>
+      <BuyerNav />
 
       {feedback && <div className="crt-toast">{feedback}</div>}
 

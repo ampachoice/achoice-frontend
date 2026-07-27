@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getLoanSummary, verifyLoanPayment, payAllDue, liquidateAll } from '../../services/loanService';
 import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import BuyerNav from '../../components/buyer/BuyerNav';
 
 export default function LoansListPage() {
   let isSeller = false;
@@ -152,24 +153,20 @@ export default function LoansListPage() {
       `}</style>
 
       {/* Navbar */}
-      <nav className="ll-nav">
-        <div className="ll-nav-left" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/products')}>
-          <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
-        </div>
-        <div className="ll-nav-links" style={isSeller ? { display: 'flex', flexWrap: 'wrap' } : undefined}>
-          <span className="ll-nav-link" onClick={() => navigate(isSeller ? '/seller/dashboard' : '/')}>{isSeller ? 'Dashboard' : 'Home'}</span>
-          <span className="ll-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
-          {!isSeller && <span className="ll-nav-link" onClick={() => navigate('/orders')}>My Orders</span>}
-        </div>
-        <div className="ll-nav-right">
-          {!isSeller && (
-            <div className="ll-desktop-only">
-              <LoanHeaderActions cartCount={cartCount} />
-            </div>
-          )}
-          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
-        </div>
-      </nav>
+      {isSeller ? (
+        <nav className="ll-nav">
+          <div className="ll-nav-left" onClick={() => navigate('/seller/dashboard')}>
+            <img src="/android-chrome-192x192.png" alt="Logo" style={s.logoImg} />
+          </div>
+          <div className="ll-nav-links" style={{ display: 'flex', flexWrap: 'wrap' }}>
+            <span className="ll-nav-link" onClick={() => navigate('/seller/dashboard')}>Dashboard</span>
+            <span className="ll-nav-link" onClick={() => navigate('/loans/apply')}>Apply for Loan</span>
+          </div>
+          <div className="ll-nav-right" />
+        </nav>
+      ) : (
+        <BuyerNav />
+      )}
 
       <div style={s.container}>
         {verifying && (

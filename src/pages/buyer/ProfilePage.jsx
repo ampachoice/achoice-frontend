@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
-import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import BuyerNav from '../../components/buyer/BuyerNav';
 
 const LOGO_PATH = '/android-chrome-192x192.png';
 
@@ -164,25 +162,7 @@ export default function ProfilePage() {
       `}</style>
 
       {/* Navbar */}
-      <nav className="pf-nav">
-        <div className="pf-nav-brand" onClick={() => navigate('/')}>
-          <img src={LOGO_PATH} alt="Achoice Logo" className="pf-nav-logo-img" />
-        </div>
-        <div className="pf-nav-links">
-          <span className="pf-nav-link" onClick={() => navigate('/')}>Home</span>
-          <span className="pf-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
-          <span className="pf-nav-link" onClick={() => navigate('/cart')}>
-            Cart {cartCount > 0 && <span className="pf-cart-badge">{cartCount}</span>}
-          </span>
-        </div>
-        <div className="pf-nav-right">
-          <div className="pf-desktop-only">
-            <NotificationBell />
-            <BuyerDropdown cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
-        </div>
-      </nav>
+      <BuyerNav />
 
       <div className="pf-container">
         {/* Profile Header */}

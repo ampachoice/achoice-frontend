@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getMyOrders, confirmDelivery } from '../../services/orderService';
 import api from '../../services/api';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
-import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import BuyerNav from '../../components/buyer/BuyerNav';
 
 const LOGO_PATH = '/android-chrome-192x192.png';
 
@@ -192,26 +190,7 @@ if (reference) {
       {showCancelModal && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 460, padding: 28 }}><h3 style={{ margin: "0 0 14px", fontSize: 18, color: "#111" }}>Cancel Order?</h3><p style={{ color: "#b36b00", fontWeight: 600, fontSize: 13, marginBottom: 16 }}>Please note: If payment was made, refunds take at least 14 working days to process.</p><textarea style={{ width: "100%", minHeight: 90, padding: 12, border: "1.5px solid #ddd", borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }} placeholder="Please tell us why you want to cancel this order (minimum 10 characters)..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} /><div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}><button style={{ padding: "10px 20px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={() => setShowCancelModal(null)}>Keep My Order</button><button style={{ padding: "10px 20px", background: cancelSubmitting ? "#aaa" : "#cc0000", color: "#fff", border: "none", borderRadius: 7, cursor: cancelSubmitting ? "not-allowed" : "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={submitCancellation} disabled={cancelSubmitting}>{cancelSubmitting ? "Submitting..." : "Submit Cancellation Request"}</button></div></div></div>)}
 
       {/* Navbar */}
-      <nav className="oh-nav">
-        <div className="oh-nav-brand" onClick={() => navigate('/')}>
-          <img src={LOGO_PATH} alt="Achoice Logo" className="oh-nav-logo-img" />
-        </div>
-        <div className="oh-nav-links">
-          <span className="oh-nav-link" onClick={() => navigate('/')}>Home</span>
-          <span className="oh-nav-link" onClick={() => navigate('/products')}>Shop</span>
-          <span className="oh-nav-link" onClick={() => navigate('/loans/apply')}>Loans</span>
-          <span className="oh-nav-link" onClick={() => navigate('/cart')}>
-            Cart {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
-          </span>
-        </div>
-        <div className="oh-nav-actions">
-          <div className="oh-desktop-only">
-            <NotificationBell />
-            <BuyerDropdown cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
-        </div>
-      </nav>
+      <BuyerNav />
 
       <style>{`
         .oh-nav { background:#1a3d1a; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; position:sticky; top:0; z-index:100; gap:16px; }

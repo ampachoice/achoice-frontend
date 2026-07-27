@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
-import BuyerDropdown from "../../components/buyer/BuyerDropdown";
-import NotificationBell from "../../components/buyer/NotificationBell";
-import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
+import BuyerNav from "../../components/buyer/BuyerNav";
 
 const LOGO_PATH = "/android-chrome-192x192.png";
 
@@ -156,16 +154,7 @@ export default function ComplaintsPage() {
       `}</style>
 
       <div className="cmp-wrap">
-        <nav className="cmp-nav">
-          <div className="cmp-nav-left" onClick={() => navigate("/products")}>
-            <img src={LOGO_PATH} alt="Logo" className="cmp-nav-logo"
-              onError={(e) => { e.target.style.display = "none"; }} />
-          </div>
-          <div className="cmp-nav-right">
-            <div className="cmp-desktop-only"><NotificationBell /><BuyerDropdown /></div>
-            <MobileNavDrawer />
-          </div>
-        </nav>
+        <BuyerNav />
 
         <div className="cmp-body">
           <h1 className="cmp-title">📋 Complaints</h1>

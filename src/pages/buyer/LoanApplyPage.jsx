@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import LoanHeaderActions from "../../components/common/LoanHeaderActions";
 import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
+import BuyerNav from "../../components/buyer/BuyerNav";
 
 const LOGO_PATH = "/android-chrome-192x192.png";
 
@@ -339,12 +340,15 @@ export default function LoanApplyPage() {
   if (success) {
     return (
       <div style={s.page}>
-        <nav className="la-nav">
-          <div className="la-nav-brand">
-            <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
-          </div>
-          {!isSeller && <MobileNavDrawer />}
-        </nav>
+        {isSeller ? (
+          <nav className="la-nav">
+            <div className="la-nav-brand">
+              <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
+            </div>
+          </nav>
+        ) : (
+          <BuyerNav />
+        )}
         <style>{`
           .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
           .la-nav-brand { display:flex; align-items:center; gap:10px; cursor:default; min-width:0; overflow:hidden; flex:0 1 auto; }
@@ -509,41 +513,24 @@ export default function LoanApplyPage() {
       {showTerms && <TermsModal />}
 
       {/* Navbar */}
-      <nav className="la-nav">
-        <div className="la-nav-brand">
-          <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
-        </div>
-        <div
-          className="la-nav-links"
-          style={isSeller ? { display: "flex", flexWrap: "wrap" } : undefined}
-        >
-          <span
-            className="la-nav-link"
-            onClick={() => navigate(isSeller ? "/seller/dashboard" : "/")}
-          >
-            {isSeller ? "Dashboard" : "Home"}
-          </span>
-          {!isSeller && (
-            <span className="la-nav-link" onClick={() => navigate("/products")}>
-              Shop
+      {isSeller ? (
+        <nav className="la-nav">
+          <div className="la-nav-brand">
+            <img src={LOGO_PATH} alt="Achoice" className="la-nav-logo" />
+          </div>
+          <div className="la-nav-links" style={{ display: "flex", flexWrap: "wrap" }}>
+            <span className="la-nav-link" onClick={() => navigate("/seller/dashboard")}>
+              Dashboard
             </span>
-          )}
-          <span
-            className="la-nav-link"
-            onClick={() => navigate("/loans/repay")}
-          >
-            My Loans
-          </span>
-        </div>
-        <div className="la-nav-actions">
-          {!isSeller && (
-            <div className="la-desktop-only">
-              <LoanHeaderActions cartCount={cartCount} />
-            </div>
-          )}
-          {!isSeller && <MobileNavDrawer cartCount={cartCount} />}
-        </div>
-      </nav>
+            <span className="la-nav-link" onClick={() => navigate("/loans/repay")}>
+              My Loans
+            </span>
+          </div>
+          <div className="la-nav-actions" />
+        </nav>
+      ) : (
+        <BuyerNav />
+      )}
 
       <style>{`
         .la-nav { background:#fff; padding:14px 60px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e4dc; position:sticky; top:0; z-index:100; gap:16px; }
