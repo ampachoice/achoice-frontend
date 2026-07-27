@@ -28,8 +28,10 @@ const CSS = `
 // maintain instead of six-plus slightly different copies.
 //
 // Usage: <BuyerNav /> — no props needed, it's fully self-contained.
+// Pass showSearch to opt in to the category+search bar (e.g. <BuyerNav showSearch />
+// on the products listing page). Defaults to false so it's hidden everywhere else.
 // ─────────────────────────────────────────────────────────────────────────────
-export default function BuyerNav() {
+export default function BuyerNav({ showSearch = false }) {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -50,10 +52,11 @@ export default function BuyerNav() {
   }, []);
 
   useEffect(() => {
+    if (!showSearch) return;
     getCategories()
       .then((res) => setCategories(["All", ...(res.data || [])]))
       .catch(() => {});
-  }, []);
+  }, [showSearch]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -107,24 +110,26 @@ export default function BuyerNav() {
           />
         </div>
 
-        <form onSubmit={handleSearchSubmit} className="bn-search-group">
-          <select
-            value={selectedCat}
-            onChange={(e) => setSelectedCat(e.target.value)}
-          >
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <input
-            type="search"
-            placeholder="Search products..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </form>
+        {showSearch && (
+          <form onSubmit={handleSearchSubmit} className="bn-search-group">
+            <select
+              value={selectedCat}
+              onChange={(e) => setSelectedCat(e.target.value)}
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <input
+              type="search"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </form>
+        )}
 
         {/* Right side actions */}
         <div

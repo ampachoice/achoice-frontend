@@ -50,6 +50,15 @@ export default function ProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
+      // TODO(backend): PUT /profile does not exist in routes/api.php.
+      // Admin has PUT /admin/profile and sellers have PUT /seller/profile,
+      // but there is no equivalent buyer-facing route or controller
+      // method yet — this call will 404 until one is added server-side.
+      // Needs something like:
+      //   Route::put('/profile', [AuthController::class, 'updateProfile']);
+      // registered in the auth:sanctum group, with a controller method
+      // that updates the logged-in user's name/phone/address and
+      // returns the updated user object.
       const res = await api.put('/profile', profileForm);
       const updated = res.data.user || res.data;
       setUser(updated);
@@ -70,7 +79,15 @@ export default function ProfilePage() {
     }
     setSaving(true);
     try {
-      await api.put('/profile/password', passwordForm);
+      // PUT /profile/password doesn't exist on the backend — the actual
+      // working endpoint is POST /auth/change-password (same one
+      // ChangePasswordPage.jsx uses), which expects
+      // current_password / new_password / new_password_confirmation.
+      await api.post('/auth/change-password', {
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.password,
+        new_password_confirmation: passwordForm.password_confirmation,
+      });
       setPasswordForm({ current_password: '', password: '', password_confirmation: '' });
       showToast('Password changed successfully!');
     } catch (err) {
