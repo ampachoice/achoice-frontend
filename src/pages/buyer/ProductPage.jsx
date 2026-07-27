@@ -254,8 +254,6 @@ export default function ProductPage() {
   const [followBusy, setFollowBusy] = useState(false);
   const [actionToast, setActionToast] = useState("");
 
-  const token = localStorage.getItem("token");
-
   const showActionToast = (msg) => {
     setActionToast(msg);
     setTimeout(() => setActionToast(""), 3000);
