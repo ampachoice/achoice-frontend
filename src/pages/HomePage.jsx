@@ -2134,23 +2134,27 @@ export default function HomePage() {
               Explore
             </div>
             {[
-              "About Us",
-              "How It Works",
-              "Become a Seller",
-              "Farm Loans",
-              "Privacy Policy",
+              { label: "About Us",        href: "#how-it-works" },
+              { label: "How It Works",    href: "#how-it-works" },
+              { label: "Become a Seller", href: "/become-a-seller" },
+              { label: "Farm Loans",      href: "/loans/apply" },
+              { label: "Help Center",     href: "/help" },
+              { label: "Return Policy",   href: "/pages/return-refund-policy" },
+              { label: "Delivery Info",   href: "/pages/delivery-timeline" },
             ].map((item) => (
-              <div
-                key={item}
+              <a
+                key={item.label}
+                href={item.href}
                 style={{
                   fontSize: 12,
                   color: "#555",
                   marginBottom: 8,
-                  cursor: "pointer",
+                  display: "block",
+                  textDecoration: "none",
                 }}
               >
-                {item}
-              </div>
+                {item.label}
+              </a>
             ))}
           </div>
           <div>
@@ -2194,7 +2198,13 @@ export default function HomePage() {
           }}
         >
           <span>© 2026 {siteName}. All rights reserved.</span>
-          <span>Privacy Policy | Terms of Service</span>
+          <span>
+            <a href="/pages/return-refund-policy" style={{ color: "#666", textDecoration: "none" }}>Return Policy</a>
+            {" | "}
+            <a href="/pages/delivery-timeline" style={{ color: "#666", textDecoration: "none" }}>Delivery Info</a>
+            {" | "}
+            <a href="/help" style={{ color: "#666", textDecoration: "none" }}>Help Center</a>
+          </span>
         </div>
       </footer>
     </div>

@@ -32,6 +32,8 @@ import ProfilePage      from './pages/buyer/ProfilePage';
 import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
 import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
+import ContentPage     from './pages/ContentPage';
+import HelpCenterPage  from './pages/HelpCenterPage';
 
 // ── STAFF ────────────────────────────────────────────────────────────────────
 import AgroStaffDashboard from './pages/staff/AgroStaffDashboard';
@@ -111,6 +113,8 @@ const router = createBrowserRouter([
   { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
   { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
+  { path: '/help',          element: <HelpCenterPage /> },
+  { path: '/pages/:slug',   element: <ContentPage /> },
 
   // ── Staff ────────────────────────────────────────────────────────────────────
   {
