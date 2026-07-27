@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import api from "../../services/api";
 import {
   getAllProducts,
   getCategories,
@@ -246,6 +247,20 @@ export default function ProductPage() {
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [reviewError, setReviewError] = useState(null);
 
+  // wishlist & follow
+  const [wishlisted, setWishlisted] = useState({});   // { [productId]: bool }
+  const [wishBusy, setWishBusy] = useState(null);
+  const [followed, setFollowed] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [actionToast, setActionToast] = useState("");
+
+  const token = localStorage.getItem("token");
+
+  const showActionToast = (msg) => {
+    setActionToast(msg);
+    setTimeout(() => setActionToast(""), 3000);
+  };
+
   const user = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "null");
@@ -322,7 +337,13 @@ export default function ProductPage() {
     setReviewError(null);
     Promise.all([getProduct(id), getProductReviews(id)])
       .then(([pRes, rRes]) => {
-        setProduct(pRes.data);
+        const pData = pRes.data;
+        setProduct(pData);
+        // Seed wishlist + follow state from the response (token-aware on backend)
+        if (pData?.is_wishlisted !== undefined) {
+          setWishlisted((prev) => ({ ...prev, [pData.id]: pData.is_wishlisted }));
+        }
+        setFollowed(pData?.seller?.is_following ?? false);
         const rd = rRes.data;
         setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
         setReviewSummary(rd?.summary || null);
@@ -357,6 +378,50 @@ export default function ProductPage() {
     },
     [navigate],
   );
+
+  const handleWishlist = async (e, productId, productName) => {
+    e.stopPropagation();
+    if (!token) { navigate("/login"); return; }
+    const isNowWishlisted = wishlisted[productId];
+    setWishBusy(productId);
+    try {
+      if (isNowWishlisted) {
+        await api.delete(`/wishlist/${productId}`);
+        setWishlisted((prev) => ({ ...prev, [productId]: false }));
+        showActionToast(`Removed from wishlist`);
+      } else {
+        await api.post(`/wishlist/${productId}`);
+        setWishlisted((prev) => ({ ...prev, [productId]: true }));
+        showActionToast(`${productName} added to wishlist`);
+      }
+    } catch (err) {
+      showActionToast(err?.response?.data?.message || "Action failed");
+    } finally {
+      setWishBusy(null);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!token) { navigate("/login"); return; }
+    const sellerId = product?.seller?.id;
+    if (!sellerId) return;
+    setFollowBusy(true);
+    try {
+      if (followed) {
+        await api.delete(`/sellers/${sellerId}/unfollow`);
+        setFollowed(false);
+        showActionToast("Unfollowed seller");
+      } else {
+        await api.post(`/sellers/${sellerId}/follow`);
+        setFollowed(true);
+        showActionToast("Now following " + (seller?.business_name || "seller"));
+      }
+    } catch (err) {
+      showActionToast(err?.response?.data?.message || "Action failed");
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   // submit review
   const handleReviewSubmit = async (e) => {
@@ -785,6 +850,15 @@ export default function ProductPage() {
   if (!id && listLoading)
     return (
       <div className="pp-wrap">
+      {actionToast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, background: "#1f4d1f", color: "#fff",
+          padding: "12px 20px", borderRadius: 8, fontSize: 14, zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+          {actionToast}
+        </div>
+      )}
         <Nav />
         <div className="pp-loader">Loading products…</div>
       </div>
@@ -793,6 +867,15 @@ export default function ProductPage() {
   if (!id && listError)
     return (
       <div className="pp-wrap">
+      {actionToast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, background: "#1f4d1f", color: "#fff",
+          padding: "12px 20px", borderRadius: 8, fontSize: 14, zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+          {actionToast}
+        </div>
+      )}
         <Nav />
         <div className="pp-error">
           {listError}{" "}
@@ -822,6 +905,15 @@ export default function ProductPage() {
   if (id && detailLoading)
     return (
       <div className="pp-wrap">
+      {actionToast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, background: "#1f4d1f", color: "#fff",
+          padding: "12px 20px", borderRadius: 8, fontSize: 14, zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+          {actionToast}
+        </div>
+      )}
         <Nav />
         <div className="pp-loader">Loading product…</div>
       </div>
@@ -830,6 +922,15 @@ export default function ProductPage() {
   if (id && !product && !detailLoading)
     return (
       <div className="pp-wrap">
+      {actionToast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, background: "#1f4d1f", color: "#fff",
+          padding: "12px 20px", borderRadius: 8, fontSize: 14, zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+          {actionToast}
+        </div>
+      )}
         <Nav />
         <div className="pp-container">
           <button className="pp-back-btn" onClick={() => navigate("/products")}>
@@ -862,6 +963,15 @@ export default function ProductPage() {
   // ── Main render ──────────────────────────────────────────────────────────
   return (
     <div className="pp-wrap">
+      {actionToast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, background: "#1f4d1f", color: "#fff",
+          padding: "12px 20px", borderRadius: 8, fontSize: 14, zIndex: 9999,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+          {actionToast}
+        </div>
+      )}
       <Nav />
       <div className="pp-container">
         {/* ════════════════════ LISTING ════════════════════ */}
@@ -896,6 +1006,21 @@ export default function ProductPage() {
                         {p.category && (
                           <div className="pp-cat-badge">{p.category}</div>
                         )}
+                        <button
+                          style={{
+                            position: "absolute", top: 8, right: 8,
+                            background: "rgba(255,255,255,0.92)", border: "none",
+                            borderRadius: "50%", width: 30, height: 30, fontSize: 15,
+                            cursor: "pointer", display: "flex", alignItems: "center",
+                            justifyContent: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                            zIndex: 2,
+                          }}
+                          onClick={(e) => handleWishlist(e, p.id, p.name)}
+                          disabled={wishBusy === p.id}
+                          title={wishlisted[p.id] ? "Remove from wishlist" : "Add to wishlist"}
+                        >
+                          {wishBusy === p.id ? "…" : wishlisted[p.id] ? "❤️" : "🤍"}
+                        </button>
                       </div>
                       <div className="pp-card-body">
                         <div className="pp-card-name">{p.name}</div>
@@ -1063,6 +1188,21 @@ export default function ProductPage() {
                     : "Add to Cart"}
                 </button>
 
+                <button
+                  style={{
+                    width: "100%", padding: "11px", marginTop: 10,
+                    background: wishlisted[product.id] ? "#fff5f5" : "#fff",
+                    color: wishlisted[product.id] ? "#cc0000" : "#555",
+                    border: `1.5px solid ${wishlisted[product.id] ? "#ffcccc" : "#ddd"}`,
+                    borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                  onClick={(e) => handleWishlist(e, product.id, product.name)}
+                  disabled={wishBusy === product.id}
+                >
+                  {wishBusy === product.id ? "..." : wishlisted[product.id] ? "❤️ Wishlisted" : "🤍 Add to Wishlist"}
+                </button>
+
                 {seller && (
                   <div className="pp-seller-card">
                     <div className="pp-seller-label">Sold by</div>
@@ -1102,6 +1242,33 @@ export default function ProductPage() {
                         💬 Contact Seller
                       </a>
                     )}
+                    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                      <button
+                        style={{
+                          padding: "8px 16px",
+                          background: followed ? "#fff" : "#1f4d1f",
+                          color: followed ? "#1f4d1f" : "#fff",
+                          border: "1.5px solid #1f4d1f",
+                          borderRadius: 7, fontSize: 12, fontWeight: 600,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}
+                        onClick={handleFollow}
+                        disabled={followBusy}
+                      >
+                        {followBusy ? "..." : followed ? "✓ Following" : "+ Follow Seller"}
+                      </button>
+                      <button
+                        style={{
+                          padding: "8px 16px", background: "#f9f7f3",
+                          color: "#555", border: "1px solid #e8e4dc",
+                          borderRadius: 7, fontSize: 12, fontWeight: 600,
+                          cursor: "pointer", fontFamily: "inherit",
+                        }}
+                        onClick={() => navigate(`/sellers/${seller.id}`)}
+                      >
+                        View Store
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
