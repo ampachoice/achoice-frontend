@@ -310,7 +310,6 @@ export default function BuyerNav({ showSearch = false }) {
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
               {[
-                { label: "🏠 Home", path: "/" },
                 { label: "🛍️ Shop Products", path: "/products" },
                 { label: "👤 My Profile", path: "/profile" },
                 { label: "🛒 Cart", path: "/cart" },
