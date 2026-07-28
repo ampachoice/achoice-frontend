@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-import NotificationBell from '../../components/buyer/NotificationBell';
-import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
+import BuyerNav from '../../components/buyer/BuyerNav';
 
 const LOGO_PATH = '/android-chrome-192x192.png';
 
@@ -22,19 +19,12 @@ export default function ProfilePage() {
   const [passwordForm, setPasswordForm] = useState({
     current_password: '', password: '', password_confirmation: '',
   });
-  const [searchParams] = useSearchParams();
-  const [showCloseModal, setShowCloseModal] = useState(false);
-  const [closePassword, setClosePassword] = useState('');
-  const [closeReason, setCloseReason] = useState('');
-  const [closeLoading, setCloseLoading] = useState(false);
-  const [closeError, setCloseError] = useState('');
   const [showPasswords, setShowPasswords] = useState({
     current: false, new: false, confirm: false,
   });
 
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    if (searchParams.get('tab') === 'close-account') setActiveTab('close-account');
     setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 0), 0));
     api.get('/me')
       .then((res) => {
@@ -60,6 +50,15 @@ export default function ProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
+      // TODO(backend): PUT /profile does not exist in routes/api.php.
+      // Admin has PUT /admin/profile and sellers have PUT /seller/profile,
+      // but there is no equivalent buyer-facing route or controller
+      // method yet — this call will 404 until one is added server-side.
+      // Needs something like:
+      //   Route::put('/profile', [AuthController::class, 'updateProfile']);
+      // registered in the auth:sanctum group, with a controller method
+      // that updates the logged-in user's name/phone/address and
+      // returns the updated user object.
       const res = await api.put('/profile', profileForm);
       const updated = res.data.user || res.data;
       setUser(updated);
@@ -80,31 +79,21 @@ export default function ProfilePage() {
     }
     setSaving(true);
     try {
-      await api.put('/profile/password', passwordForm);
+      // PUT /profile/password doesn't exist on the backend — the actual
+      // working endpoint is POST /auth/change-password (same one
+      // ChangePasswordPage.jsx uses), which expects
+      // current_password / new_password / new_password_confirmation.
+      await api.post('/auth/change-password', {
+        current_password: passwordForm.current_password,
+        new_password: passwordForm.password,
+        new_password_confirmation: passwordForm.password_confirmation,
+      });
       setPasswordForm({ current_password: '', password: '', password_confirmation: '' });
       showToast('Password changed successfully!');
     } catch (err) {
       showToast(err?.response?.data?.message || 'Failed to change password.');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleCloseAccount = async (e) => {
-    e.preventDefault();
-    setCloseLoading(true);
-    setCloseError('');
-    try {
-      await api.post('/account/close', {
-        password: closePassword,
-        reason: closeReason || undefined,
-      });
-      localStorage.clear();
-      navigate('/login?message=Your account has been closed. Thank you for using ACHOICE.');
-    } catch (err) {
-      setCloseError(err?.response?.data?.message || 'Failed to close account. Please try again.');
-    } finally {
-      setCloseLoading(false);
     }
   };
 
@@ -190,25 +179,7 @@ export default function ProfilePage() {
       `}</style>
 
       {/* Navbar */}
-      <nav className="pf-nav">
-        <div className="pf-nav-brand" onClick={() => navigate('/')}>
-          <img src={LOGO_PATH} alt="Achoice Logo" className="pf-nav-logo-img" />
-        </div>
-        <div className="pf-nav-links">
-          <span className="pf-nav-link" onClick={() => navigate('/')}>Home</span>
-          <span className="pf-nav-link" onClick={() => navigate('/orders')}>My Orders</span>
-          <span className="pf-nav-link" onClick={() => navigate('/cart')}>
-            Cart {cartCount > 0 && <span className="pf-cart-badge">{cartCount}</span>}
-          </span>
-        </div>
-        <div className="pf-nav-right">
-          <div className="pf-desktop-only">
-            <NotificationBell />
-            <BuyerDropdown cartCount={cartCount} />
-          </div>
-          <MobileNavDrawer cartCount={cartCount} />
-        </div>
-      </nav>
+      <BuyerNav />
 
       <div className="pf-container">
         {/* Profile Header */}
@@ -263,12 +234,6 @@ export default function ProfilePage() {
             onClick={() => setActiveTab('password')}
           >
             Change Password
-          </button>
-          <button
-            style={activeTab === 'close-account' ? { ...s.tab, borderColor: '#cc0000', color: '#cc0000' } : s.tab}
-            onClick={() => setActiveTab('close-account')}
-          >
-            Close Account
           </button>
         </div>
 
@@ -420,103 +385,6 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-
-      {/* Close Account Tab */}
-      {activeTab === 'close-account' && (
-        <div className="pf-card">
-          <h2 style={{ ...s.cardTitle, color: '#cc0000' }}>⚠️ Close Account</h2>
-          <p style={s.cardSub}>
-            This action is <strong>irreversible</strong>. Your personal data will be anonymised,
-            but your order and loan history will remain in our system for compliance.
-            You will be logged out immediately.
-          </p>
-
-          <div style={{
-            background: '#fff0f0', border: '1px solid #ffb3b3', borderRadius: 8,
-            padding: '14px 16px', marginBottom: 24, fontSize: 13, color: '#cc0000',
-          }}>
-            <strong>Before you close your account:</strong>
-            <ul style={{ margin: '8px 0 0', paddingLeft: 20, lineHeight: 1.8 }}>
-              <li>Active or pending loans must be settled first</li>
-              <li>Outstanding orders will still be fulfilled</li>
-              <li>You cannot reopen your account — contact support if needed</li>
-            </ul>
-          </div>
-
-          {!showCloseModal ? (
-            <button
-              style={{
-                padding: '12px 28px', background: '#fff', color: '#cc0000',
-                border: '2px solid #cc0000', borderRadius: 7, fontSize: 14,
-                fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              }}
-              onClick={() => setShowCloseModal(true)}
-            >
-              I understand — proceed to close my account
-            </button>
-          ) : (
-            <form onSubmit={handleCloseAccount} style={{ maxWidth: 440 }}>
-              <div style={s.field}>
-                <label style={s.label}>Confirm your password</label>
-                <input
-                  style={s.input}
-                  type="password"
-                  placeholder="Enter your current password"
-                  value={closePassword}
-                  onChange={(e) => setClosePassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div style={s.field}>
-                <label style={s.label}>
-                  Reason <span style={{ color: '#aaa', fontWeight: 400 }}>(optional)</span>
-                </label>
-                <input
-                  style={s.input}
-                  type="text"
-                  placeholder="Why are you closing your account?"
-                  value={closeReason}
-                  onChange={(e) => setCloseReason(e.target.value)}
-                />
-              </div>
-              {closeError && (
-                <div style={{
-                  background: '#fff0f0', color: '#cc0000', padding: '10px 14px',
-                  borderRadius: 6, fontSize: 13, marginBottom: 16, border: '1px solid #ffb3b3',
-                }}>
-                  ⚠️ {closeError}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1, padding: '12px', background: '#f0f0f0', color: '#333',
-                    border: 'none', borderRadius: 7, fontSize: 14, cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                  onClick={() => { setShowCloseModal(false); setCloseError(''); setClosePassword(''); }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1, padding: '12px',
-                    background: closeLoading ? '#ccc' : '#cc0000',
-                    color: '#fff', border: 'none', borderRadius: 7, fontSize: 14,
-                    fontWeight: 600, cursor: closeLoading ? 'not-allowed' : 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                  disabled={closeLoading || !closePassword}
-                >
-                  {closeLoading ? 'Closing...' : 'Close My Account'}
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      )}
 
       {/* Footer */}
       <footer className="pf-footer">

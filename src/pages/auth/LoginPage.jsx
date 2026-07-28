@@ -86,12 +86,7 @@ export default function LoginPage() {
         navigate("/products");
       }
     } catch (err) {
-      const code = err.response?.data?.code;
-      if (code === "ACCOUNT_CLOSED") {
-        setError("This account has been closed. Contact support@achoice.ng if this is a mistake.");
-      } else {
-        setError(err.response?.data?.message || "Invalid email or password.");
-      }
+      setError(err.response?.data?.message || "Invalid email or password.");
     } finally {
       setLoading(false);
     }
