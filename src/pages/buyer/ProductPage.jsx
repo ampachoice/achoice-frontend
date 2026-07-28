@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 import {
@@ -36,11 +36,27 @@ const CSS = `
 
   /* ── MOBILE SEARCH BAR ── */
   .pp-mobile-bar { display:none; position:sticky; z-index:190; }
-  .pp-mobile-bar-inner { padding:10px 12px; display:flex; gap:8px; background:#1a3d1a; border-bottom:3px solid #f0c050; align-items:center; }
+  .pp-mobile-bar-inner { padding:10px 12px; display:flex; gap:8px; background:#1a3d1a; border-bottom:3px solid #f0c050; align-items:center; position:relative; }
   .pp-mobile-bar-inner select { padding:10px 8px; border:none; border-radius:8px; font-size:14px; outline:none; font-family:inherit; background:#fff; color:#333; flex-shrink:0; min-width:80px; max-width:110px; cursor:pointer; }
   .pp-mobile-bar-inner input { flex:1; padding:10px 14px; border:none; border-radius:8px; font-size:16px; outline:none; font-family:inherit; min-width:0; }
   .pp-mobile-bar-clear { background:none; border:none; color:#aaa; font-size:18px; cursor:pointer; padding:0 4px; flex-shrink:0; }
   .pp-mobile-bar-count { padding:5px 14px 8px; background:#1a3d1a; font-size:12px; color:#a8d5a8; }
+
+  /* ── LIVE SEARCH SUGGESTIONS ── */
+  .pp-search-group { position:relative; }
+  .pp-suggest-box { position:absolute; top:calc(100% + 8px); left:0; right:0; background:#fff; border-radius:12px; border:1px solid #e8e4dc; box-shadow:0 12px 32px rgba(0,0,0,0.18); max-height:360px; overflow-y:auto; z-index:250; }
+  .pp-mobile-bar .pp-suggest-box { top:calc(100% + 4px); left:12px; right:12px; }
+  .pp-suggest-item { display:flex; align-items:center; gap:12px; padding:10px 14px; cursor:pointer; transition:background .15s; }
+  .pp-suggest-item:hover { background:#f7f5f0; }
+  .pp-suggest-item:not(:last-child) { border-bottom:1px solid #f5f2ea; }
+  .pp-suggest-img { width:40px; height:40px; border-radius:8px; background:#f5f5f5; overflow:hidden; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:18px; color:#ccc; }
+  .pp-suggest-img img { width:100%; height:100%; object-fit:cover; }
+  .pp-suggest-info { min-width:0; flex:1; }
+  .pp-suggest-name { font-size:13px; font-weight:600; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pp-suggest-price { font-size:12px; color:#1f4d1f; font-weight:700; margin-top:2px; }
+  .pp-suggest-loading, .pp-suggest-empty { padding:16px 14px; font-size:13px; color:#888; text-align:center; }
+  .pp-suggest-viewall { display:flex; align-items:center; justify-content:center; gap:6px; padding:11px 14px; font-size:13px; font-weight:700; color:#1f4d1f; cursor:pointer; background:#f7f5f0; }
+  .pp-suggest-viewall:hover { background:#f0ece0; }
 
   /* ── CONTAINER ── */
   .pp-container { padding:28px 40px; max-width:1280px; margin:0 auto; }
@@ -207,267 +223,109 @@ function Stars({ rating = 0, size = 14 }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main component
+// Debounce helper — delays reacting to a fast-changing value (like keystrokes)
+// until it's been stable for `delay` ms. Used so the search bar doesn't fire
+// an API request on every single character typed.
 // ─────────────────────────────────────────────────────────────────────────────
-export default function ProductPage() {
-  const { id } = useParams();
+function useDebouncedValue(value, delay = 350) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ProductNav — defined ONCE at module scope (not recreated inside ProductPage
+// on every render, which is what previously caused the whole nav — including
+// the search input — to unmount and remount on every keystroke, so the input
+// lost focus and only ever accepted one character at a time). Own local
+// menuOpen state; everything else comes in as props.
+// ─────────────────────────────────────────────────────────────────────────────
+function ProductNav({
+  id,
+  categories,
+  selectedCat,
+  setSelectedCat,
+  searchTerm,
+  setSearchTerm,
+  suggestions,
+  suggestLoading,
+  showSuggestions,
+  setShowSuggestions,
+  products,
+  cartCount,
+  token,
+}) {
   const navigate = useNavigate();
-
-  // shared
-  const [cartCount, setCartCount] = useState(0);
-  const [categories, setCategories] = useState(["All"]);
-
-  // listing
-  const [products, setProducts] = useState([]);
-  const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  // Pre-filter from a landing-page "See all" / category quick-link, e.g. /products?category=grains.
-  const [searchParams] = useSearchParams();
-  const [selectedCat, setSelectedCat] = useState(
-    searchParams.get("category") || "All",
-  );
-  const [listLoading, setListLoading] = useState(false);
-  const [listError, setListError] = useState(null);
-
-  // detail
-  const [product, setProduct] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [reviewSummary, setReviewSummary] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [activeImg, setActiveImg] = useState(0);
-
-  // review form
-  const [reviewForm, setReviewForm] = useState({
-    rating: 5,
-    comment: "",
-    order_id: "",
-  });
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [reviewError, setReviewError] = useState(null);
-
-  // wishlist & follow
-  const [wishlisted, setWishlisted] = useState({}); // { [productId]: bool }
-  const [wishBusy, setWishBusy] = useState(null);
-  const [followed, setFollowed] = useState(false);
-  const [followBusy, setFollowBusy] = useState(false);
-  const [actionToast, setActionToast] = useState("");
-
-  const showActionToast = (msg) => {
-    setActionToast(msg);
-    setTimeout(() => setActionToast(""), 3000);
-  };
-
-  const user = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null");
-    } catch {
-      return null;
-    }
-  })();
-
-  // sync cart count
-  useEffect(() => {
-    const sync = () => {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
-    };
-    sync();
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
-
-  // load categories
-  useEffect(() => {
-    getCategories()
-      .then((res) => {
-        const raw = res.data?.categories || res.data || [];
-        const names = (Array.isArray(raw) ? raw : [])
-          .map((c) =>
-            typeof c === "string" ? c : c.slug || c.name || c.category,
-          )
-          .filter(Boolean);
-        setCategories(["All", ...names]);
-      })
-      .catch(() => {});
-  }, []);
-
-  // reset page on filter change
-  useEffect(() => {
-    setPage(1);
-  }, [selectedCat, searchTerm]);
-
-  // load product list
-  useEffect(() => {
-    if (id) return;
-    setListLoading(true);
-    setListError(null);
-    const sellerId = searchParams.get("seller_id");
-    getAllProducts({
-      page,
-      per_page: 20,
-      ...(selectedCat !== "All" && { category: selectedCat }),
-      ...(searchTerm && { search: searchTerm }),
-      ...(sellerId && { seller_id: sellerId }),
-    })
-      .then((res) => {
-        const pData = res.data;
-        const data = pData?.data || (Array.isArray(pData) ? pData : []);
-        setProducts(data);
-        setMeta(pData?.meta || (pData?.last_page ? pData : null));
-      })
-      .catch(() =>
-        setListError("Failed to load products. Please check your connection."),
-      )
-      .finally(() => setListLoading(false));
-  }, [id, page, selectedCat, searchTerm, searchParams]);
-
-  // load product detail
-  useEffect(() => {
-    if (!id) return;
-    setDetailLoading(true);
-    setProduct(null);
-    setReviews([]);
-    setReviewSummary(null);
-    setActiveImg(0);
-    setReviewSuccess(false);
-    setReviewError(null);
-    Promise.all([getProduct(id), getProductReviews(id)])
-      .then(([pRes, rRes]) => {
-        const pData = pRes.data;
-        setProduct(pData);
-        // Seed wishlist + follow state from the response (token-aware on backend)
-        if (pData?.is_wishlisted !== undefined) {
-          setWishlisted((prev) => ({
-            ...prev,
-            [pData.id]: pData.is_wishlisted,
-          }));
-        }
-        setFollowed(pData?.seller?.is_following ?? false);
-        const rd = rRes.data;
-        setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
-        setReviewSummary(rd?.summary || null);
-      })
-      .catch(() => setProduct(null))
-      .finally(() => setDetailLoading(false));
-  }, [id]);
-
-  // add to cart
-  const handleAddToCart = useCallback(
-    (p) => {
-      if (!p) return;
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      const idx = cart.findIndex((item) => item.id === p.id);
-      if (idx > -1) {
-        cart[idx].quantity += 1;
-      } else {
-        cart.push({
-          id: p.id,
-          name: p.name,
-          price: Number(p.discount_price || p.price),
-          image:
-            p.images?.[0]?.image_url || p.images?.[0]?.url || p.image || "",
-          quantity: 1,
-          unit: p.unit || "",
-          seller: p.seller?.business_name || "",
-        });
-      }
-      localStorage.setItem("cart", JSON.stringify(cart));
-      setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
-      navigate("/cart");
-    },
-    [navigate],
-  );
-
-  const handleWishlist = async (e, productId, productName) => {
-    e.stopPropagation();
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-    const isNowWishlisted = wishlisted[productId];
-    setWishBusy(productId);
-    try {
-      if (isNowWishlisted) {
-        await api.delete(`/wishlist/${productId}`);
-        setWishlisted((prev) => ({ ...prev, [productId]: false }));
-        showActionToast(`Removed from wishlist`);
-      } else {
-        await api.post(`/wishlist/${productId}`);
-        setWishlisted((prev) => ({ ...prev, [productId]: true }));
-        showActionToast(`${productName} added to wishlist`);
-      }
-    } catch (err) {
-      showActionToast(err?.response?.data?.message || "Action failed");
-    } finally {
-      setWishBusy(null);
-    }
-  };
-
-  const handleFollow = async () => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-    const sellerId = product?.seller?.id;
-    if (!sellerId) return;
-    setFollowBusy(true);
-    try {
-      if (followed) {
-        await api.delete(`/sellers/${sellerId}/unfollow`);
-        setFollowed(false);
-        showActionToast("Unfollowed seller");
-      } else {
-        await api.post(`/sellers/${sellerId}/follow`);
-        setFollowed(true);
-        showActionToast("Now following " + (seller?.business_name || "seller"));
-      }
-    } catch (err) {
-      showActionToast(err?.response?.data?.message || "Action failed");
-    } finally {
-      setFollowBusy(false);
-    }
-  };
-
-  // submit review
-  const handleReviewSubmit = async (e) => {
-    e.preventDefault();
-    if (!reviewForm.comment.trim()) return;
-    setReviewSubmitting(true);
-    setReviewError(null);
-    try {
-      await submitProductReview(id, reviewForm);
-      setReviewSuccess(true);
-      setReviewForm({ rating: 5, comment: "", order_id: "" });
-      const res = await getProductReviews(id);
-      const rd = res.data;
-      setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
-      setReviewSummary(rd?.summary || null);
-    } catch (err) {
-      setReviewError(
-        err.response?.data?.message ||
-          "Failed to submit review. Please try again.",
-      );
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
-  const fmtDate = (d) =>
-    d
-      ? new Date(d).toLocaleDateString("en-NG", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })
-      : "";
-
-  // ── Nav — uses same pattern as HomePage for reliable rendering ─────────────
-  const token = localStorage.getItem("token");
   const [menuOpen, setMenuOpen] = useState(false);
+  const desktopSearchRef = useRef(null);
+  const mobileSearchRef = useRef(null);
 
-  const Nav = () => (
+  // Close the suggestion dropdown on outside click (either search box).
+  useEffect(() => {
+    const handler = (e) => {
+      const inDesktop =
+        desktopSearchRef.current && desktopSearchRef.current.contains(e.target);
+      const inMobile =
+        mobileSearchRef.current && mobileSearchRef.current.contains(e.target);
+      if (!inDesktop && !inMobile) setShowSuggestions(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [setShowSuggestions]);
+
+  const goToSuggestion = (p) => {
+    setShowSuggestions(false);
+    navigate(`/product/${p.id}`);
+  };
+
+  const viewAllResults = () => setShowSuggestions(false);
+
+  const SuggestBox = () => (
+    <div className="pp-suggest-box">
+      {suggestLoading ? (
+        <div className="pp-suggest-loading">Searching…</div>
+      ) : suggestions.length > 0 ? (
+        <>
+          {suggestions.map((p) => {
+            const pImg =
+              p.images?.[0]?.image_url || p.images?.[0]?.url || p.image;
+            const price = p.discount_price && Number(p.discount_price) > 0
+              ? p.discount_price
+              : p.price;
+            return (
+              <div
+                key={p.id}
+                className="pp-suggest-item"
+                onClick={() => goToSuggestion(p)}
+              >
+                <div className="pp-suggest-img">
+                  {pImg ? <img src={pImg} alt={p.name} /> : <span>📦</span>}
+                </div>
+                <div className="pp-suggest-info">
+                  <div className="pp-suggest-name">{p.name}</div>
+                  <div className="pp-suggest-price">
+                    ₦{Number(price || 0).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div className="pp-suggest-viewall" onClick={viewAllResults}>
+            View all results for "{searchTerm}"
+          </div>
+        </>
+      ) : (
+        <div className="pp-suggest-empty">
+          No products found for "{searchTerm}"
+        </div>
+      )}
+    </div>
+  );
+
+  return (
     <>
       <style>{CSS}</style>
 
@@ -513,7 +371,7 @@ export default function ProductPage() {
 
         {/* Desktop search — hidden on mobile via CSS */}
         {!id && (
-          <div className="pp-search-group">
+          <div className="pp-search-group" ref={desktopSearchRef}>
             <select
               value={selectedCat}
               onChange={(e) => setSelectedCat(e.target.value)}
@@ -529,7 +387,10 @@ export default function ProductPage() {
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              autoComplete="off"
             />
+            {showSuggestions && searchTerm.trim() && <SuggestBox />}
           </div>
         )}
 
@@ -712,7 +573,6 @@ export default function ProductPage() {
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
               {[
-                { label: "🏠 Home", path: "/" },
                 { label: "🛍️ Shop Products", path: "/products" },
                 { label: "👤 My Profile", path: "/profile" },
                 { label: "🛒 Cart", path: "/cart" },
@@ -815,7 +675,7 @@ export default function ProductPage() {
       {/* Mobile search bar */}
       {!id && (
         <div className="pp-mobile-bar">
-          <div className="pp-mobile-bar-inner">
+          <div className="pp-mobile-bar-inner" ref={mobileSearchRef}>
             <select
               value={selectedCat}
               onChange={(e) => setSelectedCat(e.target.value)}
@@ -831,6 +691,7 @@ export default function ProductPage() {
               placeholder="🔍 Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
               autoComplete="off"
             />
             {searchTerm && (
@@ -841,6 +702,7 @@ export default function ProductPage() {
                 ✕
               </button>
             )}
+            {showSuggestions && searchTerm.trim() && <SuggestBox />}
           </div>
           {searchTerm && (
             <div className="pp-mobile-bar-count">
@@ -852,6 +714,301 @@ export default function ProductPage() {
       )}
     </>
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main component
+// ─────────────────────────────────────────────────────────────────────────────
+export default function ProductPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  // shared
+  const [cartCount, setCartCount] = useState(0);
+  const [categories, setCategories] = useState(["All"]);
+
+  // listing
+  const [products, setProducts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  // Debounced so we don't hammer the API (or remount anything) on every keystroke.
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 350);
+  // Live "as you type" suggestion dropdown (Jumia-style), separate from the grid below.
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  // Pre-filter from a landing-page "See all" / category quick-link, e.g. /products?category=grains.
+  const [searchParams] = useSearchParams();
+  const [selectedCat, setSelectedCat] = useState(
+    searchParams.get("category") || "All",
+  );
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState(null);
+
+  // detail
+  const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
+
+  // review form
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: "",
+    order_id: "",
+  });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewError, setReviewError] = useState(null);
+
+  // wishlist & follow
+  const [wishlisted, setWishlisted] = useState({}); // { [productId]: bool }
+  const [wishBusy, setWishBusy] = useState(null);
+  const [followed, setFollowed] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [actionToast, setActionToast] = useState("");
+
+  const showActionToast = (msg) => {
+    setActionToast(msg);
+    setTimeout(() => setActionToast(""), 3000);
+  };
+
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  // sync cart count
+  useEffect(() => {
+    const sync = () => {
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
+    };
+    sync();
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+
+  // load categories
+  useEffect(() => {
+    getCategories()
+      .then((res) => {
+        const raw = res.data?.categories || res.data || [];
+        const names = (Array.isArray(raw) ? raw : [])
+          .map((c) =>
+            typeof c === "string" ? c : c.slug || c.name || c.category,
+          )
+          .filter(Boolean);
+        setCategories(["All", ...names]);
+      })
+      .catch(() => {});
+  }, []);
+
+  // reset page on filter change
+  useEffect(() => {
+    setPage(1);
+  }, [selectedCat, debouncedSearchTerm]);
+
+  // load product list
+  useEffect(() => {
+    if (id) return;
+    setListLoading(true);
+    setListError(null);
+    const sellerId = searchParams.get("seller_id");
+    getAllProducts({
+      page,
+      per_page: 20,
+      ...(selectedCat !== "All" && { category: selectedCat }),
+      ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+      ...(sellerId && { seller_id: sellerId }),
+    })
+      .then((res) => {
+        const pData = res.data;
+        const data = pData?.data || (Array.isArray(pData) ? pData : []);
+        setProducts(data);
+        setMeta(pData?.meta || (pData?.last_page ? pData : null));
+      })
+      .catch(() =>
+        setListError("Failed to load products. Please check your connection."),
+      )
+      .finally(() => setListLoading(false));
+  }, [id, page, selectedCat, debouncedSearchTerm, searchParams]);
+
+  // live "as you type" suggestions dropdown — small, fast lookup separate
+  // from the main grid fetch above
+  useEffect(() => {
+    if (id) return;
+    const term = debouncedSearchTerm.trim();
+    if (!term) {
+      setSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    setSuggestLoading(true);
+    getAllProducts({ search: term, per_page: 6, page: 1 })
+      .then((res) => {
+        if (cancelled) return;
+        const pData = res.data;
+        const data = pData?.data || (Array.isArray(pData) ? pData : []);
+        setSuggestions(data.slice(0, 6));
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSuggestLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, debouncedSearchTerm]);
+
+  // load product detail
+  useEffect(() => {
+    if (!id) return;
+    setDetailLoading(true);
+    setProduct(null);
+    setReviews([]);
+    setReviewSummary(null);
+    setActiveImg(0);
+    setReviewSuccess(false);
+    setReviewError(null);
+    Promise.all([getProduct(id), getProductReviews(id)])
+      .then(([pRes, rRes]) => {
+        const pData = pRes.data;
+        setProduct(pData);
+        // Seed wishlist + follow state from the response (token-aware on backend)
+        if (pData?.is_wishlisted !== undefined) {
+          setWishlisted((prev) => ({
+            ...prev,
+            [pData.id]: pData.is_wishlisted,
+          }));
+        }
+        setFollowed(pData?.seller?.is_following ?? false);
+        const rd = rRes.data;
+        setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
+        setReviewSummary(rd?.summary || null);
+      })
+      .catch(() => setProduct(null))
+      .finally(() => setDetailLoading(false));
+  }, [id]);
+
+  // add to cart
+  const handleAddToCart = useCallback(
+    (p) => {
+      if (!p) return;
+      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      const idx = cart.findIndex((item) => item.id === p.id);
+      if (idx > -1) {
+        cart[idx].quantity += 1;
+      } else {
+        cart.push({
+          id: p.id,
+          name: p.name,
+          price: Number(p.discount_price || p.price),
+          image:
+            p.images?.[0]?.image_url || p.images?.[0]?.url || p.image || "",
+          quantity: 1,
+          unit: p.unit || "",
+          seller: p.seller?.business_name || "",
+        });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
+      navigate("/cart");
+    },
+    [navigate],
+  );
+
+  const handleWishlist = async (e, productId, productName) => {
+    e.stopPropagation();
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    const isNowWishlisted = wishlisted[productId];
+    setWishBusy(productId);
+    try {
+      if (isNowWishlisted) {
+        await api.delete(`/wishlist/${productId}`);
+        setWishlisted((prev) => ({ ...prev, [productId]: false }));
+        showActionToast(`Removed from wishlist`);
+      } else {
+        await api.post(`/wishlist/${productId}`);
+        setWishlisted((prev) => ({ ...prev, [productId]: true }));
+        showActionToast(`${productName} added to wishlist`);
+      }
+    } catch (err) {
+      showActionToast(err?.response?.data?.message || "Action failed");
+    } finally {
+      setWishBusy(null);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    const sellerId = product?.seller?.id;
+    if (!sellerId) return;
+    setFollowBusy(true);
+    try {
+      if (followed) {
+        await api.delete(`/sellers/${sellerId}/unfollow`);
+        setFollowed(false);
+        showActionToast("Unfollowed seller");
+      } else {
+        await api.post(`/sellers/${sellerId}/follow`);
+        setFollowed(true);
+        showActionToast("Now following " + (seller?.business_name || "seller"));
+      }
+    } catch (err) {
+      showActionToast(err?.response?.data?.message || "Action failed");
+    } finally {
+      setFollowBusy(false);
+    }
+  };
+
+  // submit review
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewForm.comment.trim()) return;
+    setReviewSubmitting(true);
+    setReviewError(null);
+    try {
+      await submitProductReview(id, reviewForm);
+      setReviewSuccess(true);
+      setReviewForm({ rating: 5, comment: "", order_id: "" });
+      const res = await getProductReviews(id);
+      const rd = res.data;
+      setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
+      setReviewSummary(rd?.summary || null);
+    } catch (err) {
+      setReviewError(
+        err.response?.data?.message ||
+          "Failed to submit review. Please try again.",
+      );
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
+  const fmtDate = (d) =>
+    d
+      ? new Date(d).toLocaleDateString("en-NG", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+
+  const token = localStorage.getItem("token");
 
   // ── Loading / error states ───────────────────────────────────────────────
   if (!id && listLoading)
@@ -875,7 +1032,21 @@ export default function ProductPage() {
             {actionToast}
           </div>
         )}
-        <Nav />
+        <ProductNav
+          id={id}
+          categories={categories}
+          selectedCat={selectedCat}
+          setSelectedCat={setSelectedCat}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          suggestions={suggestions}
+          suggestLoading={suggestLoading}
+          showSuggestions={showSuggestions}
+          setShowSuggestions={setShowSuggestions}
+          products={products}
+          cartCount={cartCount}
+          token={token}
+        />
         <div className="pp-loader">Loading products…</div>
       </div>
     );
@@ -901,7 +1072,21 @@ export default function ProductPage() {
             {actionToast}
           </div>
         )}
-        <Nav />
+        <ProductNav
+          id={id}
+          categories={categories}
+          selectedCat={selectedCat}
+          setSelectedCat={setSelectedCat}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          suggestions={suggestions}
+          suggestLoading={suggestLoading}
+          showSuggestions={showSuggestions}
+          setShowSuggestions={setShowSuggestions}
+          products={products}
+          cartCount={cartCount}
+          token={token}
+        />
         <div className="pp-error">
           {listError}{" "}
           <button
@@ -948,7 +1133,21 @@ export default function ProductPage() {
             {actionToast}
           </div>
         )}
-        <Nav />
+        <ProductNav
+          id={id}
+          categories={categories}
+          selectedCat={selectedCat}
+          setSelectedCat={setSelectedCat}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          suggestions={suggestions}
+          suggestLoading={suggestLoading}
+          showSuggestions={showSuggestions}
+          setShowSuggestions={setShowSuggestions}
+          products={products}
+          cartCount={cartCount}
+          token={token}
+        />
         <div className="pp-loader">Loading product…</div>
       </div>
     );
@@ -974,7 +1173,21 @@ export default function ProductPage() {
             {actionToast}
           </div>
         )}
-        <Nav />
+        <ProductNav
+          id={id}
+          categories={categories}
+          selectedCat={selectedCat}
+          setSelectedCat={setSelectedCat}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          suggestions={suggestions}
+          suggestLoading={suggestLoading}
+          showSuggestions={showSuggestions}
+          setShowSuggestions={setShowSuggestions}
+          products={products}
+          cartCount={cartCount}
+          token={token}
+        />
         <div className="pp-container">
           <button className="pp-back-btn" onClick={() => navigate("/products")}>
             ← Back to Products
@@ -1024,7 +1237,21 @@ export default function ProductPage() {
           {actionToast}
         </div>
       )}
-      <Nav />
+      <ProductNav
+          id={id}
+          categories={categories}
+          selectedCat={selectedCat}
+          setSelectedCat={setSelectedCat}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          suggestions={suggestions}
+          suggestLoading={suggestLoading}
+          showSuggestions={showSuggestions}
+          setShowSuggestions={setShowSuggestions}
+          products={products}
+          cartCount={cartCount}
+          token={token}
+        />
       <div className="pp-container">
         {/* ════════════════════ LISTING ════════════════════ */}
         {!id && (

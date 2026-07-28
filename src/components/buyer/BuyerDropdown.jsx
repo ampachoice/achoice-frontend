@@ -47,6 +47,7 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
   };
 
   const menuItems = [
+    { icon: "🛍️", label: "Shop Products", path: "/products" },
     { icon: "👤", label: "My Profile", path: "/profile" },
     {
       icon: "🛒",
