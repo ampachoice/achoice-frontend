@@ -90,13 +90,16 @@ export default function AdminLayout({
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
-    // Dashboard endpoint already returns pending orders in one call
+    // Dashboard endpoint already returns pending orders + pending loan
+    // applications in one call (confirmed against AdminController@dashboard:
+    // both are plain ->count() queries, so these are reliable as-is).
     api
       .get("/admin/dashboard")
       .then((res) => {
         setAutoBadges((prev) => ({
           ...prev,
           "/admin/orders": res.data?.overview?.pending_orders,
+          "/admin/loans": res.data?.loans?.pending_applications,
         }));
       })
       .catch(() => {});
@@ -149,30 +152,13 @@ export default function AdminLayout({
       })
       .catch(() => {});
 
-    // Loans — "new loan request" badge = applications still awaiting an
-    // admin decision. Filtered + paginated the same way as complaints
-    // above, rather than relying on the dashboard's loans object (which
-    // doesn't reliably carry a pending count).
-    api
-      .get("/admin/loans", { params: { status: "pending" } })
-      .then((res) => {
-        const total =
-          res.data?.total ??
-          (Array.isArray(res.data) ? res.data.length : res.data?.data?.length) ??
-          0;
-        setAutoBadges((prev) => ({
-          ...prev,
-          "/admin/loans": total,
-        }));
-      })
-      .catch(() => {});
-
     // Buyers — "new registrations" badge = buyers who signed up in the
-    // last 24 hours. There's no dedicated "new buyers" endpoint, so this
-    // pulls the most recent buyers and counts client-side by created_at.
-    // NOTE: assumes /admin/users accepts a `role` filter — if it's ignored
-    // server-side, the client-side role check below still keeps the count
-    // correct, just over a slightly larger fetched page.
+    // last 24 hours. Confirmed against AdminController@users: it always
+    // filters role=buyer server-side and orders by ->latest() (created_at
+    // desc), so the first page's 20 results are always the most recent
+    // signups — plenty to catch same-day registrations. per_page/role
+    // params are ignored server-side (hardcoded paginate(20)); harmless to
+    // still send them in case that changes later.
     api
       .get("/admin/users", { params: { role: "buyer", per_page: 100 } })
       .then((res) => {
@@ -180,10 +166,7 @@ export default function AdminLayout({
           res.data?.data || (Array.isArray(res.data) ? res.data : []);
         const since = Date.now() - 24 * 60 * 60 * 1000;
         const newCount = list.filter(
-          (u) =>
-            (u.role ? u.role === "buyer" : true) &&
-            u.created_at &&
-            new Date(u.created_at).getTime() >= since,
+          (u) => u.created_at && new Date(u.created_at).getTime() >= since,
         ).length;
         setAutoBadges((prev) => ({
           ...prev,
