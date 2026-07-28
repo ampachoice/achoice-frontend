@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import api from "../../services/api";
@@ -6,14 +6,22 @@ import api from "../../services/api";
 export default function NotificationBell() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const intervalRef = useRef(null);
 
-  useEffect(() => {
+  const fetchCount = () => {
     const user = localStorage.getItem("user");
     if (!user) return;
     api
-      .get("/notifications/unread-count")
+      .get("/inbox/unread-count")
       .then((res) => setUnreadCount(res.data.unread_count || 0))
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchCount();
+    // Poll every 45 seconds — cheap single-integer endpoint
+    intervalRef.current = setInterval(fetchCount, 45000);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   return (

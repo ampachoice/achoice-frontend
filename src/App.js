@@ -32,11 +32,6 @@ import ProfilePage      from './pages/buyer/ProfilePage';
 import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
 import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
-import WishlistPage         from './pages/buyer/WishlistPage';
-import AddressBookPage from './pages/buyer/AddressBookPage';
-import SellerStorefrontPage from './pages/buyer/SellerStorefrontPage';
-import ContentPage     from './pages/ContentPage';
-import HelpCenterPage  from './pages/HelpCenterPage';
 
 // ── STAFF ────────────────────────────────────────────────────────────────────
 import AgroStaffDashboard from './pages/staff/AgroStaffDashboard';
@@ -64,6 +59,7 @@ import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
 import AdminComplaintsPage from './pages/admin/AdminComplaintsPage';
 import AdminComplaintDetailPage from './pages/admin/AdminComplaintDetailPage';
 import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
+import AdminBroadcastsPage from './pages/admin/AdminBroadcastsPage';
 import AdminProductApprovalsPage from './pages/admin/AdminProductApprovalsPage';
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
 import StaffComplaintDetailPage from './pages/staff/StaffComplaintDetailPage';
@@ -116,13 +112,6 @@ const router = createBrowserRouter([
   { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
   { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
-  { path: '/wishlist',        element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
-  { path: '/addresses', element: <ProtectedRoute><AddressBookPage /></ProtectedRoute> },
-  { path: '/sellers/:id',     element: <SellerStorefrontPage /> },
-  { path: '/help',            element: <HelpCenterPage /> },
-  { path: '/pages/:slug',     element: <ContentPage /> },
-  { path: '/help',          element: <HelpCenterPage /> },
-  { path: '/pages/:slug',   element: <ContentPage /> },
 
   // ── Staff ────────────────────────────────────────────────────────────────────
   {
@@ -280,6 +269,10 @@ const router = createBrowserRouter([
       {
         path: 'audit-log',
         element: <ProtectedRoute adminOnly><AdminAuditLogPage /></ProtectedRoute>
+      },
+      {
+        path: 'broadcasts',
+        element: <ProtectedRoute adminOnly><AdminBroadcastsPage /></ProtectedRoute>
       },
     ]
   },
