@@ -33,6 +33,7 @@ import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
 import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
 import WishlistPage         from './pages/buyer/WishlistPage';
+import AddressBookPage from './pages/buyer/AddressBookPage';
 import SellerStorefrontPage from './pages/buyer/SellerStorefrontPage';
 import ContentPage     from './pages/ContentPage';
 import HelpCenterPage  from './pages/HelpCenterPage';
@@ -116,6 +117,7 @@ const router = createBrowserRouter([
   { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
   { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
   { path: '/wishlist',        element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
+  { path: '/addresses', element: <ProtectedRoute><AddressBookPage /></ProtectedRoute> },
   { path: '/sellers/:id',     element: <SellerStorefrontPage /> },
   { path: '/help',            element: <HelpCenterPage /> },
   { path: '/pages/:slug',     element: <ContentPage /> },

@@ -7,43 +7,11 @@ import NotificationBell from "../../components/buyer/NotificationBell";
 import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 
 const NIGERIAN_STATES_FALLBACK = [
-  "Abia",
-  "Adamawa",
-  "Akwa Ibom",
-  "Anambra",
-  "Bauchi",
-  "Bayelsa",
-  "Benue",
-  "Borno",
-  "Cross River",
-  "Delta",
-  "Ebonyi",
-  "Edo",
-  "Ekiti",
-  "Enugu",
-  "FCT",
-  "Gombe",
-  "Imo",
-  "Jigawa",
-  "Kaduna",
-  "Kano",
-  "Katsina",
-  "Kebbi",
-  "Kogi",
-  "Kwara",
-  "Lagos",
-  "Nasarawa",
-  "Niger",
-  "Ogun",
-  "Ondo",
-  "Osun",
-  "Oyo",
-  "Plateau",
-  "Rivers",
-  "Sokoto",
-  "Taraba",
-  "Yobe",
-  "Zamfara",
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+  "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT", "Gombe", "Imo",
+  "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa",
+  "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba",
+  "Yobe", "Zamfara",
 ];
 
 export default function CheckoutPage() {
@@ -52,7 +20,11 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [useManualAddress, setUseManualAddress] = useState(true); // toggle between saved/manual
   const [formData, setFormData] = useState({
+    address_id: null,
     delivery_address: "",
     delivery_state: "",
     delivery_lga: "",
@@ -62,7 +34,7 @@ export default function CheckoutPage() {
   const [deliveryDays, setDeliveryDays] = useState(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliveryZones, setDeliveryZones] = useState([]);
-  const [showSummary, setShowSummary] = useState(false); // mobile toggle
+  const [showSummary, setShowSummary] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('paystack');
 
   useEffect(() => {
@@ -72,26 +44,18 @@ export default function CheckoutPage() {
     el.textContent = `
       body { margin:0; }
       .ckp-wrap { min-height:100vh; background:#f7f5f0; font-family:Arial,sans-serif; }
-
-      /* ── NAV ── */
       .ckp-nav { background:#1f4d1f; padding:10px 40px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; gap:12px; }
       .ckp-nav-left { display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0; }
       .ckp-nav-logo { width:36px; height:36px; border-radius:6px; }
-      .ckp-nav-name  { font-weight:700; font-size:17px; color:#fff; line-height:1.2; }
+      .ckp-nav-name { font-weight:700; font-size:17px; color:#fff; line-height:1.2; }
       .ckp-nav-name span { color:#f0c050; }
       .ckp-nav-motto { font-size:9px; color:#a8d5a8; }
-      .ckp-nav-back  { color:#f0c050; font-size:14px; cursor:pointer; font-weight:700; white-space:nowrap; flex-shrink:0; }
-
-      /* ── CONTAINER ── */
+      .ckp-nav-back { color:#f0c050; font-size:14px; cursor:pointer; font-weight:700; white-space:nowrap; flex-shrink:0; }
       .ckp-container { max-width:1100px; margin:0 auto; padding:36px 40px; }
       .ckp-title { font-size:26px; font-weight:700; color:#1f4d1f; margin:0 0 8px; }
       .ckp-subtitle { font-size:13px; color:#888; margin:0 0 28px; }
       .ckp-error { background:#fff0f0; color:#cc0000; padding:12px 16px; border-radius:8px; margin-bottom:22px; font-size:14px; border:1px solid #ffb3b3; }
-
-      /* ── LAYOUT ── */
       .ckp-layout { display:grid; grid-template-columns:1fr 360px; gap:28px; align-items:start; }
-
-      /* ── FORM CARD ── */
       .ckp-card { background:#fff; border-radius:14px; border:1px solid #e8e4dc; padding:28px; }
       .ckp-card-title { font-size:18px; font-weight:700; color:#1f4d1f; margin:0 0 22px; display:flex; align-items:center; gap:8px; }
       .ckp-field { margin-bottom:20px; }
@@ -100,7 +64,19 @@ export default function CheckoutPage() {
       .ckp-input:focus { border-color:#1f4d1f; }
       .ckp-textarea { width:100%; padding:13px 14px; border:1.5px solid #ddd; border-radius:10px; font-size:14px; box-sizing:border-box; resize:vertical; font-family:inherit; outline:none; transition:border .2s; }
       .ckp-textarea:focus { border-color:#1f4d1f; }
-      .ckp-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; } .ckp-payment-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:6px; } .ckp-payment-card { border:1.5px solid #ddd; border-radius:10px; padding:16px; cursor:pointer; transition:border .2s, background .2s; } .ckp-payment-card-active { border-color:#1f4d1f; background:#f0f7ec; } .ckp-payment-card-title { font-size:14px; font-weight:700; color:#111; margin-bottom:4px; } .ckp-payment-card-desc { font-size:12px; color:#888; }
+      .ckp-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+      .ckp-address-picker { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+      .ckp-address-option { padding:12px 14px; border:1.5px solid #ddd; border-radius:10px; cursor:pointer; transition:border .2s, background .2s; }
+      .ckp-address-option-selected { border-color:#1f4d1f; background:#eafaf0; }
+      .ckp-address-option-label { font-size:13px; font-weight:600; color:#111; }
+      .ckp-address-option-desc { font-size:12px; color:#888; margin-top:3px; }
+      .ckp-address-toggle { display:flex; gap:10px; align-items:center; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #e8e4dc; }
+      .ckp-address-toggle-label { font-size:12px; color:#666; }
+      .ckp-payment-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:6px; }
+      .ckp-payment-card { border:1.5px solid #ddd; border-radius:10px; padding:16px; cursor:pointer; transition:border .2s, background .2s; }
+      .ckp-payment-card-active { border-color:#1f4d1f; background:#f0f7ec; }
+      .ckp-payment-card-title { font-size:14px; font-weight:700; color:#111; margin-bottom:4px; }
+      .ckp-payment-card-desc { font-size:12px; color:#888; }
       .ckp-delivery-hint { font-size:12px; color:#888; margin-top:6px; }
       .ckp-delivery-box { margin-top:8px; background:#fff8e7; border:1px solid #f0c050; border-radius:8px; padding:10px 14px; font-size:13px; color:#7a5c00; }
       .ckp-delivery-box-free { margin-top:8px; background:#f0fff4; border:1px solid #a8d5a8; border-radius:8px; padding:10px 14px; font-size:13px; color:#1f4d1f; }
@@ -108,41 +84,33 @@ export default function CheckoutPage() {
       .ckp-btn { width:100%; padding:16px; background:#1f4d1f; color:#fff; border:none; border-radius:10px; font-size:16px; font-weight:700; cursor:pointer; margin-top:10px; font-family:inherit; }
       .ckp-btn-dis { width:100%; padding:16px; background:#ccc; color:#fff; border:none; border-radius:10px; font-size:16px; cursor:not-allowed; margin-top:10px; font-family:inherit; }
       .ckp-secure-row { display:flex; align-items:center; justify-content:center; gap:6px; font-size:11px; color:#888; margin-top:12px; }
-
-      /* ── SUMMARY ── */
       .ckp-summary { background:#fff; border-radius:14px; border:1px solid #e8e4dc; padding:24px; position:sticky; top:80px; }
       .ckp-summary-title { font-size:18px; font-weight:700; color:#1f4d1f; margin:0 0 18px; }
       .ckp-item-list { max-height:260px; overflow-y:auto; margin-bottom:14px; }
       .ckp-item-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f5f5f5; gap:8px; }
       .ckp-item-left { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
-      .ckp-item-name  { font-size:13px; color:#333; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      .ckp-item-qty   { font-size:11px; color:#1f4d1f; font-weight:700; background:#f0f7ec; padding:2px 7px; border-radius:99px; flex-shrink:0; }
+      .ckp-item-name { font-size:13px; color:#333; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .ckp-item-qty { font-size:11px; color:#1f4d1f; font-weight:700; background:#f0f7ec; padding:2px 7px; border-radius:99px; flex-shrink:0; }
       .ckp-item-price { font-size:13px; font-weight:700; color:#333; flex-shrink:0; }
       .ckp-divider { height:1px; background:#eee; margin:14px 0; }
       .ckp-sub-row { display:flex; justify-content:space-between; margin-bottom:10px; }
       .ckp-sub-label { font-size:14px; color:#888; }
-      .ckp-sub-val   { font-size:14px; font-weight:600; color:#333; }
+      .ckp-sub-val { font-size:14px; font-weight:600; color:#333; }
       .ckp-total-row { display:flex; justify-content:space-between; align-items:center; margin:4px 0 18px; }
       .ckp-total-label { font-size:18px; font-weight:700; color:#111; }
-      .ckp-total-val   { font-size:26px; font-weight:900; color:#1f4d1f; }
+      .ckp-total-val { font-size:26px; font-weight:900; color:#1f4d1f; }
       .ckp-est-delivery { font-size:12px; color:#555; background:#f7f5f0; padding:9px 12px; border-radius:7px; margin-bottom:16px; }
       .ckp-paystack { text-align:center; background:#f9f9f9; padding:14px; border-radius:8px; border:1px solid #eee; }
       .ckp-paystack img { height:20px; margin-bottom:6px; }
       .ckp-paystack p { font-size:11px; color:#888; margin:0; }
-
-      /* ── MOBILE SUMMARY TOGGLE ── */
       .ckp-mobile-summary-toggle { display:none; }
-      .ckp-mobile-total-bar      { display:none; }
-
-      /* ── TABLET ── */
+      .ckp-mobile-total-bar { display:none; }
       @media (max-width:860px) {
         .ckp-nav { padding:10px 20px; }
         .ckp-container { padding:24px 20px; }
         .ckp-layout { grid-template-columns:1fr; }
         .ckp-summary { position:static; }
       }
-
-      /* ── MOBILE ── */
       @media (max-width:600px) {
         .ckp-nav { padding:8px 14px; }
         .ckp-nav-name { font-size:15px; }
@@ -154,44 +122,38 @@ export default function CheckoutPage() {
         .ckp-row { grid-template-columns:1fr; gap:0; }
         .ckp-input, .ckp-textarea { font-size:16px; padding:14px 12px; }
         .ckp-btn, .ckp-btn-dis { font-size:16px; padding:16px; border-radius:10px; }
-
-        /* Hide summary on mobile — replaced by toggle + bottom bar */
         .ckp-summary-col { display:none; }
-
-        /* Mobile order summary toggle */
-        .ckp-mobile-summary-toggle {
-          display:flex; align-items:center; justify-content:space-between;
-          background:#fff; border:1px solid #e8e4dc; border-radius:10px;
-          padding:14px 16px; margin-bottom:16px; cursor:pointer;
-        }
+        .ckp-mobile-summary-toggle { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #e8e4dc; border-radius:10px; padding:14px 16px; margin-bottom:16px; cursor:pointer; }
         .ckp-mobile-summary-toggle-left { font-size:14px; font-weight:700; color:#1f4d1f; display:flex; align-items:center; gap:6px; }
         .ckp-mobile-summary-toggle-right { font-size:16px; font-weight:900; color:#1f4d1f; }
-
-        /* Mobile summary panel (shown when toggled) */
         .ckp-mobile-summary-panel { background:#fff; border:1px solid #e8e4dc; border-radius:10px; padding:16px; margin-bottom:16px; }
-
-        /* Sticky bottom pay bar */
-        .ckp-mobile-total-bar {
-          display:flex; position:fixed; bottom:0; left:0; right:0;
-          background:#fff; border-top:2px solid #e8e4dc;
-          padding:12px 16px; gap:14px; align-items:center;
-          box-shadow:0 -4px 20px rgba(0,0,0,0.1); z-index:200;
-        }
+        .ckp-mobile-total-bar { display:flex; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:2px solid #e8e4dc; padding:12px 16px; gap:14px; align-items:center; box-shadow:0 -4px 20px rgba(0,0,0,0.1); z-index:200; }
         .ckp-mobile-total-bar-left { flex:1; }
         .ckp-mobile-total-bar-label { font-size:11px; color:#888; margin-bottom:1px; }
-        .ckp-mobile-total-bar-val   { font-size:20px; font-weight:900; color:#1f4d1f; line-height:1; }
-        .ckp-mobile-total-bar-btn {
-          padding:14px 22px; background:#1f4d1f; color:#fff; border:none;
-          border-radius:9px; font-size:15px; font-weight:700; cursor:pointer;
-          font-family:inherit; white-space:nowrap;
-        }
-        .ckp-mobile-total-bar-btn-dis {
-          padding:14px 22px; background:#ccc; color:#fff; border:none;
-          border-radius:9px; font-size:15px; cursor:not-allowed; font-family:inherit;
-        }
+        .ckp-mobile-total-bar-val { font-size:20px; font-weight:900; color:#1f4d1f; line-height:1; }
+        .ckp-mobile-total-bar-btn { padding:14px 22px; background:#1f4d1f; color:#fff; border:none; border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; font-family:inherit; white-space:nowrap; }
+        .ckp-mobile-total-bar-btn-dis { padding:14px 22px; background:#ccc; color:#fff; border:none; border-radius:9px; font-size:15px; cursor:not-allowed; font-family:inherit; }
       }
     `;
     document.head.appendChild(el);
+  }, []);
+
+  // Fetch saved addresses on mount
+  useEffect(() => {
+    api
+      .get("/addresses")
+      .then((res) => {
+        const addrs = res.data?.data || res.data || [];
+        setSavedAddresses(addrs);
+        // If there's a default address, switch to saved mode and select it
+        const defaultAddr = addrs.find((a) => a.is_default);
+        if (defaultAddr) {
+          setUseManualAddress(false);
+          setFormData((prev) => ({ ...prev, address_id: defaultAddr.id }));
+        }
+      })
+      .catch(() => setSavedAddresses([]))
+      .finally(() => setAddressesLoading(false));
   }, []);
 
   useEffect(() => {
@@ -212,15 +174,19 @@ export default function CheckoutPage() {
       .catch(() => setDeliveryZones([]));
   }, [navigate]);
 
+  // Calculate delivery fee based on state
   useEffect(() => {
-    if (!formData.delivery_state) {
+    const state = useManualAddress ? formData.delivery_state : 
+      savedAddresses.find((a) => a.id === formData.address_id)?.state;
+    
+    if (!state) {
       setDeliveryFee(0);
       setDeliveryDays(null);
       return;
     }
     setDeliveryLoading(true);
     api
-      .get(`/delivery-zones/${encodeURIComponent(formData.delivery_state)}`)
+      .get(`/delivery-zones/${encodeURIComponent(state)}`)
       .then((res) => {
         const zone = res.data?.data || res.data;
         setDeliveryFee(Number(zone?.delivery_fee || zone?.fee || 0));
@@ -228,14 +194,13 @@ export default function CheckoutPage() {
       })
       .catch(() => {
         const match = deliveryZones.find(
-          (z) =>
-            z.state?.toLowerCase() === formData.delivery_state.toLowerCase(),
+          (z) => z.state?.toLowerCase() === state.toLowerCase(),
         );
         setDeliveryFee(Number(match?.delivery_fee || match?.fee || 0));
         setDeliveryDays(match?.estimated_days || match?.days || null);
       })
       .finally(() => setDeliveryLoading(false));
-  }, [formData.delivery_state]);
+  }, [formData.address_id, formData.delivery_state, useManualAddress, deliveryZones, savedAddresses]);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -251,18 +216,31 @@ export default function CheckoutPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await createOrder({
-        items: cart.map((item) => ({
-          product_id: item.id,
-          quantity: item.quantity,
-        })),
-        delivery_address: formData.delivery_address,
-        delivery_state: formData.delivery_state,
-        delivery_lga: formData.delivery_lga,
-        notes: formData.note,
-        delivery_fee: deliveryFee,
-        payment_method: paymentMethod,
-      });
+      const orderPayload = useManualAddress
+        ? {
+            items: cart.map((item) => ({
+              product_id: item.id,
+              quantity: item.quantity,
+            })),
+            delivery_address: formData.delivery_address,
+            delivery_state: formData.delivery_state,
+            delivery_lga: formData.delivery_lga,
+            notes: formData.note,
+            delivery_fee: deliveryFee,
+            payment_method: paymentMethod,
+          }
+        : {
+            items: cart.map((item) => ({
+              product_id: item.id,
+              quantity: item.quantity,
+            })),
+            address_id: formData.address_id,
+            notes: formData.note,
+            delivery_fee: deliveryFee,
+            payment_method: paymentMethod,
+          };
+
+      const res = await createOrder(orderPayload);
       if (res.data.payment_url) {
         if (res.data.reference)
           localStorage.setItem("last_order_reference", res.data.reference);
@@ -270,7 +248,8 @@ export default function CheckoutPage() {
         window.location.href = res.data.payment_url;
       } else {
         localStorage.removeItem("cart");
-        if (paymentMethod === "pay_on_delivery") localStorage.setItem("pod_order_placed", "true");
+        if (paymentMethod === "pay_on_delivery")
+          localStorage.setItem("pod_order_placed", "true");
         navigate("/orders");
       }
     } catch (err) {
@@ -289,18 +268,18 @@ export default function CheckoutPage() {
       : NIGERIAN_STATES_FALLBACK;
 
   const DeliveryFeeInfo = () => {
+    const state = useManualAddress ? formData.delivery_state :
+      savedAddresses.find((a) => a.id === formData.address_id)?.state;
+    
     if (deliveryLoading)
-      return (
-        <div className="ckp-delivery-hint">⏳ Fetching delivery fee...</div>
-      );
-    if (!formData.delivery_state) return null;
+      return <div className="ckp-delivery-hint">⏳ Fetching delivery fee...</div>;
+    if (!state) return null;
     if (deliveryFee === 0)
       return (
         <div className="ckp-delivery-box-free">
-          🎉 Free delivery to <strong>{formData.delivery_state}</strong>!
+          🎉 Free delivery to <strong>{state}</strong>!
           {deliveryDays && (
             <span className="ckp-delivery-days">
-              {" "}
               · Est. {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
             </span>
           )}
@@ -308,17 +287,19 @@ export default function CheckoutPage() {
       );
     return (
       <div className="ckp-delivery-box">
-        🚚 Delivery to <strong>{formData.delivery_state}</strong>:{" "}
-        <strong>₦{deliveryFee.toLocaleString()}</strong>
+        🚚 Delivery to <strong>{state}</strong>: <strong>₦{deliveryFee.toLocaleString()}</strong>
         {deliveryDays && (
           <span className="ckp-delivery-days">
-            {" "}
             · Est. {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
           </span>
         )}
       </div>
     );
   };
+
+  const isFormValid = useManualAddress
+    ? formData.delivery_state && formData.delivery_address
+    : formData.address_id;
 
   const SummaryContent = () => (
     <>
@@ -341,18 +322,15 @@ export default function CheckoutPage() {
         <span className="ckp-sub-val">₦{subtotal.toLocaleString()}</span>
       </div>
       <div className="ckp-sub-row">
-        <span className="ckp-sub-label">
-          Delivery{" "}
-          {formData.delivery_state ? `(${formData.delivery_state})` : ""}
-        </span>
+        <span className="ckp-sub-label">Delivery</span>
         <span className="ckp-sub-val">
           {deliveryLoading
             ? "..."
-            : formData.delivery_state
+            : isFormValid
               ? deliveryFee === 0
                 ? "Free 🎉"
                 : `₦${deliveryFee.toLocaleString()}`
-              : "— select state"}
+              : "— select address"}
         </span>
       </div>
       <div className="ckp-divider" />
@@ -360,13 +338,9 @@ export default function CheckoutPage() {
         <span className="ckp-total-label">Grand Total</span>
         <span className="ckp-total-val">₦{grandTotal.toLocaleString()}</span>
       </div>
-      {deliveryDays && formData.delivery_state && (
+      {deliveryDays && isFormValid && (
         <div className="ckp-est-delivery">
-          📦 Est. delivery:{" "}
-          <strong>
-            {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
-          </strong>{" "}
-          to {formData.delivery_state}
+          📦 Est. delivery: <strong>{deliveryDays} day{deliveryDays > 1 ? "s" : ""}</strong>
         </div>
       )}
       <div className="ckp-paystack">
@@ -383,14 +357,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="ckp-wrap">
-      {/* Nav */}
       <nav className="ckp-nav">
         <div className="ckp-nav-left" onClick={() => navigate("/products")}>
-          <img
-            src="/android-chrome-192x192.png"
-            alt="Logo"
-            className="ckp-nav-logo"
-          />
+          <img src="/android-chrome-192x192.png" alt="Logo" className="ckp-nav-logo" />
         </div>
         <span className="ckp-nav-back" onClick={() => navigate("/cart")}>
           ← Return to Cart
@@ -404,20 +373,17 @@ export default function CheckoutPage() {
       <div className="ckp-container">
         <h1 className="ckp-title">🔒 Secure Checkout</h1>
         <p className="ckp-subtitle">
-          {cart.length} item{cart.length > 1 ? "s" : ""} · Grand Total: ₦
-          {grandTotal.toLocaleString()}
+          {cart.length} item{cart.length > 1 ? "s" : ""} · Grand Total: ₦{grandTotal.toLocaleString()}
         </p>
 
         {error && <div className="ckp-error">⚠️ {error}</div>}
 
-        {/* ✅ Mobile: collapsible order summary */}
         <div
           className="ckp-mobile-summary-toggle"
           onClick={() => setShowSummary((s) => !s)}
         >
           <span className="ckp-mobile-summary-toggle-left">
-            🧾 Order Summary ({cart.length} item{cart.length > 1 ? "s" : ""}){" "}
-            {showSummary ? "▲" : "▼"}
+            🧾 Order Summary ({cart.length} item{cart.length > 1 ? "s" : ""}) {showSummary ? "▲" : "▼"}
           </span>
           <span className="ckp-mobile-summary-toggle-right">
             ₦{grandTotal.toLocaleString()}
@@ -430,68 +396,132 @@ export default function CheckoutPage() {
         )}
 
         <div className="ckp-layout">
-          {/* Delivery Form */}
           <div>
             <div className="ckp-card">
               <div className="ckp-card-title">📍 Delivery Details</div>
               <form onSubmit={handleSubmit}>
-                <div className="ckp-field">
-                  <label className="ckp-label">Full Delivery Address</label>
-                  <input
-                    className="ckp-input"
-                    type="text"
-                    name="delivery_address"
-                    placeholder="House number, street name, landmark..."
-                    value={formData.delivery_address}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
+                {/* Address Mode Toggle */}
+                {!addressesLoading && savedAddresses.length > 0 && (
+                  <div className="ckp-address-toggle">
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        checked={!useManualAddress}
+                        onChange={() => setUseManualAddress(false)}
+                      />
+                      <span className="ckp-address-toggle-label">Use saved address</span>
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <input
+                        type="radio"
+                        checked={useManualAddress}
+                        onChange={() => setUseManualAddress(true)}
+                      />
+                      <span className="ckp-address-toggle-label">Enter new address</span>
+                    </label>
+                  </div>
+                )}
 
-                <div className="ckp-row">
-                  <div className="ckp-field">
-                    <label className="ckp-label">State</label>
-                    <select
-                      className="ckp-input"
-                      name="delivery_state"
-                      value={formData.delivery_state}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select state</option>
-                      {nigerianStates.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
+                {/* Saved Addresses Picker */}
+                {!useManualAddress && !addressesLoading && (
+                  <div>
+                    <label className="ckp-label">Select Address</label>
+                    <div className="ckp-address-picker">
+                      {savedAddresses.map((addr) => (
+                        <div
+                          key={addr.id}
+                          className={
+                            formData.address_id === addr.id
+                              ? "ckp-address-option ckp-address-option-selected"
+                              : "ckp-address-option"
+                          }
+                          onClick={() => setFormData({ ...formData, address_id: addr.id })}
+                        >
+                          <div className="ckp-address-option-label">
+                            {addr.label} {addr.is_default && "⭐ Default"}
+                          </div>
+                          <div className="ckp-address-option-desc">
+                            {addr.full_address}
+                          </div>
+                        </div>
                       ))}
-                    </select>
+                    </div>
+                    <button
+                      type="button"
+                      className="ckp-input"
+                      onClick={() => navigate("/addresses")}
+                      style={{
+                        background: "#f0f7ec",
+                        color: "#1f4d1f",
+                        cursor: "pointer",
+                        border: "none",
+                        fontWeight: 600,
+                      }}
+                    >
+                      + Manage Addresses
+                    </button>
                     <DeliveryFeeInfo />
                   </div>
-                  <div className="ckp-field">
-                    <label className="ckp-label">LGA</label>
-                    <select
-                      className="ckp-input"
-                      name="delivery_lga"
-                      value={formData.delivery_lga}
-                      onChange={handleChange}
-                      required
-                      disabled={!formData.delivery_state}
-                    >
-                      <option value="">
-                        {formData.delivery_state
-                          ? "Select LGA"
-                          : "Select state first"}
-                      </option>
-                      {(NIGERIA_LGAS[formData.delivery_state] || []).map(
-                        (lga) => (
-                          <option key={lga} value={lga}>
-                            {lga}
+                )}
+
+                {/* Manual Address Entry */}
+                {useManualAddress && (
+                  <>
+                    <div className="ckp-field">
+                      <label className="ckp-label">Full Delivery Address</label>
+                      <input
+                        className="ckp-input"
+                        type="text"
+                        name="delivery_address"
+                        placeholder="House number, street name, landmark..."
+                        value={formData.delivery_address}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+
+                    <div className="ckp-row">
+                      <div className="ckp-field">
+                        <label className="ckp-label">State</label>
+                        <select
+                          className="ckp-input"
+                          name="delivery_state"
+                          value={formData.delivery_state}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="">Select state</option>
+                          {nigerianStates.map((state) => (
+                            <option key={state} value={state}>
+                              {state}
+                            </option>
+                          ))}
+                        </select>
+                        <DeliveryFeeInfo />
+                      </div>
+                      <div className="ckp-field">
+                        <label className="ckp-label">LGA</label>
+                        <select
+                          className="ckp-input"
+                          name="delivery_lga"
+                          value={formData.delivery_lga}
+                          onChange={handleChange}
+                          required
+                          disabled={!formData.delivery_state}
+                        >
+                          <option value="">
+                            {formData.delivery_state ? "Select LGA" : "Select state first"}
                           </option>
-                        ),
-                      )}
-                    </select>
-                  </div>
-                </div>
+                          {(NIGERIA_LGAS[formData.delivery_state] || []).map((lga) => (
+                            <option key={lga} value={lga}>
+                              {lga}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="ckp-field">
                   <label className="ckp-label">
@@ -510,29 +540,58 @@ export default function CheckoutPage() {
                   />
                 </div>
 
-                {/* Submit button — desktop/tablet only; mobile uses sticky bar */}
-                <div className="ckp-field"><label className="ckp-label">Payment Method</label><div className="ckp-payment-cards"><div className={paymentMethod === "paystack" ? "ckp-payment-card ckp-payment-card-active" : "ckp-payment-card"} onClick={() => setPaymentMethod("paystack")}><div className="ckp-payment-card-title">Pay Online</div><div className="ckp-payment-card-desc">Card, bank transfer or USSD via Paystack</div></div><div className={paymentMethod === "pay_on_delivery" ? "ckp-payment-card ckp-payment-card-active" : "ckp-payment-card"} onClick={() => setPaymentMethod("pay_on_delivery")}><div className="ckp-payment-card-title">Pay on Delivery</div><div className="ckp-payment-card-desc">Pay with cash when your order arrives</div></div></div></div>
+                <div className="ckp-field">
+                  <label className="ckp-label">Payment Method</label>
+                  <div className="ckp-payment-cards">
+                    <div
+                      className={
+                        paymentMethod === "paystack"
+                          ? "ckp-payment-card ckp-payment-card-active"
+                          : "ckp-payment-card"
+                      }
+                      onClick={() => setPaymentMethod("paystack")}
+                    >
+                      <div className="ckp-payment-card-title">Pay Online</div>
+                      <div className="ckp-payment-card-desc">
+                        Card, bank transfer or USSD via Paystack
+                      </div>
+                    </div>
+                    <div
+                      className={
+                        paymentMethod === "pay_on_delivery"
+                          ? "ckp-payment-card ckp-payment-card-active"
+                          : "ckp-payment-card"
+                      }
+                      onClick={() => setPaymentMethod("pay_on_delivery")}
+                    >
+                      <div className="ckp-payment-card-title">Pay on Delivery</div>
+                      <div className="ckp-payment-card-desc">
+                        Pay with cash when your order arrives
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   type="submit"
-                  className={
-                    loading || !formData.delivery_state
-                      ? "ckp-btn-dis"
-                      : "ckp-btn"
-                  }
-                  disabled={loading || !formData.delivery_state}
+                  className={loading || !isFormValid ? "ckp-btn-dis" : "ckp-btn"}
+                  disabled={loading || !isFormValid}
                 >
-                  {loading ? "Finalizing Order..." : (paymentMethod === "pay_on_delivery" ? "Place Order" : "Confirm and Pay Now")}
+                  {loading
+                    ? "Finalizing Order..."
+                    : paymentMethod === "pay_on_delivery"
+                      ? "Place Order"
+                      : "Confirm and Pay Now"}
                 </button>
                 {paymentMethod === "paystack" && (
-                <div className="ckp-secure-row">
-                  <span>Secured</span> Secured and encrypted by Paystack
-                </div>
+                  <div className="ckp-secure-row">
+                    Secured and encrypted by Paystack
+                  </div>
                 )}
               </form>
             </div>
           </div>
 
-          {/* Order Summary — desktop/tablet */}
           <div className="ckp-summary-col">
             <div className="ckp-summary">
               <div className="ckp-summary-title">Order Summary</div>
@@ -542,7 +601,6 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* ✅ Mobile sticky pay bar */}
       <div className="ckp-mobile-total-bar">
         <div className="ckp-mobile-total-bar-left">
           <div className="ckp-mobile-total-bar-label">Grand Total</div>
@@ -552,22 +610,20 @@ export default function CheckoutPage() {
         </div>
         <button
           className={
-            loading || !formData.delivery_state
+            loading || !isFormValid
               ? "ckp-mobile-total-bar-btn-dis"
               : "ckp-mobile-total-bar-btn"
           }
-          disabled={loading || !formData.delivery_state}
+          disabled={loading || !isFormValid}
           onClick={handleSubmit}
         >
-          {loading ? "Processing..." : (paymentMethod === "pay_on_delivery" ? "Place Order" : "Pay Now")}
+          {loading
+            ? "Processing..."
+            : paymentMethod === "pay_on_delivery"
+              ? "Place Order"
+              : "Pay Now"}
         </button>
       </div>
     </div>
   );
 }
-
-
-
-
-
-

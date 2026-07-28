@@ -1694,23 +1694,26 @@ export default function ProductPage() {
                     </div>
                     <div className="pp-review-field">
                       <label className="pp-review-label">
-                        Order ID{" "}
-                        <span style={{ color: "#aaa", fontWeight: 400 }}>
-                          (optional)
-                        </span>
-                      </label>
-                      <input
-                        className="pp-review-input"
-                        type="text"
-                        placeholder="Your order ID e.g. ACH-XXXXXXXX"
-                        value={reviewForm.order_id}
-                        onChange={(e) =>
-                          setReviewForm({
-                            ...reviewForm,
-                            order_id: e.target.value,
-                          })
-                        }
-                      />
+                    Order ID{" "}
+                    <span style={{ color: "#cc0000", fontWeight: 400 }}>
+                      *required
+                    </span>
+                  </label>
+                  <p style={{ fontSize: 12, color: "#888", margin: "2px 0 6px" }}>
+                    Find your Order ID in My Orders — e.g. ACH-XXXXXXXX
+                  </p>
+                  <input
+                    className="pp-review-input"
+                    type="text"
+                    placeholder="e.g. ACH-XXXXXXXX"
+                    value={reviewForm.order_id}
+                    onChange={(e) =>
+                      setReviewForm({
+                        ...reviewForm,
+                        order_id: e.target.value,
+                      })
+                    }
+                  />
                     </div>
                     <div className="pp-review-field">
                       <label className="pp-review-label">Your Review</label>
