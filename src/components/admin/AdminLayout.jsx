@@ -5,6 +5,15 @@ import api from "../../services/api";
 
 const LOGO_PATH = "/achoice logo.png";
 
+const LIVE_PULSE_CSS = `
+  @keyframes livePulse {
+    0% { box-shadow: 0 0 0 0 rgba(40,180,90,0.55); }
+    70% { box-shadow: 0 0 0 6px rgba(40,180,90,0); }
+    100% { box-shadow: 0 0 0 0 rgba(40,180,90,0); }
+  }
+  .live-dot { animation: livePulse 1.8s infinite; }
+`;
+
 // Core, frequently-used nav — stays in the sidebar
 const SIDEBAR_ITEMS = [
   { icon: "📊", label: "Dashboard", path: "/admin/dashboard" },
@@ -55,6 +64,7 @@ export default function AdminLayout({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
   const [autoBadges, setAutoBadges] = useState({});
+  const [liveUsers, setLiveUsers] = useState({ buyers: 0, sellers: 0, staff: 0 });
   const [isMobile, setIsMobile] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -80,14 +90,13 @@ export default function AdminLayout({
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
-    // Dashboard endpoint already returns pending orders + pending loans in one call
+    // Dashboard endpoint already returns pending orders in one call
     api
       .get("/admin/dashboard")
       .then((res) => {
         setAutoBadges((prev) => ({
           ...prev,
           "/admin/orders": res.data?.overview?.pending_orders,
-          "/admin/loans": res.data?.loans?.pending_applications,
         }));
       })
       .catch(() => {});
@@ -104,7 +113,7 @@ export default function AdminLayout({
       })
       .catch(() => {});
 
-    // Same pagination pattern as complaints — these three endpoints all
+    // Same pagination pattern as complaints — these endpoints all
     // return a Laravel paginator, which serializes with a "total" key.
     api
       .get("/admin/sellers/pending-approval")
@@ -139,9 +148,77 @@ export default function AdminLayout({
         }));
       })
       .catch(() => {});
+
+    // Loans — "new loan request" badge = applications still awaiting an
+    // admin decision. Filtered + paginated the same way as complaints
+    // above, rather than relying on the dashboard's loans object (which
+    // doesn't reliably carry a pending count).
+    api
+      .get("/admin/loans", { params: { status: "pending" } })
+      .then((res) => {
+        const total =
+          res.data?.total ??
+          (Array.isArray(res.data) ? res.data.length : res.data?.data?.length) ??
+          0;
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/loans": total,
+        }));
+      })
+      .catch(() => {});
+
+    // Buyers — "new registrations" badge = buyers who signed up in the
+    // last 24 hours. There's no dedicated "new buyers" endpoint, so this
+    // pulls the most recent buyers and counts client-side by created_at.
+    // NOTE: assumes /admin/users accepts a `role` filter — if it's ignored
+    // server-side, the client-side role check below still keeps the count
+    // correct, just over a slightly larger fetched page.
+    api
+      .get("/admin/users", { params: { role: "buyer", per_page: 100 } })
+      .then((res) => {
+        const list =
+          res.data?.data || (Array.isArray(res.data) ? res.data : []);
+        const since = Date.now() - 24 * 60 * 60 * 1000;
+        const newCount = list.filter(
+          (u) =>
+            (u.role ? u.role === "buyer" : true) &&
+            u.created_at &&
+            new Date(u.created_at).getTime() >= since,
+        ).length;
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/buyers": newCount,
+        }));
+      })
+      .catch(() => {});
   }, []);
 
   const mergedBadges = { ...autoBadges, ...badges };
+
+  // "Live now" — buyers/sellers/staff with a currently valid session token.
+  // Polls every 30s so it stays roughly current without hammering the API.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchLiveUsers = () => {
+      api
+        .get("/admin/live-users")
+        .then((res) => {
+          if (cancelled) return;
+          setLiveUsers({
+            buyers: res.data?.buyers ?? 0,
+            sellers: res.data?.sellers ?? 0,
+            staff: res.data?.staff ?? 0,
+          });
+        })
+        .catch(() => {});
+    };
+    fetchLiveUsers();
+    const interval = setInterval(fetchLiveUsers, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     const onClickOutside = (e) => {
@@ -208,6 +285,25 @@ export default function AdminLayout({
           ))}
         </div>
       )}
+    </div>
+  );
+
+  const liveUsersBar = (
+    <div style={s.liveBar}>
+      <style>{LIVE_PULSE_CSS}</style>
+      <span style={s.liveBarLabel}>Live now:</span>
+      <div style={s.livePill}>
+        <span className="live-dot" style={s.liveDot} />
+        👥 Buyers <b>{liveUsers.buyers}</b>
+      </div>
+      <div style={s.livePill}>
+        <span className="live-dot" style={s.liveDot} />
+        🏪 Sellers <b>{liveUsers.sellers}</b>
+      </div>
+      <div style={s.livePill}>
+        <span className="live-dot" style={s.liveDot} />
+        🦺 Staff <b>{liveUsers.staff}</b>
+      </div>
     </div>
   );
 
@@ -335,6 +431,8 @@ export default function AdminLayout({
             </>
           )}
         </div>
+
+        {liveUsersBar}
 
         {children}
       </div>
@@ -526,6 +624,35 @@ const s = {
     flexWrap: "wrap",
   },
   headerDate: { fontSize: 13, color: "#888", whiteSpace: "nowrap" },
+  liveBar: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 10,
+    background: "#fff",
+    border: "1px solid #e8e4dc",
+    borderRadius: 10,
+    padding: "10px 16px",
+    marginBottom: 20,
+  },
+  liveBarLabel: { fontSize: 12, fontWeight: 700, color: "#888" },
+  livePill: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: "#f7f5f0",
+    borderRadius: 99,
+    padding: "5px 12px",
+    fontSize: 12,
+    color: "#333",
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    background: "#28b45a",
+    flexShrink: 0,
+  },
   settingsWrap: { position: "relative" },
   settingsBtn: {
     width: 40,
