@@ -90,16 +90,33 @@ export default function AdminLayout({
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
-    // Dashboard endpoint already returns pending orders + pending loan
-    // applications in one call (confirmed against AdminController@dashboard:
-    // both are plain ->count() queries, so these are reliable as-is).
+    // Dashboard endpoint returns pending orders directly.
     api
       .get("/admin/dashboard")
       .then((res) => {
         setAutoBadges((prev) => ({
           ...prev,
           "/admin/orders": res.data?.overview?.pending_orders,
-          "/admin/loans": res.data?.loans?.pending_applications,
+        }));
+      })
+      .catch(() => {});
+
+    // Loans — badge = loans still needing admin action: new applications
+    // awaiting a decision ("pending") PLUS approved loans awaiting payout
+    // ("approved" — confirmed via LoanController@disburse, which requires
+    // status === 'approved' before disbursing; there's no separate
+    // "awaiting disbursement" status in this schema, approved IS that
+    // state). status_counts comes from adminIndex() and is computed across
+    // the whole loans table, not just the current page, so it's accurate
+    // regardless of pagination or any status filter.
+    api
+      .get("/admin/loans", { params: { per_page: 1 } })
+      .then((res) => {
+        const counts = res.data?.status_counts || {};
+        const total = (counts.pending || 0) + (counts.approved || 0);
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/loans": total,
         }));
       })
       .catch(() => {});
