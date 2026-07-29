@@ -30,6 +30,7 @@ const SIDEBAR_ITEMS = [
 // Configuration / setup items — moved into the top-right Settings dropdown
 const SETTINGS_ITEMS = [
   { icon: "👥", label: "Staff", path: "/admin/staff" },
+  { icon: "📢", label: "Broadcasts", path: "/admin/broadcasts" },
   { icon: "💳", label: "Payments", path: "/admin/payments" },
   { icon: "⚙️", label: "Loan Settings", path: "/admin/loan-settings" },
   { icon: "🚚", label: "Delivery Zones", path: "/admin/delivery-zones" },
