@@ -22,6 +22,18 @@ export default function ManageLoansPage() {
   const [scheduleData, setScheduleData] = useState({}); // loanId -> response, cached
   const [scheduleLoading, setScheduleLoading] = useState(false);
 
+  // Pagination — /admin/loans only returns one page (20 by default) at a
+  // time. totalLoans/serverStatusCounts come from the server across ALL
+  // loans, not just the current page — computing them from `loans` (the
+  // current page's array) silently caps every figure at the page size and
+  // makes anything past page 1 invisible.
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [totalLoans, setTotalLoans] = useState(0);
+  const [serverStatusCounts, setServerStatusCounts] = useState({
+    pending: 0, approved: 0, disbursed: 0, active: 0, rejected: 0, completed: 0,
+  });
+
   // Documents state
   const [expandedDocs, setExpandedDocs] = useState(null);
   const [docsMap, setDocsMap] = useState({});
@@ -32,10 +44,22 @@ export default function ManageLoansPage() {
 
   const fetchLoans = () => {
     setLoading(true);
-    Promise.all([api.get("/admin/loans"), api.get("/settings/loan")])
+    Promise.all([
+      api.get("/admin/loans", {
+        params: {
+          page,
+          ...(filter !== "all" && { status: filter }),
+        },
+      }),
+      api.get("/settings/loan"),
+    ])
       .then(([loansRes, settingsRes]) => {
-        const raw = loansRes.data?.data || loansRes.data;
+        const body = loansRes.data;
+        const raw = body?.data || (Array.isArray(body) ? body : []);
         setLoans(Array.isArray(raw) ? raw : []);
+        setTotalLoans(body?.total ?? raw.length);
+        setLastPage(body?.last_page ?? 1);
+        if (body?.status_counts) setServerStatusCounts(body.status_counts);
         setLoanSettings(settingsRes.data);
       })
       .catch((err) => console.error(err))
@@ -44,7 +68,16 @@ export default function ManageLoansPage() {
 
   useEffect(() => {
     fetchLoans();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filter]);
+
+  // Reset to page 1 whenever the status tab changes, so switching tabs
+  // never leaves you stranded on a page number that doesn't exist for
+  // the newly selected status.
+  const handleFilterChange = (next) => {
+    setFilter(next);
+    setPage(1);
+  };
 
   // Auto-load docs for all loans
   useEffect(() => {
@@ -305,8 +338,10 @@ export default function ManageLoansPage() {
       other: "Other",
     })[t] || (t || "Document").replace(/_/g, " ");
 
+  // Status filtering now happens server-side (see fetchLoans), so `loans`
+  // already only contains the selected status — just apply the local
+  // name/email/purpose search on top of that.
   const filtered = loans
-    .filter((l) => filter === "all" || l.status === filter)
     .filter(
       (l) =>
         !search ||
@@ -315,17 +350,9 @@ export default function ManageLoansPage() {
         l.purpose?.toLowerCase().includes(search.toLowerCase()),
     );
 
-  const statusCounts = [
-    "pending",
-    "approved",
-    "disbursed",
-    "active",
-    "rejected",
-    "completed",
-  ].reduce(
-    (acc, s) => ({ ...acc, [s]: loans.filter((l) => l.status === s).length }),
-    {},
-  );
+  // Real counts across ALL loans, from the server — not just whatever
+  // happens to be on the currently loaded page.
+  const statusCounts = serverStatusCounts;
 
   return (
     <>
@@ -434,7 +461,7 @@ export default function ManageLoansPage() {
       {/* Sidebar */}
       <AdminLayout
         title="Loan Applications"
-        subtitle={`${loans.length} total applications`}
+        subtitle={`${totalLoans} total application${totalLoans !== 1 ? "s" : ""}`}
         badges={{ "/admin/loans": statusCounts.pending }}
         headerActions={
           <>
@@ -484,7 +511,7 @@ export default function ManageLoansPage() {
               <button
                 key={tab}
                 style={filter === tab ? s.filterTabActive : s.filterTab}
-                onClick={() => setFilter(tab)}
+                onClick={() => handleFilterChange(tab)}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {tab !== "all" && statusCounts[tab] > 0 && (
@@ -1138,6 +1165,56 @@ export default function ManageLoansPage() {
             </div>
           );
         })}
+
+        {lastPage > 1 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 16,
+              padding: "24px 0",
+            }}
+          >
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1 || loading}
+              style={{
+                padding: "10px 20px",
+                background: page <= 1 ? "#e8e4dc" : "#1f4d1f",
+                color: page <= 1 ? "#aaa" : "#fff",
+                border: "none",
+                borderRadius: 7,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: page <= 1 ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              ← Prev
+            </button>
+            <span style={{ fontSize: 13, color: "#555", fontWeight: 500 }}>
+              Page {page} of {lastPage}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
+              disabled={page >= lastPage || loading}
+              style={{
+                padding: "10px 20px",
+                background: page >= lastPage ? "#e8e4dc" : "#1f4d1f",
+                color: page >= lastPage ? "#aaa" : "#fff",
+                border: "none",
+                borderRadius: 7,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: page >= lastPage ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Next →
+            </button>
+          </div>
+        )}
 
         {scheduleModalLoanId && (
           <div style={s.modalOverlay} onClick={() => setScheduleModalLoanId(null)}>
