@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
+import api from "../../services/api";
 import {
   getUserFullProfile,
   suspendUserAccount,
@@ -18,6 +19,7 @@ const ROLE_COLORS = {
 const STATUS_COLORS = {
   active: { bg: "#e6f4ea", color: "#1f4d1f" },
   suspended: { bg: "#fbe9e9", color: "#a81f1f" },
+  closed: { bg: "#f0f0f0", color: "#555" },
 };
 
 export default function AdminUserDetailPage() {
@@ -31,6 +33,14 @@ export default function AdminUserDetailPage() {
   const [restrictOrders, setRestrictOrders] = useState(false);
   const [restrictLoans, setRestrictLoans] = useState(false);
   const [restrictReason, setRestrictReason] = useState("");
+
+  // Close / Reopen account — Phase 5
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeReason, setCloseReason] = useState("");
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenName, setReopenName] = useState("");
+  const [reopenEmail, setReopenEmail] = useState("");
+  const [reopenReason, setReopenReason] = useState("");
 
   const showToast = (msg) => {
     setToast(msg);
@@ -79,6 +89,44 @@ export default function AdminUserDetailPage() {
       () => restrictUserAccount(id, { restrict_orders: restrictOrders, restrict_loans: restrictLoans, reason: restrictReason }),
       "Restrictions updated."
     ).then(() => setShowRestrict(false));
+
+  // NOTE: not yet in adminService.js since it wasn't available to add to —
+  // calling api directly here. Move into adminService.js alongside the
+  // other account actions above if you want full consistency.
+  const handleCloseAccount = () => {
+    if (closeReason.trim().length < 10) {
+      showToast("Reason must be at least 10 characters.");
+      return;
+    }
+    runAction(
+      () => api.post(`/admin/users/${id}/close`, { reason: closeReason }),
+      "Account closed."
+    ).then(() => {
+      setShowCloseModal(false);
+      setCloseReason("");
+    });
+  };
+
+  const handleReopenAccount = () => {
+    if (!reopenName.trim() || !reopenEmail.trim()) {
+      showToast("Name and email are required to reopen this account.");
+      return;
+    }
+    runAction(
+      () =>
+        api.post(`/admin/users/${id}/reopen`, {
+          name: reopenName,
+          email: reopenEmail,
+          reason: reopenReason,
+        }),
+      "Account reopened."
+    ).then(() => {
+      setShowReopenModal(false);
+      setReopenName("");
+      setReopenEmail("");
+      setReopenReason("");
+    });
+  };
 
   if (loading) {
     return (
@@ -193,13 +241,32 @@ export default function AdminUserDetailPage() {
           <div style={s.actionsCol}>
             {user.status === "active" ? (
               <button style={s.actionBtnWarn} disabled={acting} onClick={handleSuspend}>Suspend Account</button>
-            ) : (
+            ) : user.status !== "closed" ? (
               <button style={s.actionBtnGood} disabled={acting} onClick={handleActivate}>Activate Account</button>
+            ) : null}
+            {user.status !== "closed" && (
+              <button style={s.actionBtnNeutral} disabled={acting} onClick={() => setShowRestrict(true)}>
+                Manage Restrictions
+              </button>
             )}
-            <button style={s.actionBtnNeutral} disabled={acting} onClick={() => setShowRestrict(true)}>
-              Manage Restrictions
-            </button>
-            <button style={s.actionBtnDanger} disabled={acting} onClick={handleBan}>Ban Permanently</button>
+            {user.status !== "closed" && (
+              <button style={s.actionBtnDanger} disabled={acting} onClick={handleBan}>Ban Permanently</button>
+            )}
+
+            {/* Close / Reopen — admins can't close other admin accounts */}
+            {user.role === "admin" ? (
+              <div style={{ fontSize: 12, color: "#888", padding: "8px 2px" }}>
+                Admin accounts cannot be closed from here.
+              </div>
+            ) : user.status === "closed" ? (
+              <button style={s.actionBtnGood} disabled={acting} onClick={() => setShowReopenModal(true)}>
+                Reopen Account
+              </button>
+            ) : (
+              <button style={s.actionBtnDanger} disabled={acting} onClick={() => setShowCloseModal(true)}>
+                Close Account
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -228,6 +295,89 @@ export default function AdminUserDetailPage() {
               <button style={s.actionBtnNeutral} onClick={() => setShowRestrict(false)}>Cancel</button>
               <button style={s.actionBtnGood} disabled={acting} onClick={handleSaveRestrictions}>
                 {acting ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCloseModal && (
+        <div style={s.modalOverlay} onClick={() => setShowCloseModal(false)}>
+          <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div style={s.cardTitle}>Close {user.name}'s Account</div>
+            <p style={{ fontSize: 12.5, color: "#a81f1f", background: "#fbe9e9", padding: "10px 12px", borderRadius: 7, marginBottom: 14 }}>
+              This anonymizes the user's personal data. Their order/loan history stays intact, but this cannot
+              be undone from their side — only an admin can reopen it, and reopening requires re-entering
+              their real name and email since that data won't be recoverable from our records.
+            </p>
+            <div style={s.editField}>
+              <label style={s.editLabel}>Reason * (minimum 10 characters)</label>
+              <textarea
+                style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #ddd", borderRadius: 7, fontSize: 13, fontFamily: "inherit", minHeight: 70, boxSizing: "border-box" }}
+                value={closeReason}
+                onChange={(e) => setCloseReason(e.target.value)}
+                placeholder="e.g. Repeated policy violations after two prior warnings..."
+              />
+              <div style={{ fontSize: 11, color: closeReason.trim().length < 10 ? "#a81f1f" : "#1a7a3a", marginTop: 4 }}>
+                {closeReason.trim().length}/10 minimum
+              </div>
+            </div>
+            <div style={s.modalActions}>
+              <button style={s.actionBtnNeutral} onClick={() => setShowCloseModal(false)}>Cancel</button>
+              <button
+                style={s.actionBtnDanger}
+                disabled={acting || closeReason.trim().length < 10}
+                onClick={handleCloseAccount}
+              >
+                {acting ? "Closing..." : "Close Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReopenModal && (
+        <div style={s.modalOverlay} onClick={() => setShowReopenModal(false)}>
+          <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
+            <div style={s.cardTitle}>Reopen This Account</div>
+            <p style={{ fontSize: 12.5, color: "#7a5000", background: "#fff8e7", padding: "10px 12px", borderRadius: 7, marginBottom: 14 }}>
+              This user's name and email were anonymized when their account was closed and can't be recovered
+              from our records — enter their real details to restore the account.
+            </p>
+            <div style={s.editField}>
+              <label style={s.editLabel}>Real Name *</label>
+              <input
+                type="text"
+                style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #ddd", borderRadius: 7, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }}
+                value={reopenName}
+                onChange={(e) => setReopenName(e.target.value)}
+              />
+            </div>
+            <div style={s.editField}>
+              <label style={s.editLabel}>Real Email *</label>
+              <input
+                type="email"
+                style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #ddd", borderRadius: 7, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }}
+                value={reopenEmail}
+                onChange={(e) => setReopenEmail(e.target.value)}
+              />
+            </div>
+            <div style={s.editField}>
+              <label style={s.editLabel}>Reason (optional)</label>
+              <textarea
+                style={{ width: "100%", padding: "9px 12px", border: "1.5px solid #ddd", borderRadius: 7, fontSize: 13, fontFamily: "inherit", minHeight: 60, boxSizing: "border-box" }}
+                value={reopenReason}
+                onChange={(e) => setReopenReason(e.target.value)}
+              />
+            </div>
+            <div style={s.modalActions}>
+              <button style={s.actionBtnNeutral} onClick={() => setShowReopenModal(false)}>Cancel</button>
+              <button
+                style={s.actionBtnGood}
+                disabled={acting || !reopenName.trim() || !reopenEmail.trim()}
+                onClick={handleReopenAccount}
+              >
+                {acting ? "Reopening..." : "Reopen Account"}
               </button>
             </div>
           </div>
