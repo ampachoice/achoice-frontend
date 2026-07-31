@@ -10,6 +10,7 @@ import {
 } from "../../services/productService";
 import NotificationBell from "../../components/buyer/NotificationBell";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
+import CategorySidebar from "../../components/buyer/CategorySidebar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CSS constant — injected via <style> tag inside Nav component.
@@ -1252,6 +1253,16 @@ export default function ProductPage() {
           cartCount={cartCount}
           token={token}
         />
+      {/* Left category sidebar (Phase 19) — listing mode only, not the
+           single-product detail view. Shared with HomePage.jsx. */}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        {!id && (
+          <CategorySidebar
+            onLoansClick={() => navigate("/loans/apply")}
+            onContactClick={() => navigate("/pages/live-chat-support")}
+          />
+        )}
+        <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
       <div className="pp-container">
         {/* ════════════════════ LISTING ════════════════════ */}
         {!id && (
@@ -1744,6 +1755,8 @@ export default function ProductPage() {
             </div>
           </>
         )}
+      </div>
+        </div>
       </div>
     </div>
   );
