@@ -10,6 +10,7 @@ import {
 } from "../../services/productService";
 import NotificationBell from "../../components/buyer/NotificationBell";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
+import CategorySidebar from "../../components/buyer/CategorySidebar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CSS constant — injected via <style> tag inside Nav component.
@@ -1047,7 +1048,12 @@ export default function ProductPage() {
           cartCount={cartCount}
           token={token}
         />
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          <CategorySidebar />
+          <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
         <div className="pp-loader">Loading products…</div>
+          </div>
+        </div>
       </div>
     );
 
@@ -1087,6 +1093,9 @@ export default function ProductPage() {
           cartCount={cartCount}
           token={token}
         />
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          <CategorySidebar />
+          <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
         <div className="pp-error">
           {listError}{" "}
           <button
@@ -1108,6 +1117,8 @@ export default function ProductPage() {
           >
             Retry
           </button>
+        </div>
+          </div>
         </div>
       </div>
     );
@@ -1148,7 +1159,12 @@ export default function ProductPage() {
           cartCount={cartCount}
           token={token}
         />
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          <CategorySidebar />
+          <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
         <div className="pp-loader">Loading product…</div>
+          </div>
+        </div>
       </div>
     );
 
@@ -1188,11 +1204,16 @@ export default function ProductPage() {
           cartCount={cartCount}
           token={token}
         />
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          <CategorySidebar />
+          <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
         <div className="pp-container">
           <button className="pp-back-btn" onClick={() => navigate("/products")}>
             ← Back to Products
           </button>
           <div className="pp-empty">Product not found.</div>
+        </div>
+          </div>
         </div>
       </div>
     );
@@ -1252,6 +1273,9 @@ export default function ProductPage() {
           cartCount={cartCount}
           token={token}
         />
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        <CategorySidebar />
+        <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
       <div className="pp-container">
         {/* ════════════════════ LISTING ════════════════════ */}
         {!id && (
@@ -1745,6 +1769,8 @@ export default function ProductPage() {
           </>
         )}
       </div>
+          </div>
+        </div>
     </div>
   );
 }
