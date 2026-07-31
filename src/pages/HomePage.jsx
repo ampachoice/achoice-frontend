@@ -74,7 +74,7 @@ const injectCSS = () => {
     .hp-carousel-track { display: flex; transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94); will-change: transform; }
     .hp-carousel-slide {
       min-width: 100%; position: relative; height: 560px;
-      display: flex; align-items: center; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
     }
     .hp-carousel-slide-bg {
       position: absolute; inset: 0;
@@ -288,6 +288,16 @@ const injectCSS = () => {
       .hp-carousel-slide { height: 340px; }
       .hp-carousel-title { font-size: 22px !important; }
     }
+
+    /* Left category sidebar (Phase 19) — persistent on desktop, hidden on
+       mobile/tablet where the existing hamburger menu covers navigation. */
+    .hp-sidebar { display: block; }
+    @media (max-width: 900px) {
+      .hp-sidebar { display: none; }
+    }
+    .hp-sidebar-cat-row:hover { background: #f7f5f0; }
+    .hp-sidebar-sub-row:hover { background: #f0ece0; }
+    .hp-sidebar-service-row:hover { background: #143a14; }
   `;
   document.head.appendChild(style);
 };
@@ -310,6 +320,12 @@ export default function HomePage() {
 
   // Category rails — { [slug]: { loading, products } }
   const [categoryRails, setCategoryRails] = useState({});
+
+  // Left sidebar (Phase 19) — full parent→subcategory tree from GET /categories,
+  // separate from the CATEGORIES const above (which only drives the horizontal
+  // quick-links row + rails and intentionally has no subcategories).
+  const [categoryTree, setCategoryTree] = useState([]);
+  const [expandedCat, setExpandedCat] = useState(null);
 
   // Flash sales — fetched with a client timestamp so the countdown can tick
   // locally between polls without drifting (server seconds_remaining is the source of truth).
@@ -366,6 +382,10 @@ export default function HomePage() {
     }, 5000);
   };
 
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
     injectCSS();
 
@@ -385,6 +405,10 @@ export default function HomePage() {
     api
       .get("/settings/site")
       .then((r) => setSiteSetting(r.data))
+      .catch(() => {});
+    api
+      .get("/categories")
+      .then((r) => setCategoryTree(Array.isArray(r.data) ? r.data : []))
       .catch(() => {});
 
     // Category rails — fetch each category independently so a slow/empty
@@ -868,6 +892,93 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* ── Left category sidebar (Phase 19) — persistent quick-nav for
+           categories + shortcuts into the Loans and Contact sections that
+           already exist further down this page. Hidden on mobile/tablet
+           via .hp-sidebar CSS above; the existing hamburger menu covers
+           navigation there instead. */}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        <aside className="hp-sidebar" style={s.sidebar}>
+          <div style={s.sidebarHeader}>Categories</div>
+          <div style={s.sidebarCatList}>
+            {(categoryTree.length > 0 ? categoryTree : CATEGORIES).map((cat) => {
+              const hasSubs = cat.subcategories && cat.subcategories.length > 0;
+              const isOpen = expandedCat === cat.id;
+              return (
+                <div key={cat.id || cat.slug}>
+                  <div
+                    className="hp-sidebar-cat-row"
+                    style={s.sidebarCatRow}
+                    onClick={() => navigate(`/products?category=${cat.slug}`)}
+                  >
+                    <span style={{ marginRight: 8 }}>{cat.icon || "🌾"}</span>
+                    <span style={{ flex: 1 }}>{cat.name}</span>
+                    {hasSubs && (
+                      <span
+                        style={s.sidebarChevron}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedCat(isOpen ? null : cat.id);
+                        }}
+                      >
+                        {isOpen ? "▾" : "▸"}
+                      </span>
+                    )}
+                  </div>
+                  {hasSubs && isOpen && (
+                    <div>
+                      {cat.subcategories.map((sub) => (
+                        <div
+                          key={sub.id || sub.slug}
+                          className="hp-sidebar-sub-row"
+                          style={s.sidebarSubRow}
+                          onClick={() =>
+                            navigate(`/products?category=${sub.slug}`)
+                          }
+                        >
+                          {sub.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={s.sidebarDivider} />
+
+          <div style={s.sidebarHeader}>Our Service</div>
+          <div
+            className="hp-sidebar-service-row"
+            style={s.sidebarServiceRow}
+            onClick={() => scrollToSection("loans")}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>💰</span>
+              <span style={{ fontWeight: 600 }}>Get a Loan</span>
+            </div>
+            <div style={s.sidebarServiceSub}>
+              Farm financing in 24hrs
+            </div>
+          </div>
+          <div
+            className="hp-sidebar-service-row"
+            style={s.sidebarServiceRow}
+            onClick={() => scrollToSection("contact")}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>📞</span>
+              <span style={{ fontWeight: 600 }}>Contact Us</span>
+            </div>
+            <div style={s.sidebarServiceSub}>
+              {phone} · {email}
+            </div>
+          </div>
+        </aside>
+
+        <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
 
       {/* ✅ HERO CAROUSEL — Auto-slides every 5 seconds */}
       <div className="hp-carousel">
@@ -2207,11 +2318,75 @@ export default function HomePage() {
           </span>
         </div>
       </footer>
+
+        </div>
+      </div>
     </div>
   );
 }
 
 const s = {
+  // ── Left category sidebar (Phase 19) ──────────────────────────────────
+  sidebar: {
+    width: 260,
+    flexShrink: 0,
+    background: "#fff",
+    borderRight: "1px solid #e8e4dc",
+    padding: "20px 0",
+    position: "sticky",
+    top: 0,
+    alignSelf: "flex-start",
+    maxHeight: "100vh",
+    overflowY: "auto",
+  },
+  sidebarHeader: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    padding: "4px 20px 10px",
+  },
+  sidebarCatList: { marginBottom: 6 },
+  sidebarCatRow: {
+    display: "flex",
+    alignItems: "center",
+    padding: "10px 20px",
+    fontSize: 13.5,
+    color: "#222",
+    cursor: "pointer",
+  },
+  sidebarChevron: {
+    fontSize: 11,
+    color: "#999",
+    padding: "2px 6px",
+    cursor: "pointer",
+  },
+  sidebarSubRow: {
+    padding: "8px 20px 8px 46px",
+    fontSize: 12.5,
+    color: "#555",
+    cursor: "pointer",
+  },
+  sidebarDivider: {
+    height: 1,
+    background: "#f0ece0",
+    margin: "10px 0 14px",
+  },
+  sidebarServiceRow: {
+    margin: "0 12px 8px",
+    padding: "12px 12px",
+    background: "#1f4d1f",
+    color: "#fff",
+    borderRadius: 8,
+    fontSize: 13,
+    cursor: "pointer",
+  },
+  sidebarServiceSub: {
+    fontSize: 11,
+    color: "#a8d5a8",
+    marginTop: 4,
+  },
   topBar: {
     background: "#1f4d1f",
     color: "#fff",
