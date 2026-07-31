@@ -61,6 +61,7 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
     { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
     { icon: "📋", label: "My Loans", path: "/loans/repay" },
     { icon: "📝", label: "Complaints & Refunds", path: "/complaints" },
+    { icon: "🔔", label: "Notifications", path: "/notifications" },
   ];
 
   if (!user) {

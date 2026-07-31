@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import CloseAccountModal from "../common/CloseAccountModal";
 
 // ──────────────────────────────────────────────────────────────────────────
 // MobileNavDrawer — hamburger icon + slide-out menu for small screens.
@@ -14,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
   const panelRef = useRef(null);
 
   const userRaw = localStorage.getItem("user");
@@ -138,7 +140,13 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
           background: #cc0000; color: #fff; font-size: 11px; font-weight: 700;
           border-radius: 99px; padding: 2px 8px; flex-shrink: 0;
         }
-        .mnd-footer { padding: 16px 20px; border-top: 1px solid #eee; }
+        .mnd-footer { padding: 16px 20px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; }
+        .mnd-close-account {
+          width: 100%; padding: 12px; background: #fff; color: #a81f1f;
+          border: 1px solid #f0c8c8; border-radius: 8px; font-size: 14px; font-weight: 600;
+          cursor: pointer; font-family: inherit; display: flex; align-items: center;
+          justify-content: center; gap: 8px;
+        }
         .mnd-logout {
           width: 100%; padding: 12px; background: #fff0f0; color: #cc0000;
           border: 1px solid #ffb3b3; border-radius: 8px; font-size: 14px; font-weight: 600;
@@ -204,6 +212,15 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
                   ))}
                 </div>
                 <div className="mnd-footer">
+                  <button
+                    className="mnd-close-account"
+                    onClick={() => {
+                      setOpen(false);
+                      setShowCloseModal(true);
+                    }}
+                  >
+                    ⚠️ Close Account
+                  </button>
                   <button className="mnd-logout" onClick={handleLogout}>
                     🚪 Logout
                   </button>
@@ -227,6 +244,10 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
             )}
           </div>
         </div>
+      )}
+
+      {showCloseModal && (
+        <CloseAccountModal onClose={() => setShowCloseModal(false)} />
       )}
     </>
   );
