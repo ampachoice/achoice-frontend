@@ -33,6 +33,7 @@ const SETTINGS_ITEMS = [
   { icon: "📢", label: "Broadcasts", path: "/admin/broadcasts" },
   { icon: "💳", label: "Payments", path: "/admin/payments" },
   { icon: "⚙️", label: "Loan Settings", path: "/admin/loan-settings" },
+  { icon: "🗂️", label: "Categories", path: "/admin/categories" },
   { icon: "🚚", label: "Delivery Zones", path: "/admin/delivery-zones" },
   { icon: "📈", label: "Reports", path: "/admin/reports" },
   { icon: "📜", label: "Audit Log", path: "/admin/audit-log" },

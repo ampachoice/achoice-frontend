@@ -26,3 +26,11 @@ export const suspendUserAccount = (id) => api.patch(`/admin/users/${id}/suspend`
 export const activateUserAccount = (id) => api.patch(`/admin/users/${id}/activate`);
 export const banUserAccount = (id) => api.patch(`/admin/users/${id}/ban`);
 export const restrictUserAccount = (id, data) => api.patch(`/admin/users/${id}/restrict`, data);
+
+// Categories — full tree (including inactive), create/edit/delete. To create
+// a subcategory, pass parent_id pointing at a top-level category's id; only
+// one level of nesting is supported server-side.
+export const getAdminCategories = () => api.get('/admin/categories');
+export const createCategory = (data) => api.post('/admin/categories', data);
+export const updateCategory = (id, data) => api.put(`/admin/categories/${id}`, data);
+export const deleteCategory = (id) => api.delete(`/admin/categories/${id}`);

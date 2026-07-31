@@ -49,6 +49,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import Adminreportspage   from './pages/admin/Adminreportspage';
 import ManageSellersPage  from './pages/admin/ManageSellersPage';
 import ManageProductsPage from './pages/admin/ManageProductsPage';
+import ManageCategoriesPage from './pages/admin/ManageCategoriesPage';
 import AdminFlashSalesPage from './pages/admin/AdminFlashSalesPage';
 import AdminFlashSaleRequestsPage from './pages/admin/AdminFlashSaleRequestsPage';
 import AdminRemittanceRequestsPage from './pages/admin/AdminRemittanceRequestsPage';
@@ -217,6 +218,10 @@ const router = createBrowserRouter([
       {
         path: 'products',
         element: <ProtectedRoute adminOnly><ManageProductsPage /></ProtectedRoute>
+      },
+      {
+        path: 'categories',
+        element: <ProtectedRoute adminOnly><ManageCategoriesPage /></ProtectedRoute>
       },
       {
         path: 'flash-sales',

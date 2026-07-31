@@ -11,6 +11,7 @@ import {
   addProductGalleryImages,
   deleteProductGalleryImage,
 } from "../../services/sellerService";
+import { getCategoryTree } from "../../services/productService";
 
 // Same unsigned Cloudinary preset the admin product form already uploads
 // through — keeps this on the one proven-working image path in the codebase
@@ -28,18 +29,6 @@ async function uploadImageToCloudinary(file) {
   return res.data.secure_url;
 }
 
-const CATEGORIES = [
-  "grains",
-  "vegetables",
-  "fruits",
-  "tubers",
-  "livestock",
-  "poultry",
-  "fishery",
-  "dairy",
-  "processed",
-  "other",
-];
 const UNITS = ["bag", "kg", "ton", "crate", "litre", "piece", "bunch"];
 
 const STATUS_TABS = [
@@ -67,12 +56,13 @@ const EMPTY_FORM = {
   quantity: "",
   min_order_qty: "1",
   unit: "bag",
-  category: "",
+  category_id: "",
   tags: "",
 };
 
 export default function SellerProductsPage() {
   const [seller, setSeller] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
@@ -100,6 +90,12 @@ export default function SellerProductsPage() {
   useEffect(() => {
     getSellerProfile()
       .then((res) => setSeller(res.data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    getCategoryTree()
+      .then((res) => setCategories(res.data || []))
       .catch(() => {});
   }, []);
 
@@ -147,7 +143,7 @@ export default function SellerProductsPage() {
       quantity: String(product.quantity ?? ""),
       min_order_qty: String(product.min_order_qty ?? "1"),
       unit: product.unit || "bag",
-      category: product.category || "",
+      category_id: product.category_id ?? "",
       tags: product.tags || "",
     });
     setImageFile(null);
@@ -177,7 +173,7 @@ export default function SellerProductsPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!form.category) {
+    if (!form.category_id) {
       setFormError("Select a category.");
       return;
     }
@@ -210,7 +206,7 @@ export default function SellerProductsPage() {
         quantity: Number(form.quantity),
         min_order_qty: Number(form.min_order_qty) || 1,
         unit: form.unit,
-        category: form.category,
+        category_id: Number(form.category_id),
         tags: form.tags || null,
         ...(imageUrl !== undefined && { image: imageUrl }),
       };
@@ -495,17 +491,27 @@ export default function SellerProductsPage() {
                   <select
                     style={s.input}
                     required
-                    value={form.category}
+                    value={form.category_id}
                     onChange={(e) =>
-                      setForm((f) => ({ ...f, category: e.target.value }))
+                      setForm((f) => ({ ...f, category_id: e.target.value }))
                     }
                   >
                     <option value="">Select category</option>
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c[0].toUpperCase() + c.slice(1)}
-                      </option>
-                    ))}
+                    {categories.map((parent) =>
+                      parent.subcategories?.length > 0 ? (
+                        <optgroup key={parent.id} label={parent.name}>
+                          {parent.subcategories.map((sub) => (
+                            <option key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        <option key={parent.id} value={parent.id}>
+                          {parent.name}
+                        </option>
+                      ),
+                    )}
                   </select>
                 </div>
                 <div style={s.field}>
