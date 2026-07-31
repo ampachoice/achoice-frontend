@@ -279,6 +279,20 @@ export default function SellerProductsPage() {
 
   const canAddProduct = seller?.status === "active";
 
+  // Product list rows only carry category_id (or, on older records, the
+  // legacy `category` string) — resolve a display name from the fetched
+  // tree rather than trusting whichever shape the API happens to return.
+  const getCategoryName = (product) => {
+    for (const parent of categories) {
+      if (parent.id === product.category_id) return parent.name;
+      const sub = parent.subcategories?.find(
+        (s) => s.id === product.category_id,
+      );
+      if (sub) return sub.name;
+    }
+    return product.category || "Uncategorized";
+  };
+
   return (
     <SellerLayout
       title="Products"
@@ -356,7 +370,7 @@ export default function SellerProductsPage() {
                 <div style={{ padding: 14 }}>
                   <div style={s.cardName}>{p.name}</div>
                   <div style={s.cardMeta}>
-                    {p.category} · {p.quantity} {p.unit} in stock
+                    {getCategoryName(p)} · {p.quantity} {p.unit} in stock
                   </div>
                   <div
                     style={{
