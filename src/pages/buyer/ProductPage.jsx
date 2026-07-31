@@ -921,9 +921,9 @@ export default function ProductPage() {
       }
       localStorage.setItem("cart", JSON.stringify(cart));
       setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
-      navigate("/cart");
+      showActionToast(`${p.name} added to cart`);
     },
-    [navigate],
+    [showActionToast],
   );
 
   const handleWishlist = async (e, productId, productName) => {
@@ -1358,7 +1358,7 @@ export default function ProductPage() {
                             handleAddToCart(p);
                           }}
                         >
-                          Add &amp; Checkout
+                          Add to Cart
                         </button>
                       </div>
                     </div>
