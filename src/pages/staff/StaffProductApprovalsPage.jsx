@@ -17,6 +17,7 @@ export default function StaffProductApprovalsPage() {
   const [editForm, setEditForm] = useState({});
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
+  const [categories, setCategories] = useState([]);
 
   let user = null;
   try {
@@ -39,6 +40,10 @@ export default function StaffProductApprovalsPage() {
 
   useEffect(() => {
     fetchPending();
+    api
+      .get("/categories")
+      .then((res) => setCategories(Array.isArray(res.data) ? res.data : []))
+      .catch(() => {});
   }, []);
 
   const handleApprove = async (product) => {
@@ -62,7 +67,7 @@ export default function StaffProductApprovalsPage() {
       price: product.price ?? "",
       quantity: product.quantity ?? "",
       unit: product.unit || "",
-      category: product.category || "",
+      category_id: product.category_id ?? "",
       min_order_qty: product.min_order_qty ?? "",
     });
     setEditError("");
@@ -81,7 +86,9 @@ export default function StaffProductApprovalsPage() {
         price: Number(editForm.price),
         quantity: Number(editForm.quantity),
         unit: editForm.unit,
-        category: editForm.category,
+        ...(editForm.category_id && {
+          category_id: Number(editForm.category_id),
+        }),
         ...(editForm.min_order_qty && {
           min_order_qty: Number(editForm.min_order_qty),
         }),
@@ -298,13 +305,23 @@ export default function StaffProductApprovalsPage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={s.editLabel}>Category</label>
-                  <input
+                  <select
                     style={s.editInput}
-                    value={editForm.category}
+                    value={editForm.category_id}
                     onChange={(e) =>
-                      setEditForm((p) => ({ ...p, category: e.target.value }))
+                      setEditForm((p) => ({
+                        ...p,
+                        category_id: e.target.value,
+                      }))
                     }
-                  />
+                  >
+                    <option value="">— Select category —</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>

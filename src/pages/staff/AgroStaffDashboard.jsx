@@ -13,8 +13,6 @@ export default function AgroStaffDashboard() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [stats, setStats] = useState(null);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [statsError, setStatsError] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [orderFilter, setOrderFilter] = useState("all");
@@ -55,24 +53,11 @@ export default function AgroStaffDashboard() {
     user = JSON.parse(localStorage.getItem("user"));
   } catch {}
 
-  const loadStats = () => {
-    setStatsLoading(true);
-    setStatsError(null);
+  useEffect(() => {
     api
       .get("/staff/agro/dashboard")
       .then((res) => setStats(res.data))
-      .catch((err) =>
-        setStatsError(
-          err.response?.status === 403
-            ? "You don't have access to the Agro Staff dashboard."
-            : "Failed to load dashboard stats.",
-        ),
-      )
-      .finally(() => setStatsLoading(false));
-  };
-
-  useEffect(() => {
-    loadStats();
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -81,7 +66,7 @@ export default function AgroStaffDashboard() {
       api
         .get("/staff/agro/orders")
         .then((res) => setOrders(res.data.data || res.data || []))
-        .catch(() => showToast("Failed to load orders."))
+        .catch(() => {})
         .finally(() => setOrdersLoading(false));
     }
     if (activeTab === "inventory") {
@@ -94,7 +79,7 @@ export default function AgroStaffDashboard() {
           setInventory(invRes.data.data || invRes.data || []);
           setLowStock(lowRes.data.data || lowRes.data || []);
         })
-        .catch(() => showToast("Failed to load inventory."))
+        .catch(() => {})
         .finally(() => setInventoryLoading(false));
     }
     if (activeTab === "reports") {
@@ -109,7 +94,7 @@ export default function AgroStaffDashboard() {
           const revData = revRes.data.data || revRes.data;
           setRevenueReport(Array.isArray(revData) ? revData : []);
         })
-        .catch(() => showToast("Failed to load reports."))
+        .catch(() => {})
         .finally(() => setReportsLoading(false));
     }
     if (activeTab === "sellers") {
@@ -134,10 +119,6 @@ export default function AgroStaffDashboard() {
 
   // Sidebar red-alert badges — pending products awaiting review + pending
   // remittance requests, mirroring the admin dashboard's badge pattern.
-  // NOTE: like the dashboard stats fetch above, these silently no-op on
-  // failure — intentionally not toasted since this is a passive background
-  // fetch, not a user-initiated action. If a badge never appears, check for
-  // the same 403/role-mismatch cause as the stats error first.
   useEffect(() => {
     api
       .get("/staff/agro/products/pending-review")
@@ -158,23 +139,6 @@ export default function AgroStaffDashboard() {
           ? list.filter((r) => r.status === "pending").length
           : 0;
         setBadges((prev) => ({ ...prev, remittances: pending }));
-      })
-      .catch(() => {});
-  }, []);
-
-  // Cross-link badge — pending loan applications count, for the "Loan
-  // Staff" nav section shown to combined-permission staff. Reuses
-  // /staff/loan/dashboard (the same endpoint LoanStaffDashboard itself
-  // uses) rather than a separate count endpoint.
-  useEffect(() => {
-    if (!(user?.staff_profile?.can_manage_loans || user?.role === "admin")) return;
-    api
-      .get("/staff/loan/dashboard")
-      .then((res) => {
-        setBadges((prev) => ({
-          ...prev,
-          loanApplications: res.data?.applications?.pending,
-        }));
       })
       .catch(() => {});
   }, []);
@@ -251,7 +215,17 @@ export default function AgroStaffDashboard() {
     setSellerDetailLoading(true);
     try {
       const res = await api.get(`/staff/agro/sellers/${seller.id}`);
-      setSellerDetail(res.data?.seller || res.data);
+      // Backend shape: { seller: {...}, total_revenue, total_items_sold,
+      // total_products, active_products } — the stats are siblings of
+      // `seller`, not nested inside it.
+      const data = res.data || {};
+      setSellerDetail({
+        ...(data.seller || {}),
+        total_revenue: data.total_revenue,
+        total_items_sold: data.total_items_sold,
+        total_products: data.total_products,
+        active_products: data.active_products,
+      });
     } catch {
       showToast("Failed to load seller details.");
       setSellerDetail(null);
@@ -432,7 +406,7 @@ export default function AgroStaffDashboard() {
               rendering its content inline — the two dashboards remain
               separate pages/components, this just surfaces both nav
               sections together per the combined-dashboard spec. */}
-          {(user?.staff_profile?.can_manage_loans || user?.role === "admin") && (
+          {user?.can_manage_loans && (
             <>
               <div style={s.navSectionLabel}>Loan Staff</div>
               {[
@@ -441,7 +415,6 @@ export default function AgroStaffDashboard() {
                   icon: "📄",
                   label: "Applications",
                   path: "/staff/loans?tab=applications",
-                  badgeKey: "loanApplications",
                 },
                 {
                   icon: "💳",
@@ -458,9 +431,6 @@ export default function AgroStaffDashboard() {
                   }}
                 >
                   <span>{item.icon}</span> {item.label}
-                  {item.badgeKey && badges[item.badgeKey] > 0 && (
-                    <span style={s.navBadge}>{badges[item.badgeKey]}</span>
-                  )}
                 </div>
               ))}
             </>
@@ -594,19 +564,8 @@ export default function AgroStaffDashboard() {
                   </div>
                 )}
               </>
-            ) : statsError ? (
-              <div style={s.alertBox}>
-                <div style={s.alertTitle}>⚠️ {statsError}</div>
-                <div style={s.alertText}>
-                  <span style={s.alertLink} onClick={loadStats}>
-                    Try again
-                  </span>
-                </div>
-              </div>
             ) : (
-              <p style={s.loading}>
-                {statsLoading ? "Loading dashboard..." : "No data available."}
-              </p>
+              <p style={s.loading}>Loading dashboard...</p>
             )}
           </div>
         )}
@@ -1090,28 +1049,27 @@ export default function AgroStaffDashboard() {
               <div style={s.statsGrid}>
                 <div style={s.statCard}>
                   <div style={s.statValue}>
-                    {toMoney(
-                      salesReport.summary.total_revenue ??
-                        salesReport.summary.revenue,
-                    )}
+                    {toMoney(salesReport.summary.total_revenue)}
                   </div>
                   <div style={s.statLabel}>Total Revenue</div>
                 </div>
                 <div style={s.statCard}>
                   <div style={s.statValue}>
-                    {salesReport.summary.total_orders ??
-                      salesReport.summary.orders ??
-                      "—"}
+                    {salesReport.summary.total_orders ?? "—"}
                   </div>
                   <div style={s.statLabel}>Total Orders</div>
                 </div>
                 <div style={s.statCard}>
                   <div style={s.statValue}>
-                    {salesReport.summary.total_products_sold ??
-                      salesReport.summary.items_sold ??
-                      "—"}
+                    {salesReport.summary.total_products ?? "—"}
                   </div>
-                  <div style={s.statLabel}>Items Sold</div>
+                  <div style={s.statLabel}>Total Products</div>
+                </div>
+                <div style={s.statCard}>
+                  <div style={s.statValue}>
+                    {salesReport.summary.total_sellers ?? "—"}
+                  </div>
+                  <div style={s.statLabel}>Active Sellers</div>
                 </div>
               </div>
             )}
@@ -1123,17 +1081,16 @@ export default function AgroStaffDashboard() {
                   <p style={s.empty}>No sales data yet.</p>
                 ) : (
                   salesReport.top_products.map((p, i) => (
-                    <div key={p.id || i} style={s.reportRow}>
+                    <div key={p.product_id || i} style={s.reportRow}>
                       <div style={s.reportRank}>#{i + 1}</div>
                       <div style={s.reportInfo}>
-                        <div style={s.reportName}>{p.name}</div>
+                        <div style={s.reportName}>{p.product_name}</div>
                         <div style={s.reportMeta}>
-                          {p.category} · {p.items_sold || p.quantity_sold || 0}{" "}
-                          sold
+                          {p.category} · {p.total_quantity || 0} sold
                         </div>
                       </div>
                       <div style={s.reportValue}>
-                        {toMoney(p.revenue || p.total_revenue)}
+                        {toMoney(p.total_revenue)}
                       </div>
                     </div>
                   ))
@@ -1146,18 +1103,16 @@ export default function AgroStaffDashboard() {
                   <p style={s.empty}>No seller sales data yet.</p>
                 ) : (
                   salesReport.top_sellers.map((sl, i) => (
-                    <div key={sl.id || i} style={s.reportRow}>
+                    <div key={sl.seller_id || i} style={s.reportRow}>
                       <div style={s.reportRank}>#{i + 1}</div>
                       <div style={s.reportInfo}>
-                        <div style={s.reportName}>
-                          {sl.business_name || sl.name}
-                        </div>
+                        <div style={s.reportName}>{sl.business_name}</div>
                         <div style={s.reportMeta}>
-                          {sl.order_count || 0} orders
+                          {sl.state} · {sl.order_count || 0} orders
                         </div>
                       </div>
                       <div style={s.reportValue}>
-                        {toMoney(sl.revenue || sl.total_revenue)}
+                        {toMoney(sl.total_revenue)}
                       </div>
                     </div>
                   ))
@@ -1185,7 +1140,9 @@ export default function AgroStaffDashboard() {
                         : 0;
                     return (
                       <div key={i} style={s.revenueRow}>
-                        <div style={s.revenueMonth}>{r.month || r.label}</div>
+                        <div style={s.revenueMonth}>
+                          {r.month_name || r.month || r.label}
+                        </div>
                         <div style={s.revenueBarBg}>
                           <div
                             style={{ ...s.revenueBarFill, width: `${pct}%` }}
@@ -1237,15 +1194,16 @@ export default function AgroStaffDashboard() {
                 </div>
                 <div style={s.sellerModalStat}>
                   <div style={s.sellerModalStatVal}>
-                    {sellerDetail.product_count ?? "—"}
+                    {sellerDetail.total_items_sold ?? "—"}
                   </div>
-                  <div style={s.sellerModalStatLabel}>Products</div>
+                  <div style={s.sellerModalStatLabel}>Items Sold</div>
                 </div>
                 <div style={s.sellerModalStat}>
                   <div style={s.sellerModalStatVal}>
-                    {sellerDetail.order_count ?? "—"}
+                    {sellerDetail.active_products ?? "—"}/
+                    {sellerDetail.total_products ?? "—"}
                   </div>
-                  <div style={s.sellerModalStatLabel}>Orders</div>
+                  <div style={s.sellerModalStatLabel}>Active Products</div>
                 </div>
               </div>
 
