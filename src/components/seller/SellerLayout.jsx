@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getSellerProfile } from "../../services/sellerService";
+import { getSellerProfile, getSellerDashboard } from "../../services/sellerService";
 import CloseAccountModal from "../common/CloseAccountModal";
+import api from "../../services/api";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -51,6 +52,7 @@ export default function SellerLayout({
   const location = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
+  const [autoBadges, setAutoBadges] = useState({});
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT
   );
@@ -83,6 +85,45 @@ export default function SellerLayout({
       .catch(() => {});
   }, []);
 
+  // Sidebar red-alert badges — same self-contained pattern as AdminLayout:
+  // fetched here once on mount so every seller page gets accurate badges
+  // automatically, instead of relying on each page to remember to compute
+  // and pass a `badges` prop (which none currently do).
+  useEffect(() => {
+    // Orders badge = pending orders to process. Products badge combines
+    // every product-related concern already surfaced on the dashboard
+    // shortcuts panel (low stock, out of stock, pending review, rejected)
+    // into one count, since there's a single "Products" nav item covering
+    // all of them.
+    getSellerDashboard()
+      .then((res) => {
+        const shortcuts = res.data?.shortcuts || {};
+        const productsTotal =
+          (shortcuts.low_stock_products || 0) +
+          (shortcuts.out_of_stock_products || 0) +
+          (shortcuts.pending_review_products || 0) +
+          (shortcuts.rejected_products || 0);
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/seller/orders": shortcuts.pending_orders_to_process,
+          "/seller/products": productsTotal,
+        }));
+      })
+      .catch(() => {});
+
+    // Same unread-count endpoint NotificationBell uses — works for buyers,
+    // sellers, and staff alike.
+    api
+      .get("/inbox/unread-count")
+      .then((res) => {
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/seller/notifications": res.data?.unread_count,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     const onClickOutside = (e) => {
       if (settingsRef.current && !settingsRef.current.contains(e.target)) {
@@ -93,7 +134,7 @@ export default function SellerLayout({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const mergedBadges = badges;
+  const mergedBadges = { ...autoBadges, ...badges };
 
   const handleLogout = () => {
     localStorage.removeItem("token");

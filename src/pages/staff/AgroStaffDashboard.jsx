@@ -13,6 +13,8 @@ export default function AgroStaffDashboard() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [orderFilter, setOrderFilter] = useState("all");
@@ -53,11 +55,24 @@ export default function AgroStaffDashboard() {
     user = JSON.parse(localStorage.getItem("user"));
   } catch {}
 
-  useEffect(() => {
+  const loadStats = () => {
+    setStatsLoading(true);
+    setStatsError(null);
     api
       .get("/staff/agro/dashboard")
       .then((res) => setStats(res.data))
-      .catch(() => {});
+      .catch((err) =>
+        setStatsError(
+          err.response?.status === 403
+            ? "You don't have access to the Agro Staff dashboard."
+            : "Failed to load dashboard stats.",
+        ),
+      )
+      .finally(() => setStatsLoading(false));
+  };
+
+  useEffect(() => {
+    loadStats();
   }, []);
 
   useEffect(() => {
@@ -554,8 +569,19 @@ export default function AgroStaffDashboard() {
                   </div>
                 )}
               </>
+            ) : statsError ? (
+              <div style={s.alertBox}>
+                <div style={s.alertTitle}>⚠️ {statsError}</div>
+                <div style={s.alertText}>
+                  <span style={s.alertLink} onClick={loadStats}>
+                    Try again
+                  </span>
+                </div>
+              </div>
             ) : (
-              <p style={s.loading}>Loading dashboard...</p>
+              <p style={s.loading}>
+                {statsLoading ? "Loading dashboard..." : "No data available."}
+              </p>
             )}
           </div>
         )}

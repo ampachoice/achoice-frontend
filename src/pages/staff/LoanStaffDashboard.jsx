@@ -18,6 +18,8 @@ export default function LoanStaffDashboard() {
 
   // Dashboard
   const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(null);
   const [loanSettings, setLoanSettings] = useState(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -79,11 +81,24 @@ export default function LoanStaffDashboard() {
   );
 
   // Load settings + stats
-  useEffect(() => {
+  const loadStats = () => {
+    setStatsLoading(true);
+    setStatsError(null);
     api
       .get("/staff/loan/dashboard")
       .then((r) => setStats(r.data))
-      .catch(() => {});
+      .catch((err) =>
+        setStatsError(
+          err.response?.status === 403
+            ? "You don't have access to the Loan Staff dashboard."
+            : "Failed to load dashboard stats.",
+        ),
+      )
+      .finally(() => setStatsLoading(false));
+  };
+
+  useEffect(() => {
+    loadStats();
     api
       .get("/settings/loan")
       .then((r) => setLoanSettings(r.data))
@@ -1048,8 +1063,29 @@ export default function LoanStaffDashboard() {
                   </div>
                 ))}
               </div>
+            ) : statsError ? (
+              <div
+                style={{
+                  background: "#fff0f0",
+                  border: "1px solid #f3b3b3",
+                  borderRadius: 10,
+                  padding: "14px 16px",
+                  color: "#a81f1f",
+                  fontSize: 13.5,
+                }}
+              >
+                ⚠️ {statsError}{" "}
+                <span
+                  style={{ textDecoration: "underline", cursor: "pointer", fontWeight: 600 }}
+                  onClick={loadStats}
+                >
+                  Try again
+                </span>
+              </div>
             ) : (
-              <p style={s.loading}>Loading dashboard stats...</p>
+              <p style={s.loading}>
+                {statsLoading ? "Loading dashboard stats..." : "No data available."}
+              </p>
             )}
 
             <div style={s.quickActions}>
