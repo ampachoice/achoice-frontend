@@ -52,7 +52,7 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
   };
 
   const menuItems = [
-    { icon: "🏠", label: "Home", path: "/" },
+   // { icon: "🏠", label: "Home", path: "/" },
     { icon: "🛍️", label: "Shop Products", path: "/products" },
     { icon: "👤", label: "My Profile", path: "/profile" },
     {
