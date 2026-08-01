@@ -95,7 +95,12 @@ export default function SellerProductsPage() {
 
   useEffect(() => {
     getCategoryTree()
-      .then((res) => setCategories(res.data || []))
+      .then((res) => {
+        const data = res.data;
+        // Backend may return { categories: [...] } or { data: [...] } or a plain array
+        const list = data?.categories || data?.data || (Array.isArray(data) ? data : []);
+        setCategories(list);
+      })
       .catch(() => {});
   }, []);
 

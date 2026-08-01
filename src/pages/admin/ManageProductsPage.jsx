@@ -60,8 +60,10 @@ export default function ManageProductsPage() {
       if (sRes.status === "fulfilled")
         setSellers(sRes.value.data.data || sRes.value.data || []);
       if (cRes.status === "fulfilled" && cRes.value.data) {
-        setCategories(cRes.value.data || []);
-      }
+          const data = cRes.value.data;
+          const list = data?.categories || data?.data || (Array.isArray(data) ? data : []);
+          setCategories(list);
+        }
       if (pendingRes.status === "fulfilled")
         setPendingCount(pendingRes.value.data?.total ?? 0);
     } catch (err) {
