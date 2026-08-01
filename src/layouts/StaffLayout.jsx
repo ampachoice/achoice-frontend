@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 import StaffNotificationBell from "../components/staff/StaffNotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
@@ -6,19 +8,19 @@ const LOGO_PATH = "/achoice logo.png";
 // The one place staff nav items are defined. Add a new staff page here and
 // every page using StaffLayout picks it up automatically — no more copying
 // the sidebar markup into each new page file.
-function getNavItems(user, activePath) {
+function getNavItems(user, activePath, counts) {
   const items = [];
 
   if (user?.can_manage_agro) {
     items.push({ icon: "📊", label: "Agro Dashboard", path: "/staff/agro" });
-    items.push({ icon: "✅", label: "Product Approvals", path: "/staff/agro/product-approvals" });
+    items.push({ icon: "✅", label: "Product Approvals", path: "/staff/agro/product-approvals", badge: counts.productApprovals });
   }
   if (user?.can_manage_loans) {
-    items.push({ icon: "💰", label: "Loan Dashboard", path: "/staff/loans" });
+    items.push({ icon: "💰", label: "Loan Dashboard", path: "/staff/loans", badge: counts.loanApplications });
   }
 
-  items.push({ icon: "📋", label: "Complaints", path: "/staff/complaints" });
-  items.push({ icon: "🔔", label: "Notifications", path: "/staff/notifications" });
+  items.push({ icon: "📋", label: "Complaints", path: "/staff/complaints", badge: counts.complaints });
+  items.push({ icon: "🔔", label: "Notifications", path: "/staff/notifications", badge: counts.notifications });
 
   return items.map((item) => ({
     ...item,
@@ -39,7 +41,56 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
   let user = null;
   try { user = JSON.parse(localStorage.getItem("user")); } catch {}
 
-  const navItems = getNavItems(user, activePath);
+  const [counts, setCounts] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Reuses the same numbers each dashboard already displays — no new
+    // backend endpoints, just surfacing them on the sidebar too, the way
+    // the admin panel's badges work.
+    if (user?.can_manage_agro) {
+      api.get("/staff/agro/dashboard")
+        .then((res) => {
+          if (cancelled) return;
+          const n = res.data?.products?.pending_review ?? 0;
+          setCounts((prev) => ({ ...prev, productApprovals: n }));
+        })
+        .catch(() => {});
+    }
+
+    if (user?.can_manage_loans) {
+      api.get("/staff/loan/dashboard")
+        .then((res) => {
+          if (cancelled) return;
+          const n = res.data?.applications?.pending ?? 0;
+          setCounts((prev) => ({ ...prev, loanApplications: n }));
+        })
+        .catch(() => {});
+    }
+
+    api.get("/staff/complaints", { params: { status: "pending" } })
+      .then((res) => {
+        if (cancelled) return;
+        const n = res.data?.total ?? res.data?.meta?.total
+          ?? (Array.isArray(res.data?.data) ? res.data.data.length
+          : Array.isArray(res.data) ? res.data.length : 0);
+        setCounts((prev) => ({ ...prev, complaints: n }));
+      })
+      .catch(() => {});
+
+    api.get("/inbox/unread-count")
+      .then((res) => {
+        if (cancelled) return;
+        const n = res.data?.unread_count ?? res.data?.count ?? 0;
+        setCounts((prev) => ({ ...prev, notifications: n }));
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [user?.can_manage_agro, user?.can_manage_loans]);
+
+  const navItems = getNavItems(user, activePath, counts);
   const staffHome = getStaffHome(user);
 
   return (
@@ -54,6 +105,7 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
         .stl-sidebar-nav { flex:1; padding:16px 0; }
         .stl-sidebar-item { display:flex; align-items:center; gap:10px; padding:12px 20px; color:#a8d5a8; font-size:14px; cursor:pointer; }
         .stl-sidebar-item-active { background:rgba(255,255,255,0.15); color:#fff; border-left:3px solid #f0c050; }
+        .stl-badge { margin-left:auto; background:#e53935; color:#fff; font-size:11px; font-weight:700; min-width:18px; height:18px; border-radius:99px; display:flex; align-items:center; justify-content:center; padding:0 5px; }
         .stl-sidebar-footer { padding:16px 20px; border-top:1px solid rgba(255,255,255,0.1); }
         .stl-staff-name { font-size:13px; font-weight:600; color:#fff; margin-bottom:2px; }
         .stl-staff-role { font-size:11px; color:#a8d5a8; margin-bottom:10px; }
@@ -113,6 +165,7 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
                 onClick={() => { navigate(item.path); setMobileNavOpen?.(false); }}
               >
                 <span>{item.icon}</span> {item.label}
+                {item.badge > 0 && <span className="stl-badge">{item.badge > 99 ? "99+" : item.badge}</span>}
               </div>
             ))}
           </nav>
