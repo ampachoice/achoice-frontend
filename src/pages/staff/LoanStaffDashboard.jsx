@@ -39,6 +39,13 @@ export default function LoanStaffDashboard() {
   // Documents
   const [expandedDocs, setExpandedDocs] = useState(null);
   const [docsMap, setDocsMap] = useState({});
+  const [pendingDocs, setPendingDocs] = useState([]);
+  const [pendingDocsLoading, setPendingDocsLoading] = useState(false);
+  // Most unverified docs belong to loans already decided one way or
+  // another (rejected/completed/disbursed) — reviewing those doesn't
+  // unblock anything. Default to the actionable subset; toggle shows the
+  // full backlog for audit/compliance purposes.
+  const [docsFilterMode, setDocsFilterMode] = useState("pending_loans");
   const [docsLoading, setDocsLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [docForm, setDocForm] = useState({ type: "nin_document", file: null });
@@ -86,7 +93,13 @@ export default function LoanStaffDashboard() {
     setStatsError(null);
     api
       .get("/staff/loan/dashboard")
-      .then((r) => setStats(r.data))
+      .then((r) => {
+        setStats(r.data);
+        setBadges((prev) => ({
+          ...prev,
+          documentsPending: r.data?.documents?.pending_review,
+        }));
+      })
       .catch((err) =>
         setStatsError(
           err.response?.status === 403
@@ -175,6 +188,14 @@ export default function LoanStaffDashboard() {
         .then((r) => setRepayments(r.data?.data || r.data || []))
         .catch(() => showToast("Failed to load repayments."))
         .finally(() => setRepaymentsLoading(false));
+    }
+    if (activeTab === "documents") {
+      setPendingDocsLoading(true);
+      api
+        .get("/staff/loan/documents/pending")
+        .then((r) => setPendingDocs(r.data?.documents || []))
+        .catch(() => showToast("Failed to load pending documents."))
+        .finally(() => setPendingDocsLoading(false));
     }
   }, [activeTab]);
 
@@ -315,6 +336,40 @@ export default function LoanStaffDashboard() {
       showToast("✅ Document verified!");
     } catch {
       showToast("Failed to verify document.");
+    }
+  };
+
+  const handleVerifyPendingDoc = async (docId) => {
+    try {
+      await api.patch(`/loans/documents/${docId}/verify`);
+      setPendingDocs((prev) => prev.filter((d) => d.id !== docId));
+      setBadges((prev) => ({
+        ...prev,
+        documentsPending: Math.max(0, (prev.documentsPending || 1) - 1),
+      }));
+      showToast("✅ Document verified!");
+    } catch {
+      showToast("Failed to verify document.");
+    }
+  };
+
+  const handleRejectPendingDoc = async (docId) => {
+    if (
+      !window.confirm(
+        "Reject this document? It will be deleted and the borrower will need to re-upload it.",
+      )
+    )
+      return;
+    try {
+      await api.delete(`/loans/documents/${docId}`);
+      setPendingDocs((prev) => prev.filter((d) => d.id !== docId));
+      setBadges((prev) => ({
+        ...prev,
+        documentsPending: Math.max(0, (prev.documentsPending || 1) - 1),
+      }));
+      showToast("Document rejected.");
+    } catch {
+      showToast("Failed to reject document.");
     }
   };
 
@@ -616,6 +671,11 @@ export default function LoanStaffDashboard() {
         .toLowerCase()
         .includes(repaySearch.toLowerCase()),
   );
+
+  const filteredPendingDocs =
+    docsFilterMode === "pending_loans"
+      ? pendingDocs.filter((d) => d.loan?.status === "pending")
+      : pendingDocs;
 
   const approvalPreview = (() => {
     if (!approvalModal || !approvalDuration) return null;
@@ -922,6 +982,12 @@ export default function LoanStaffDashboard() {
               badgeKey: "applications",
             },
             { icon: "💳", label: "Repayments", tab: "repayments" },
+            {
+              icon: "📄",
+              label: "Documents",
+              tab: "documents",
+              badgeKey: "documentsPending",
+            },
             { icon: "🔍", label: "User History", tab: "history" },
             { icon: "📋", label: "Complaints", path: "/staff/complaints", badgeKey: "complaints" },
             { icon: "🔔", label: "Notifications", path: "/staff/notifications", badgeKey: "notifications" },
@@ -1758,6 +1824,136 @@ export default function LoanStaffDashboard() {
               {!repaymentsLoading && filteredRepayments.length === 0 && (
                 <div style={s.emptyBox}>
                   <p style={s.emptyText}>No repayments found.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* DOCUMENTS QUEUE */}
+        {activeTab === "documents" && (
+          <div>
+            <h1 style={s.pageTitle}>Documents Pending Review</h1>
+            <p style={{ fontSize: 13, color: "#888", marginBottom: 12 }}>
+              Every unverified document across all loans, in one place —
+              approvals above the document threshold are blocked until
+              these are cleared.
+            </p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+              <button
+                style={
+                  docsFilterMode === "pending_loans"
+                    ? s.docsFilterBtnActive
+                    : s.docsFilterBtn
+                }
+                onClick={() => setDocsFilterMode("pending_loans")}
+              >
+                Needs Decision (
+                {pendingDocs.filter((d) => d.loan?.status === "pending").length}
+                )
+              </button>
+              <button
+                style={
+                  docsFilterMode === "all"
+                    ? s.docsFilterBtnActive
+                    : s.docsFilterBtn
+                }
+                onClick={() => setDocsFilterMode("all")}
+              >
+                All Unverified ({pendingDocs.length})
+              </button>
+            </div>
+            {pendingDocsLoading && (
+              <p style={s.loading}>Loading pending documents...</p>
+            )}
+            <div style={s.tableCard}>
+              <table style={s.table}>
+                <thead>
+                  <tr style={s.tableHead}>
+                    <th style={s.th}>Borrower</th>
+                    <th style={s.th}>Loan</th>
+                    <th style={s.th}>Document Type</th>
+                    <th style={s.th}>Uploaded</th>
+                    <th style={s.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPendingDocs.map((doc) => (
+                    <tr key={doc.id} style={s.tableRow}>
+                      <td style={s.td}>
+                        <div style={s.repayName}>
+                          {doc.borrower?.name || "—"}
+                        </div>
+                        <div style={s.repayEmail}>
+                          {doc.borrower?.email || ""}
+                        </div>
+                      </td>
+                      <td style={s.td}>
+                        <span
+                          style={{
+                            color: "#1f4d1f",
+                            cursor: "pointer",
+                            textDecoration: "underline",
+                          }}
+                          onClick={() => {
+                            setActiveTab("applications");
+                            setAppSearch(doc.borrower?.name || "");
+                          }}
+                        >
+                          #{doc.loan_id}
+                        </span>
+                        {doc.loan?.amount != null && (
+                          <div style={{ fontSize: 11, color: "#888" }}>
+                            {toMoney(doc.loan.amount)}
+                          </div>
+                        )}
+                      </td>
+                      <td style={s.td}>{doc.type_label || doc.type}</td>
+                      <td style={{ ...s.td, fontSize: 12, color: "#888" }}>
+                        {doc.uploaded_at
+                          ? new Date(doc.uploaded_at).toLocaleDateString(
+                              "en-NG",
+                              { day: "numeric", month: "short", year: "numeric" },
+                            )
+                          : "—"}
+                      </td>
+                      <td style={s.td}>
+                        <div style={s.docCardActions}>
+                          {doc.file_url && (
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={s.viewDocBtn}
+                            >
+                              👁 View
+                            </a>
+                          )}
+                          <button
+                            style={s.verifyDocBtn}
+                            onClick={() => handleVerifyPendingDoc(doc.id)}
+                          >
+                            ✓ Verify
+                          </button>
+                          <button
+                            style={s.delDocBtn}
+                            onClick={() => handleRejectPendingDoc(doc.id)}
+                          >
+                            ✕ Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!pendingDocsLoading && filteredPendingDocs.length === 0 && (
+                <div style={s.emptyBox}>
+                  <p style={s.emptyText}>
+                    {docsFilterMode === "pending_loans"
+                      ? "No documents blocking a pending decision right now. 🎉"
+                      : "No documents waiting on review. 🎉"}
+                  </p>
                 </div>
               )}
             </div>
@@ -2799,6 +2995,28 @@ const s = {
     border: "1px solid #ffa39e",
     borderRadius: 5,
     fontSize: 11,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  docsFilterBtn: {
+    padding: "8px 16px",
+    background: "#fff",
+    color: "#555",
+    border: "1.5px solid #e8e4dc",
+    borderRadius: 8,
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  docsFilterBtnActive: {
+    padding: "8px 16px",
+    background: "#1f4d1f",
+    color: "#fff",
+    border: "1.5px solid #1f4d1f",
+    borderRadius: 8,
+    fontSize: 12.5,
+    fontWeight: 600,
     cursor: "pointer",
     fontFamily: "inherit",
   },
