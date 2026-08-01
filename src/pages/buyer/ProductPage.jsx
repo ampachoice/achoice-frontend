@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 import {
@@ -1227,7 +1228,23 @@ export default function ProductPage() {
   const seller = product?.seller;
 
   // ── Main render ──────────────────────────────────────────────────────────
-  return (
+  const handleRefresh = async () => {
+    if (id) return; // only refresh listing, not detail page
+    const sellerId = searchParams.get("seller_id");
+    const res = await getAllProducts({
+      page,
+      per_page: 20,
+      ...(selectedCat !== "All" && { category: selectedCat }),
+      ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+      ...(sellerId && { seller_id: sellerId }),
+    });
+    const pData = res.data;
+    setProducts(pData?.data || (Array.isArray(pData) ? pData : []));
+    setMeta(pData?.meta || (pData?.last_page ? pData : null));
+  };
+
+  const isMobile = !id && window.innerWidth < 768;
+  const pageContent = (
     <div className="pp-wrap">
       {actionToast && (
         <div
@@ -1767,10 +1784,14 @@ export default function ProductPage() {
               )}
             </div>
           </>
-        )}
+    )}
       </div>
         </div>
       </div>
     </div>
   );
+
+  return isMobile
+    ? <PullToRefresh onRefresh={handleRefresh}>{pageContent}</PullToRefresh>
+    : pageContent;
 }

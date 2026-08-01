@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
@@ -7,6 +8,22 @@ import AdminLayout from "../../components/admin/AdminLayout";
 // ── Tiny bar chart (pure CSS) ─────────────────────────────────────────────────
 function BarChart({ data, color = "#1f4d1f" }) {
   const max = Math.max(...data.map((d) => d.value), 1);
+
+  const handleRefresh = async () => {
+      const [dashRes, revRes] = await Promise.all([
+        api.get("/admin/dashboard"),
+        api.get("/admin/stats/revenue"),
+      ]);
+      const dash = dashRes.data;
+      setOverview(dash.overview);
+      setLoans(dash.loans);
+      setRecentOrders(dash.recent_orders || []);
+      setRecentLoans(dash.recent_loans || []);
+      setRevenueStats(revRes.data);
+    };
+
+    const isMobile = window.innerWidth < 768;
+
   return (
     <div
       style={{
@@ -171,7 +188,21 @@ export default function AdminDashboardPage() {
 
   const chartData = buildChartData(revenueStats?.monthly_revenue);
 
-  return (
+  const handleRefresh = async () => {
+    const [dashRes, revRes] = await Promise.all([
+      api.get("/admin/dashboard"),
+      api.get("/admin/stats/revenue"),
+    ]);
+    const dash = dashRes.data;
+    setOverview(dash.overview);
+    setLoans(dash.loans);
+    setRecentOrders(dash.recent_orders || []);
+    setRecentLoans(dash.recent_loans || []);
+    setRevenueStats(revRes.data);
+  };
+
+  const isMobile = window.innerWidth < 768;
+  const pageContent = (
     <AdminLayout
       title="Dashboard"
       subtitle={`Welcome back, ${user.name || "Admin"}`}
@@ -462,8 +493,12 @@ export default function AdminDashboardPage() {
             </div>
           </>
         )}
-    </AdminLayout>
+ </AdminLayout>
   );
+
+  return isMobile
+    ? <PullToRefresh onRefresh={handleRefresh}>{pageContent}</PullToRefresh>
+    : pageContent;
 }
 
 const s = {

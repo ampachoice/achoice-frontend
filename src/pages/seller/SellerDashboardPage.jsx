@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useNavigate } from "react-router-dom";
 import SellerLayout from "../../components/seller/SellerLayout";
 import { getSellerDashboard, getPublicSellerProfile } from "../../services/sellerService";
@@ -36,6 +37,18 @@ export default function SellerDashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleRefresh = async () => {
+    const res = await getSellerDashboard();
+    setDashboard(res.data);
+    const sellerId = res.data?.seller?.id;
+    if (sellerId) {
+      const r = await getPublicSellerProfile(sellerId).catch(() => null);
+      if (r) setStoreScore(r.data);
+    }
+  };
+
+  const isMobile = window.innerWidth < 768;
+
   if (loading) {
     return (
       <SellerLayout title="Dashboard">
@@ -55,7 +68,7 @@ export default function SellerDashboardPage() {
   const { seller, shortcuts, overview, earnings } = dashboard;
   const colors = SCORE_COLORS[storeScore?.score_label] || { bg: "#eee", color: "#555" };
 
-  return (
+  const mainContent = (
     <SellerLayout title={`Welcome back, ${seller.business_name}`} subtitle={`${seller.state || ""}`} showDate>
       {/* Shortcuts — actionable counts, each links to where the seller would resolve it */}
       <div style={s.shortcutGrid}>
@@ -150,10 +163,13 @@ export default function SellerDashboardPage() {
           <Stat label="Commission Rate" value={earnings.commission_rate} />
         </div>
       </div>
-    </SellerLayout>
-  );
-}
+   </SellerLayout>
+    );
 
+    return isMobile
+      ? <PullToRefresh onRefresh={handleRefresh}>{mainContent}</PullToRefresh>
+      : mainContent;
+  }
 function ShortcutCard({ icon, label, value, onClick, alert }) {
   return (
     <div style={{ ...s.shortcutCard, ...(alert && value > 0 ? s.shortcutCardAlert : {}) }} onClick={onClick}>
