@@ -81,7 +81,7 @@ export default function AgroStaffDashboard() {
       api
         .get("/staff/agro/orders")
         .then((res) => setOrders(res.data.data || res.data || []))
-        .catch(() => {})
+        .catch(() => showToast("Failed to load orders."))
         .finally(() => setOrdersLoading(false));
     }
     if (activeTab === "inventory") {
@@ -94,7 +94,7 @@ export default function AgroStaffDashboard() {
           setInventory(invRes.data.data || invRes.data || []);
           setLowStock(lowRes.data.data || lowRes.data || []);
         })
-        .catch(() => {})
+        .catch(() => showToast("Failed to load inventory."))
         .finally(() => setInventoryLoading(false));
     }
     if (activeTab === "reports") {
@@ -109,7 +109,7 @@ export default function AgroStaffDashboard() {
           const revData = revRes.data.data || revRes.data;
           setRevenueReport(Array.isArray(revData) ? revData : []);
         })
-        .catch(() => {})
+        .catch(() => showToast("Failed to load reports."))
         .finally(() => setReportsLoading(false));
     }
     if (activeTab === "sellers") {
@@ -134,6 +134,10 @@ export default function AgroStaffDashboard() {
 
   // Sidebar red-alert badges — pending products awaiting review + pending
   // remittance requests, mirroring the admin dashboard's badge pattern.
+  // NOTE: like the dashboard stats fetch above, these silently no-op on
+  // failure — intentionally not toasted since this is a passive background
+  // fetch, not a user-initiated action. If a badge never appears, check for
+  // the same 403/role-mismatch cause as the stats error first.
   useEffect(() => {
     api
       .get("/staff/agro/products/pending-review")

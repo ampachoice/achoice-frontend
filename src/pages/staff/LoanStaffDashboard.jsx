@@ -106,6 +106,10 @@ export default function LoanStaffDashboard() {
   }, []);
 
   // Sidebar red-alert badge — pending applications awaiting a decision
+  // NOTE: like the dashboard stats fetch above, this silently no-ops on
+  // failure — intentionally not toasted since it's a passive background
+  // fetch, not a user-initiated action. If it never appears, check for the
+  // same 403/role-mismatch cause as the stats error first.
   useEffect(() => {
     api
       .get("/staff/loan/applications", {
@@ -128,7 +132,7 @@ export default function LoanStaffDashboard() {
       api
         .get("/staff/loan/applications", { params: { per_page: 500 } })
         .then((r) => setApplications(r.data?.data || r.data || []))
-        .catch(() => {})
+        .catch(() => showToast("Failed to load applications."))
         .finally(() => setAppsLoading(false));
     }
     if (activeTab === "repayments") {
@@ -136,7 +140,7 @@ export default function LoanStaffDashboard() {
       api
         .get("/staff/loan/repayments")
         .then((r) => setRepayments(r.data?.data || r.data || []))
-        .catch(() => {})
+        .catch(() => showToast("Failed to load repayments."))
         .finally(() => setRepaymentsLoading(false));
     }
   }, [activeTab]);
