@@ -105,21 +105,15 @@ export default function LoanStaffDashboard() {
       .catch(() => {});
   }, []);
 
-  // Sidebar red-alert badge — pending applications awaiting a decision
-  // NOTE: like the dashboard stats fetch above, this silently no-ops on
-  // failure — intentionally not toasted since it's a passive background
-  // fetch, not a user-initiated action. If it never appears, check for the
-  // same 403/role-mismatch cause as the stats error first.
+  // Sidebar red-alert badge — loans still needing staff attention: pending
+  // decisions PLUS approved loans awaiting disbursement (the system can
+  // auto-approve, so "approved" is a real action queue too). Mirrors the
+  // admin dashboard's formula and matches StaffLayout's same calculation.
   useEffect(() => {
     api
-      .get("/staff/loan/applications", {
-        params: { status: "pending", per_page: 1 },
-      })
+      .get("/staff/loan/dashboard")
       .then((res) => {
-        const total =
-          res.data?.total ??
-          (Array.isArray(res.data) ? res.data.length : res.data?.data?.length) ??
-          0;
+        const total = (res.data?.applications?.pending ?? 0) + (res.data?.applications?.approved ?? 0);
         setBadges((prev) => ({ ...prev, applications: total }));
       })
       .catch(() => {});

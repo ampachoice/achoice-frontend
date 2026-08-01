@@ -79,7 +79,11 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
       api.get("/staff/loan/dashboard")
         .then((res) => {
           if (cancelled) return;
-          const n = res.data?.applications?.pending ?? 0;
+          // Loans still needing staff attention = pending decisions PLUS
+          // approved loans awaiting disbursement — the system can
+          // auto-approve, so "approved" is a real action queue too, not
+          // just a resting state. Mirrors the admin dashboard's formula.
+          const n = (res.data?.applications?.pending ?? 0) + (res.data?.applications?.approved ?? 0);
           setCounts((prev) => ({ ...prev, loanApplications: n }));
         })
         .catch(() => {});
