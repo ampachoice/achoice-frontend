@@ -4,6 +4,7 @@ import { getCategories } from "../../services/productService";
 import NotificationBell from "./NotificationBell";
 import BuyerDropdown from "./BuyerDropdown";
 import CloseAccountModal from "../common/CloseAccountModal";
+import useLogout from "../../hooks/useLogout";
 
 const CSS = `
   .bn-search-group { flex:1; max-width:500px; margin:0 10px; display:flex; background:#fff; border-radius:25px; overflow:hidden; border:2px solid #f0c050; min-width:0; }
@@ -34,6 +35,7 @@ const CSS = `
 // ─────────────────────────────────────────────────────────────────────────────
 export default function BuyerNav({ showSearch = false }) {
   const navigate = useNavigate();
+  const logout = useLogout();
   const token = localStorage.getItem("token");
 
   const [cartCount, setCartCount] = useState(0);
@@ -378,8 +380,8 @@ export default function BuyerNav({ showSearch = false }) {
                       fontFamily: "inherit",
                     }}
                     onClick={() => {
-                      localStorage.clear();
-                      navigate("/login");
+                      setMenuOpen(false);
+                      logout();
                     }}
                   >
                     🚪 Logout

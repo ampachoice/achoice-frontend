@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import CloseAccountModal from "../common/CloseAccountModal";
+import useLogout from "../../hooks/useLogout";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BuyerDropdown — drop this into any buyer page navbar
@@ -11,11 +12,12 @@ import CloseAccountModal from "../common/CloseAccountModal";
 //
 // Optional props:
 //   cartCount  — number shown on cart badge (default 0)
-//   onLogout   — custom logout handler (default: clears localStorage + /login)
+//   onLogout   — custom logout handler (default: centralized logout via useLogout)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function BuyerDropdown({ cartCount = 0, onLogout }) {
   const navigate = useNavigate();
+  const logout = useLogout();
   const [open, setOpen] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const ref = useRef(null);
@@ -38,8 +40,7 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
     if (onLogout) {
       onLogout();
     } else {
-      localStorage.clear();
-      navigate("/login");
+      logout();
     }
   };
 
@@ -168,13 +169,6 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 }
 
 const s = {
-  // Was position:'fixed' — that glued this to the exact same viewport
-  // corner on every page regardless of that page's own nav layout, which
-  // is what caused it to visually collide with whatever else a page also
-  // placed near the top-right (NotificationBell, a cart icon, etc). Now it
-  // just sits inline wherever the page's own nav-right container puts it,
-  // like a normal flex item — the dropdown menu below still anchors
-  // correctly since it's position:absolute relative to this wrapper.
   wrapper: {
     position: "relative",
     zIndex: 2000,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import CloseAccountModal from "../common/CloseAccountModal";
+import useLogout from "../../hooks/useLogout";
 
 // ──────────────────────────────────────────────────────────────────────────
 // MobileNavDrawer — hamburger icon + slide-out menu for small screens.
@@ -14,6 +15,7 @@ import CloseAccountModal from "../common/CloseAccountModal";
 
 export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
   const navigate = useNavigate();
+  const logout = useLogout();
   const [open, setOpen] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
   const panelRef = useRef(null);
@@ -40,8 +42,7 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
     if (onLogout) {
       onLogout();
     } else {
-      localStorage.clear();
-      navigate("/login");
+      logout();
     }
   };
 
