@@ -13,6 +13,10 @@ export default function StaffProductApprovalsPage() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState("");
 
   let user = null;
   try {
@@ -47,6 +51,53 @@ export default function StaffProductApprovalsPage() {
       showToast(err?.response?.data?.message || "Failed to approve product.");
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const openEdit = (product) => {
+    setEditTarget(product);
+    setEditForm({
+      name: product.name || "",
+      description: product.description || "",
+      price: product.price ?? "",
+      quantity: product.quantity ?? "",
+      unit: product.unit || "",
+      category: product.category || "",
+      min_order_qty: product.min_order_qty ?? "",
+    });
+    setEditError("");
+  };
+
+  const submitEdit = async () => {
+    if (!editForm.name?.trim() || !editForm.price || !editForm.quantity) {
+      setEditError("Name, price, and quantity are required.");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const res = await api.put(`/staff/agro/products/${editTarget.id}`, {
+        name: editForm.name.trim(),
+        description: editForm.description,
+        price: Number(editForm.price),
+        quantity: Number(editForm.quantity),
+        unit: editForm.unit,
+        category: editForm.category,
+        ...(editForm.min_order_qty && {
+          min_order_qty: Number(editForm.min_order_qty),
+        }),
+      });
+      const updated = res.data?.product || res.data;
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === editTarget.id ? { ...p, ...updated } : p,
+        ),
+      );
+      showToast(`"${editForm.name}" updated.`);
+      setEditTarget(null);
+    } catch (err) {
+      setEditError(err?.response?.data?.message || "Failed to save changes.");
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -157,6 +208,13 @@ export default function StaffProductApprovalsPage() {
                     {busyId === product.id ? "Working..." : "✓ Approve"}
                   </button>
                   <button
+                    style={s.editBtn}
+                    onClick={() => openEdit(product)}
+                    disabled={busyId === product.id}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
                     style={s.rejectBtn}
                     onClick={() => openReject(product)}
                     disabled={busyId === product.id}
@@ -169,6 +227,123 @@ export default function StaffProductApprovalsPage() {
           </div>
         )}
       </div>
+
+      {editTarget && (
+        <div style={s.modalOverlay} onClick={() => setEditTarget(null)}>
+          <div
+            style={{ ...s.modalBox, maxWidth: 480 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={s.modalTitle}>Edit "{editTarget.name}"</div>
+            <p style={s.modalSub}>
+              Changes save immediately — this doesn't require re-approval.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={s.editLabel}>Name</label>
+                <input
+                  style={s.editInput}
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm((p) => ({ ...p, name: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label style={s.editLabel}>Description</label>
+                <textarea
+                  style={{ ...s.editInput, resize: "vertical" }}
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm((p) => ({ ...p, description: e.target.value }))
+                  }
+                />
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={s.editLabel}>Price (₦)</label>
+                  <input
+                    style={s.editInput}
+                    type="number"
+                    value={editForm.price}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, price: e.target.value }))
+                    }
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={s.editLabel}>Quantity</label>
+                  <input
+                    style={s.editInput}
+                    type="number"
+                    value={editForm.quantity}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, quantity: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={s.editLabel}>Unit</label>
+                  <input
+                    style={s.editInput}
+                    value={editForm.unit}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, unit: e.target.value }))
+                    }
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={s.editLabel}>Category</label>
+                  <input
+                    style={s.editInput}
+                    value={editForm.category}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, category: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={s.editLabel}>Min order qty (optional)</label>
+                <input
+                  style={s.editInput}
+                  type="number"
+                  value={editForm.min_order_qty}
+                  onChange={(e) =>
+                    setEditForm((p) => ({
+                      ...p,
+                      min_order_qty: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            {editError && <div style={s.modalError}>{editError}</div>}
+            <div style={s.modalActions}>
+              <button
+                style={s.modalCancelBtn}
+                onClick={() => setEditTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                style={
+                  editSaving ? s.approveBtnDisabled : s.editSaveBtn
+                }
+                onClick={submitEdit}
+                disabled={editSaving}
+              >
+                {editSaving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {rejectTarget && (
         <div style={s.modalOverlay} onClick={() => setRejectTarget(null)}>
@@ -322,6 +497,45 @@ const s = {
     background: "#fff",
     color: "#cc0000",
     border: "1px solid #ffcccc",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  editBtn: {
+    flex: 1,
+    padding: "10px 14px",
+    background: "#fff",
+    color: "#1f4d1f",
+    border: "1px solid #1f4d1f",
+    borderRadius: 7,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  editLabel: {
+    display: "block",
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#555",
+    marginBottom: 5,
+  },
+  editInput: {
+    width: "100%",
+    padding: "9px 12px",
+    border: "1.5px solid #ddd",
+    borderRadius: 7,
+    fontSize: 13,
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+  editSaveBtn: {
+    padding: "10px 18px",
+    background: "#1f4d1f",
+    color: "#fff",
+    border: "none",
     borderRadius: 7,
     fontSize: 13,
     fontWeight: 600,

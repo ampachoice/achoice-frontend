@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 
 const LOGO_PATH = "/achoice logo.png";
 
 export default function AgroStaffDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") || "dashboard",
+  );
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [stats, setStats] = useState(null);
@@ -20,9 +23,25 @@ export default function AgroStaffDashboard() {
   const [lowStock, setLowStock] = useState([]);
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [inventorySearch, setInventorySearch] = useState("");
-  const [salesReport, setSalesReport] = useState([]);
+  const [salesReport, setSalesReport] = useState(null);
   const [revenueReport, setRevenueReport] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(false);
+
+  // Sellers (full list, same access as admin)
+  const [sellers, setSellers] = useState([]);
+  const [sellersLoading, setSellersLoading] = useState(false);
+  const [sellerSearch, setSellerSearch] = useState("");
+  const [sellerDetail, setSellerDetail] = useState(null);
+  const [sellerDetailLoading, setSellerDetailLoading] = useState(false);
+
+  // Remittance requests — two-tier flow. Agro staff can only pre-approve
+  // ("staff_approved") or reject; admin must finalize the actual payout.
+  const [remittances, setRemittances] = useState([]);
+  const [remittancesLoading, setRemittancesLoading] = useState(false);
+  const [remittanceBusyId, setRemittanceBusyId] = useState(null);
+
+  // Sidebar red-alert badges — same pattern as AdminLayout
+  const [badges, setBadges] = useState({});
 
   const showToast = (msg) => {
     setToast(msg);
@@ -70,15 +89,59 @@ export default function AgroStaffDashboard() {
         api.get("/staff/agro/reports/revenue"),
       ])
         .then(([salesRes, revRes]) => {
-          const salesData = salesRes.data.data || salesRes.data;
-          setSalesReport(Array.isArray(salesData) ? salesData : []);
+          // Real shape: { summary, monthly_revenue, top_products, top_sellers }
+          setSalesReport(salesRes.data?.data || salesRes.data || null);
           const revData = revRes.data.data || revRes.data;
           setRevenueReport(Array.isArray(revData) ? revData : []);
         })
         .catch(() => {})
         .finally(() => setReportsLoading(false));
     }
-  }, [activeTab]);
+    if (activeTab === "sellers") {
+      setSellersLoading(true);
+      api
+        .get("/staff/agro/sellers", {
+          params: sellerSearch ? { search: sellerSearch } : {},
+        })
+        .then((res) => setSellers(res.data?.data || res.data || []))
+        .catch(() => showToast("Failed to load sellers."))
+        .finally(() => setSellersLoading(false));
+    }
+    if (activeTab === "remittances") {
+      setRemittancesLoading(true);
+      api
+        .get("/staff/agro/remittance-requests")
+        .then((res) => setRemittances(res.data?.data || res.data || []))
+        .catch(() => showToast("Failed to load remittance requests."))
+        .finally(() => setRemittancesLoading(false));
+    }
+  }, [activeTab, sellerSearch]);
+
+  // Sidebar red-alert badges — pending products awaiting review + pending
+  // remittance requests, mirroring the admin dashboard's badge pattern.
+  useEffect(() => {
+    api
+      .get("/staff/agro/products/pending-review")
+      .then((res) => {
+        const total =
+          res.data?.total ??
+          (Array.isArray(res.data) ? res.data.length : res.data?.data?.length) ??
+          0;
+        setBadges((prev) => ({ ...prev, productApprovals: total }));
+      })
+      .catch(() => {});
+
+    api
+      .get("/staff/agro/remittance-requests")
+      .then((res) => {
+        const list = res.data?.data || res.data || [];
+        const pending = Array.isArray(list)
+          ? list.filter((r) => r.status === "pending").length
+          : 0;
+        setBadges((prev) => ({ ...prev, remittances: pending }));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleUpdateOrderStatus = async (orderId, status) => {
     setUpdating(orderId);
@@ -146,6 +209,78 @@ export default function AgroStaffDashboard() {
     })[status] || { background: "#f0f0f0", color: "#555" };
 
   const toMoney = (val) => `₦${Number(val || 0).toLocaleString()}`;
+
+  const openSellerDetail = async (seller) => {
+    setSellerDetail({ ...seller, _loading: true });
+    setSellerDetailLoading(true);
+    try {
+      const res = await api.get(`/staff/agro/sellers/${seller.id}`);
+      setSellerDetail(res.data?.seller || res.data);
+    } catch {
+      showToast("Failed to load seller details.");
+      setSellerDetail(null);
+    } finally {
+      setSellerDetailLoading(false);
+    }
+  };
+
+  const handleApproveRemittance = async (req) => {
+    setRemittanceBusyId(req.id);
+    try {
+      await api.patch(`/staff/agro/remittance-requests/${req.id}/approve`);
+      setRemittances((prev) =>
+        prev.map((r) =>
+          r.id === req.id ? { ...r, status: "staff_approved" } : r,
+        ),
+      );
+      setBadges((prev) => ({
+        ...prev,
+        remittances: Math.max((prev.remittances || 1) - 1, 0),
+      }));
+      showToast(
+        "Sent for final approval — admin must confirm payout. Seller balance is unchanged.",
+      );
+    } catch (err) {
+      showToast(
+        err?.response?.data?.message || "Failed to send for final approval.",
+      );
+    } finally {
+      setRemittanceBusyId(null);
+    }
+  };
+
+  const handleRejectRemittance = async (req) => {
+    const reason = window.prompt("Reason for declining this remittance request:");
+    if (!reason) return;
+    setRemittanceBusyId(req.id);
+    try {
+      await api.patch(`/staff/agro/remittance-requests/${req.id}/reject`, {
+        reason,
+      });
+      setRemittances((prev) =>
+        prev.map((r) =>
+          r.id === req.id ? { ...r, status: "rejected", rejection_reason: reason } : r,
+        ),
+      );
+      setBadges((prev) => ({
+        ...prev,
+        remittances: Math.max((prev.remittances || 1) - 1, 0),
+      }));
+      showToast("Remittance request declined.");
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Failed to decline request.");
+    } finally {
+      setRemittanceBusyId(null);
+    }
+  };
+
+  const filteredSellers = sellers.filter((sl) =>
+    !sellerSearch
+      ? true
+      : (sl.business_name || "")
+          .toLowerCase()
+          .includes(sellerSearch.toLowerCase()),
+  );
 
   const filteredOrders = orders.filter((o) => {
     const matchFilter = orderFilter === "all" || o.status === orderFilter;
@@ -221,11 +356,24 @@ export default function AgroStaffDashboard() {
             { icon: "📊", label: "Dashboard", tab: "dashboard" },
             { icon: "📦", label: "Orders", tab: "orders" },
             { icon: "🌾", label: "Inventory", tab: "inventory" },
+            { icon: "🏪", label: "Sellers", tab: "sellers" },
+            {
+              icon: "✅",
+              label: "Product Approvals",
+              path: "/staff/agro/product-approvals",
+              badgeKey: "productApprovals",
+            },
+            {
+              icon: "💸",
+              label: "Remittances",
+              tab: "remittances",
+              badgeKey: "remittances",
+            },
             { icon: "📈", label: "Reports", tab: "reports" },
             { icon: "📋", label: "Complaints", path: "/staff/complaints" },
           ].map((item) => (
             <div
-              key={item.tab}
+              key={item.tab || item.path}
               style={{
                 ...s.sidebarItem,
                 ...(activeTab === item.tab ? s.sidebarItemActive : {}),
@@ -236,8 +384,47 @@ export default function AgroStaffDashboard() {
               }}
             >
               <span>{item.icon}</span> {item.label}
+              {item.badgeKey && badges[item.badgeKey] > 0 && (
+                <span style={s.navBadge}>{badges[item.badgeKey]}</span>
+              )}
             </div>
           ))}
+
+          {/* Combined dashboard: staff with both can_manage_agro and
+              can_manage_loans see the Loan Staff nav here too. Each item
+              navigates to the Loan Staff dashboard's own route rather than
+              rendering its content inline — the two dashboards remain
+              separate pages/components, this just surfaces both nav
+              sections together per the combined-dashboard spec. */}
+          {user?.can_manage_loans && (
+            <>
+              <div style={s.navSectionLabel}>Loan Staff</div>
+              {[
+                { icon: "📊", label: "Loan Dashboard", path: "/staff/loans" },
+                {
+                  icon: "📄",
+                  label: "Applications",
+                  path: "/staff/loans?tab=applications",
+                },
+                {
+                  icon: "💳",
+                  label: "Repayments",
+                  path: "/staff/loans?tab=repayments",
+                },
+              ].map((item) => (
+                <div
+                  key={item.path}
+                  style={s.sidebarItem}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMobileNavOpen(false);
+                  }}
+                >
+                  <span>{item.icon}</span> {item.label}
+                </div>
+              ))}
+            </>
+          )}
         </nav>
         {user?.role === "admin" && (
           <button
@@ -706,24 +893,192 @@ export default function AgroStaffDashboard() {
           </div>
         )}
 
+        {/* Sellers — full list, same access as admin */}
+        {activeTab === "sellers" && (
+          <div>
+            <h1 style={s.pageTitle}>Sellers</h1>
+            <p style={s.pageSub}>
+              Full seller list with revenue and product stats.
+            </p>
+            <input
+              style={s.searchInput}
+              placeholder="Search sellers by business name..."
+              value={sellerSearch}
+              onChange={(e) => setSellerSearch(e.target.value)}
+            />
+            {sellersLoading ? (
+              <p style={s.loading}>Loading sellers...</p>
+            ) : filteredSellers.length === 0 ? (
+              <div style={s.empty}>No sellers found.</div>
+            ) : (
+              <div style={s.tableCard}>
+                <table style={s.table}>
+                  <thead style={s.tableHead}>
+                    <tr>
+                      <th style={s.th}>Business Name</th>
+                      <th style={s.th}>State</th>
+                      <th style={s.th}>Status</th>
+                      <th style={s.th}>Rating</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSellers.map((sl) => (
+                      <tr
+                        key={sl.id}
+                        style={{ cursor: "pointer" }}
+                        onClick={() => openSellerDetail(sl)}
+                      >
+                        <td style={s.td}>{sl.business_name}</td>
+                        <td style={s.td}>{sl.state || "—"}</td>
+                        <td style={s.td}>
+                          <span
+                            style={{
+                              ...s.statusBadge,
+                              ...getStatusStyle(sl.status),
+                            }}
+                          >
+                            {sl.status}
+                          </span>
+                        </td>
+                        <td style={s.td}>
+                          {sl.rating ? Number(sl.rating).toFixed(1) : "—"} ★
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Remittances — two-tier flow: agro staff can only pre-approve or
+            reject, never move money. Admin finalizes the actual payout. */}
+        {activeTab === "remittances" && (
+          <div>
+            <h1 style={s.pageTitle}>Remittance Requests</h1>
+            <p style={s.pageSub}>
+              You can pre-approve or decline requests here — admin still has
+              to finalize the payout before money actually moves.
+            </p>
+            {remittancesLoading ? (
+              <p style={s.loading}>Loading remittance requests...</p>
+            ) : remittances.length === 0 ? (
+              <div style={s.empty}>No remittance requests.</div>
+            ) : (
+              <div style={s.reportsGrid}>
+                {remittances.map((r) => (
+                  <div key={r.id} style={s.reportCard}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: 10,
+                      }}
+                    >
+                      <div>
+                        <div style={s.reportName}>
+                          {r.seller?.business_name || "Seller"}
+                        </div>
+                        <div style={s.reportMeta}>
+                          Requested {toMoney(r.amount)}
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          ...s.statusBadge,
+                          ...(r.status === "pending"
+                            ? { background: "#fff8e7", color: "#b36b00" }
+                            : r.status === "staff_approved"
+                              ? { background: "#e7f0ff", color: "#1a4fa0" }
+                              : r.status === "rejected"
+                                ? { background: "#fff0f0", color: "#cc0000" }
+                                : { background: "#eafaf0", color: "#1a7a3a" }),
+                        }}
+                      >
+                        {r.status === "staff_approved"
+                          ? "Awaiting admin"
+                          : r.status?.replace("_", " ")}
+                      </span>
+                    </div>
+                    {r.status === "pending" && (
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <button
+                          style={s.approveBtn}
+                          disabled={remittanceBusyId === r.id}
+                          onClick={() => handleApproveRemittance(r)}
+                        >
+                          {remittanceBusyId === r.id
+                            ? "Working..."
+                            : "Send for Final Approval"}
+                        </button>
+                        <button
+                          style={s.rejectBtn}
+                          disabled={remittanceBusyId === r.id}
+                          onClick={() => handleRejectRemittance(r)}
+                        >
+                          ✕ Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Reports */}
         {activeTab === "reports" && (
           <div>
             <h1 style={s.pageTitle}>Sales Reports</h1>
             {reportsLoading && <p style={s.loading}>Loading reports...</p>}
+
+            {salesReport?.summary && (
+              <div style={s.statsGrid}>
+                <div style={s.statCard}>
+                  <div style={s.statValue}>
+                    {toMoney(
+                      salesReport.summary.total_revenue ??
+                        salesReport.summary.revenue,
+                    )}
+                  </div>
+                  <div style={s.statLabel}>Total Revenue</div>
+                </div>
+                <div style={s.statCard}>
+                  <div style={s.statValue}>
+                    {salesReport.summary.total_orders ??
+                      salesReport.summary.orders ??
+                      "—"}
+                  </div>
+                  <div style={s.statLabel}>Total Orders</div>
+                </div>
+                <div style={s.statCard}>
+                  <div style={s.statValue}>
+                    {salesReport.summary.total_products_sold ??
+                      salesReport.summary.items_sold ??
+                      "—"}
+                  </div>
+                  <div style={s.statLabel}>Items Sold</div>
+                </div>
+              </div>
+            )}
+
             <div style={s.reportsGrid}>
               <div style={s.reportCard}>
                 <h2 style={s.reportTitle}>Top Selling Products</h2>
-                {salesReport.length === 0 ? (
+                {!salesReport?.top_products?.length ? (
                   <p style={s.empty}>No sales data yet.</p>
                 ) : (
-                  salesReport.map((p, i) => (
+                  salesReport.top_products.map((p, i) => (
                     <div key={p.id || i} style={s.reportRow}>
                       <div style={s.reportRank}>#{i + 1}</div>
                       <div style={s.reportInfo}>
                         <div style={s.reportName}>{p.name}</div>
                         <div style={s.reportMeta}>
-                          {p.category} · {p.items_sold || 0} sold
+                          {p.category} · {p.items_sold || p.quantity_sold || 0}{" "}
+                          sold
                         </div>
                       </div>
                       <div style={s.reportValue}>
@@ -733,17 +1088,46 @@ export default function AgroStaffDashboard() {
                   ))
                 )}
               </div>
+
+              <div style={s.reportCard}>
+                <h2 style={s.reportTitle}>Top Sellers</h2>
+                {!salesReport?.top_sellers?.length ? (
+                  <p style={s.empty}>No seller sales data yet.</p>
+                ) : (
+                  salesReport.top_sellers.map((sl, i) => (
+                    <div key={sl.id || i} style={s.reportRow}>
+                      <div style={s.reportRank}>#{i + 1}</div>
+                      <div style={s.reportInfo}>
+                        <div style={s.reportName}>
+                          {sl.business_name || sl.name}
+                        </div>
+                        <div style={s.reportMeta}>
+                          {sl.order_count || 0} orders
+                        </div>
+                      </div>
+                      <div style={s.reportValue}>
+                        {toMoney(sl.revenue || sl.total_revenue)}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
               <div style={s.reportCard}>
                 <h2 style={s.reportTitle}>Monthly Revenue</h2>
-                {revenueReport.length === 0 ? (
-                  <p style={s.empty}>No revenue data yet.</p>
-                ) : (
-                  revenueReport.map((r, i) => {
-                    const maxRev = Math.max(
-                      ...revenueReport.map((x) =>
-                        Number(x.revenue || x.total || 0),
-                      ),
-                    );
+                {(() => {
+                  // Prefer monthly_revenue from the new sales-report shape;
+                  // fall back to the separate /reports/revenue endpoint.
+                  const monthly =
+                    salesReport?.monthly_revenue?.length
+                      ? salesReport.monthly_revenue
+                      : revenueReport;
+                  if (!monthly?.length)
+                    return <p style={s.empty}>No revenue data yet.</p>;
+                  const maxRev = Math.max(
+                    ...monthly.map((x) => Number(x.revenue || x.total || 0)),
+                  );
+                  return monthly.map((r, i) => {
                     const pct =
                       maxRev > 0
                         ? (Number(r.revenue || r.total || 0) / maxRev) * 100
@@ -761,14 +1145,69 @@ export default function AgroStaffDashboard() {
                         </div>
                       </div>
                     );
-                  })
-                )}
+                  });
+                })()}
               </div>
             </div>
           </div>
         )}
       </div>
     </div>
+
+    {sellerDetail && (
+      <div style={s.sellerModalOverlay} onClick={() => setSellerDetail(null)}>
+        <div style={s.sellerModalBox} onClick={(e) => e.stopPropagation()}>
+          <button
+            style={s.sellerModalClose}
+            onClick={() => setSellerDetail(null)}
+          >
+            ✕
+          </button>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>
+            {sellerDetail.business_name}
+          </h2>
+          <p style={{ fontSize: 13, color: "#888", marginTop: 2 }}>
+            {sellerDetail.state || "—"} ·{" "}
+            <span style={{ textTransform: "capitalize" }}>
+              {sellerDetail.status}
+            </span>
+          </p>
+
+          {sellerDetailLoading ? (
+            <p style={s.loading}>Loading seller details...</p>
+          ) : (
+            <>
+              <div style={s.sellerModalStatsRow}>
+                <div style={s.sellerModalStat}>
+                  <div style={s.sellerModalStatVal}>
+                    {toMoney(sellerDetail.total_revenue)}
+                  </div>
+                  <div style={s.sellerModalStatLabel}>Total Revenue</div>
+                </div>
+                <div style={s.sellerModalStat}>
+                  <div style={s.sellerModalStatVal}>
+                    {sellerDetail.product_count ?? "—"}
+                  </div>
+                  <div style={s.sellerModalStatLabel}>Products</div>
+                </div>
+                <div style={s.sellerModalStat}>
+                  <div style={s.sellerModalStatVal}>
+                    {sellerDetail.order_count ?? "—"}
+                  </div>
+                  <div style={s.sellerModalStatLabel}>Orders</div>
+                </div>
+              </div>
+
+              {sellerDetail.description && (
+                <p style={{ fontSize: 13, color: "#555", lineHeight: 1.6 }}>
+                  {sellerDetail.description}
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    )}
     </>
   );
 }
@@ -1186,5 +1625,91 @@ const s = {
     cursor: "pointer",
     fontFamily: "inherit",
     marginBottom: 10,
+  },
+  navBadge: {
+    marginLeft: "auto",
+    background: "#cc0000",
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: 700,
+    padding: "2px 7px",
+    borderRadius: 99,
+  },
+  navSectionLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#7ca87c",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    padding: "16px 20px 6px",
+  },
+  approveBtn: {
+    padding: "9px 16px",
+    background: "#1f4d1f",
+    color: "#fff",
+    border: "none",
+    borderRadius: 7,
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  rejectBtn: {
+    padding: "9px 16px",
+    background: "#fff",
+    color: "#cc0000",
+    border: "1px solid #ffcccc",
+    borderRadius: 7,
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  sellerModalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.5)",
+    zIndex: 1000,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  sellerModalBox: {
+    background: "#fff",
+    borderRadius: 12,
+    padding: 28,
+    width: "100%",
+    maxWidth: 520,
+    maxHeight: "85vh",
+    overflowY: "auto",
+  },
+  sellerModalClose: {
+    float: "right",
+    background: "none",
+    border: "none",
+    fontSize: 18,
+    cursor: "pointer",
+    color: "#888",
+  },
+  sellerModalStatsRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 10,
+    margin: "16px 0",
+  },
+  sellerModalStat: {
+    background: "#f7f5f0",
+    borderRadius: 10,
+    padding: "12px 10px",
+    textAlign: "center",
+  },
+  sellerModalStatVal: { fontSize: 17, fontWeight: 800, color: "#111" },
+  sellerModalStatLabel: {
+    fontSize: 10,
+    color: "#888",
+    marginTop: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 };

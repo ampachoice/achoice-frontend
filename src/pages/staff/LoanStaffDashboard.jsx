@@ -1,14 +1,20 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 
 const LOGO_PATH = "/achoice logo.png";
 
 export default function LoanStaffDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") || "dashboard",
+  );
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [toast, setToast] = useState("");
+
+  // Sidebar red-alert badges — same pattern as AdminLayout/AgroStaffDashboard
+  const [badges, setBadges] = useState({});
 
   // Dashboard
   const [stats, setStats] = useState(null);
@@ -45,25 +51,10 @@ export default function LoanStaffDashboard() {
   const [userHistoryLoading, setUserHistoryLoading] = useState(false);
   const [userIdInput, setUserIdInput] = useState("");
 
-  // Apply on behalf
-  const [showApplyForm, setShowApplyForm] = useState(false);
-  const [applyForm, setApplyForm] = useState({
-    seller_id: "",
-    amount: "",
-    purpose: "",
-    duration_months: "",
-    repayment_preference: "monthly",
-    nin_number: "",
-    bvn_number: "",
-    documents: {},
-  });
-  const [applying, setApplying] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [sellerQuery, setSellerQuery] = useState("");
-  const [sellerResults, setSellerResults] = useState([]);
-  const [sellerSearching, setSellerSearching] = useState(false);
-  const [selectedSeller, setSelectedSeller] = useState(null);
-  const debounceRef = useRef(null);
+  // Repayment schedule modal (view-only, same endpoint admin uses)
+  const [scheduleModal, setScheduleModal] = useState(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleData, setScheduleData] = useState(null);
 
   let user = null;
   try {
@@ -96,6 +87,22 @@ export default function LoanStaffDashboard() {
     api
       .get("/settings/loan")
       .then((r) => setLoanSettings(r.data))
+      .catch(() => {});
+  }, []);
+
+  // Sidebar red-alert badge — pending applications awaiting a decision
+  useEffect(() => {
+    api
+      .get("/staff/loan/applications", {
+        params: { status: "pending", per_page: 1 },
+      })
+      .then((res) => {
+        const total =
+          res.data?.total ??
+          (Array.isArray(res.data) ? res.data.length : res.data?.data?.length) ??
+          0;
+        setBadges((prev) => ({ ...prev, applications: total }));
+      })
       .catch(() => {});
   }, []);
 
@@ -139,44 +146,6 @@ export default function LoanStaffDashboard() {
   }, [applications]);
 
   // Seller live search — try both endpoints
-  useEffect(() => {
-    if (sellerQuery.length < 2) {
-      setSellerResults([]);
-      return;
-    }
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setSellerSearching(true);
-      // Try staff endpoint first, fallback to admin endpoint
-      api
-        .get("/staff/loan/sellers/search", { params: { q: sellerQuery } })
-        .then((r) => {
-          const list = r.data?.sellers || r.data?.data || r.data || [];
-          setSellerResults(Array.isArray(list) ? list.slice(0, 8) : []);
-        })
-        .catch(() => {
-          // Fallback to admin sellers endpoint
-          api
-            .get("/admin/sellers", { params: { search: sellerQuery } })
-            .then((r) => {
-              const list = r.data?.data || r.data || [];
-              setSellerResults(Array.isArray(list) ? list.slice(0, 8) : []);
-            })
-            .catch(() => setSellerResults([]));
-        })
-        .finally(() => setSellerSearching(false));
-    }, 400);
-    return () => clearTimeout(debounceRef.current);
-  }, [sellerQuery]);
-
-  const handleSelectSeller = (seller) => {
-    setSelectedSeller(seller);
-    setApplyForm((p) => ({ ...p, seller_id: seller.id }));
-    setSellerQuery("");
-    setSellerResults([]);
-  };
-
-  // Approve
   const handleOpenApproval = (app) => {
     setApprovalModal(app);
     setApprovalDuration(
@@ -353,92 +322,19 @@ export default function LoanStaffDashboard() {
   };
 
   // Apply on Behalf
-  const handleApplyOnBehalf = async (e) => {
-    e.preventDefault();
-    if (!applyForm.seller_id)
-      return showToast("Please search and select a seller first.");
-    setApplying(true);
+  const handleViewSchedule = async (loan) => {
+    setScheduleModal(loan);
+    setScheduleLoading(true);
+    setScheduleData(null);
     try {
-      const res = await api.post("/staff/loan/apply-for-seller", {
-        seller_id: Number(applyForm.seller_id),
-        amount: Number(applyForm.amount),
-        purpose: applyForm.purpose,
-        duration_months: Number(applyForm.duration_months),
-        repayment_preference: applyForm.repayment_preference,
-        nin_number: applyForm.nin_number,
-        bvn_number: applyForm.bvn_number,
-      });
-
-      const loanId = res.data?.loan?.id || res.data?.data?.id || res.data?.id;
-      if (!loanId) throw new Error("Server did not return a loan ID.");
-
-      const docDefs = [
-        { key: "nin_document", type: "nin_document", label: "NIN Document" },
-        { key: "bvn_document", type: "bvn_document", label: "BVN Document" },
-        {
-          key: "bank_statement",
-          type: "statement_of_account",
-          label: "Bank Statement",
-        },
-        {
-          key: "collateral_document",
-          type: "collateral_document",
-          label: "Collateral",
-        },
-        { key: "other_document", type: "other", label: "Other Document" },
-      ];
-
-      const docs = applyForm.documents || {};
-      const uploadErrors = [];
-
-      for (const def of docDefs) {
-        if (!docs[def.key]) continue;
-        const form = new FormData();
-        form.append("type", def.type);
-        form.append("document", docs[def.key]);
-        form.append("description", `Seller ${def.label}`);
-        try {
-          await api.post(`/loans/${loanId}/documents`, form, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-        } catch {
-          uploadErrors.push(def.label);
-        }
-      }
-
-      if (uploadErrors.length > 0) {
-        showToast(
-          `✅ Loan created! Failed to upload: ${uploadErrors.join(", ")}. Upload manually from Applications.`,
-        );
-      } else {
-        showToast(
-          "✅ Loan application and all documents submitted successfully!",
-        );
-      }
-
-      setSubmitted(true);
-      setSelectedSeller(null);
-      setApplyForm({
-        seller_id: "",
-        amount: "",
-        purpose: "",
-        duration_months: "",
-        repayment_preference: "monthly",
-        nin_number: "",
-        bvn_number: "",
-        documents: {},
-      });
+      const res = await api.get(`/staff/loans/${loan.id}/installments`);
+      setScheduleData(res.data);
     } catch (err) {
-      const errors = err.response?.data?.errors;
-      if (errors) showToast(Object.values(errors)[0][0]);
-      else
-        showToast(
-          err.response?.data?.message ||
-            err.message ||
-            "Failed to submit application.",
-        );
+      showToast(
+        err.response?.data?.message || "Failed to load repayment schedule.",
+      );
     } finally {
-      setApplying(false);
+      setScheduleLoading(false);
     }
   };
 
@@ -669,23 +565,6 @@ export default function LoanStaffDashboard() {
         .includes(repaySearch.toLowerCase()),
   );
 
-  const preview = (() => {
-    if (!applyForm.amount || !applyForm.duration_months || !interestRate)
-      return null;
-    const amount = Number(applyForm.amount);
-    const months = Number(applyForm.duration_months);
-    const interest = (amount * interestRate) / 100;
-    const total = amount + interest;
-    return {
-      amount,
-      months,
-      interest,
-      total,
-      monthly: Math.ceil(total / months),
-      weekly: Math.ceil(total / months / 4),
-    };
-  })();
-
   const approvalPreview = (() => {
     if (!approvalModal || !approvalDuration) return null;
     const amount = Number(approvalModal.amount);
@@ -858,6 +737,112 @@ export default function LoanStaffDashboard() {
         </div>
       )}
 
+      {/* Repayment Schedule Modal (view-only) */}
+      {scheduleModal && (
+        <div style={s.modalOverlay}>
+          <div style={s.modalBox}>
+            <div style={s.modalHeader}>
+              <h2 style={s.modalTitle}>📋 Repayment Schedule</h2>
+              <button
+                style={s.modalClose}
+                onClick={() => {
+                  setScheduleModal(null);
+                  setScheduleData(null);
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={s.modalBody}>
+              <div style={s.modalLoanInfo}>
+                <div style={s.modalLoanAmount}>
+                  {toMoney(scheduleModal.amount)}
+                </div>
+                <div style={s.modalLoanMeta}>
+                  👤 {scheduleModal.user?.name} · {scheduleModal.purpose}
+                </div>
+              </div>
+
+              {scheduleLoading ? (
+                <p style={s.loading}>Loading schedule...</p>
+              ) : !scheduleData?.schedule?.length ? (
+                <p style={s.loading}>No installments found for this loan.</p>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        {["#", "Due Date", "Amount Due", "Paid", "Status"].map(
+                          (h) => (
+                            <th
+                              key={h}
+                              style={{
+                                textAlign: "left",
+                                fontSize: 11,
+                                color: "#888",
+                                textTransform: "uppercase",
+                                letterSpacing: 0.5,
+                                padding: "8px 6px",
+                                borderBottom: "2px solid #f0f0f0",
+                              }}
+                            >
+                              {h}
+                            </th>
+                          ),
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scheduleData.schedule.map((inst) => (
+                        <tr key={inst.installment_number}>
+                          <td style={{ padding: "10px 6px", fontSize: 13 }}>
+                            {inst.installment_number}
+                          </td>
+                          <td style={{ padding: "10px 6px", fontSize: 13 }}>
+                            {fmtDate(inst.due_date)}
+                          </td>
+                          <td style={{ padding: "10px 6px", fontSize: 13 }}>
+                            {toMoney(inst.total_payable)}
+                          </td>
+                          <td style={{ padding: "10px 6px", fontSize: 13 }}>
+                            {toMoney(inst.amount_paid)}
+                          </td>
+                          <td style={{ padding: "10px 6px", fontSize: 13 }}>
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                padding: "3px 10px",
+                                borderRadius: 99,
+                                textTransform: "capitalize",
+                                background:
+                                  inst.status === "paid"
+                                    ? "#eafaf0"
+                                    : inst.status === "overdue"
+                                      ? "#fdecec"
+                                      : "#f0f0f0",
+                                color:
+                                  inst.status === "paid"
+                                    ? "#1a7a3a"
+                                    : inst.status === "overdue"
+                                      ? "#cc0000"
+                                      : "#666",
+                              }}
+                            >
+                              {inst.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <div className={"loan-staff-sidebar" + (mobileNavOpen ? " loan-sidebar-open" : "")} style={s.sidebar}>
         <div style={s.sidebarLogo}>
@@ -878,13 +863,18 @@ export default function LoanStaffDashboard() {
         <nav style={s.sidebarNav}>
           {[
             { icon: "📊", label: "Dashboard", tab: "dashboard" },
-            { icon: "📋", label: "Applications", tab: "applications" },
+            {
+              icon: "📋",
+              label: "Applications",
+              tab: "applications",
+              badgeKey: "applications",
+            },
             { icon: "💳", label: "Repayments", tab: "repayments" },
             { icon: "🔍", label: "User History", tab: "history" },
             { icon: "📋", label: "Complaints", path: "/staff/complaints" },
           ].map((item) => (
             <div
-              key={item.tab}
+              key={item.tab || item.path}
               style={{
                 ...s.sidebarItem,
                 ...(activeTab === item.tab ? s.sidebarItemActive : {}),
@@ -895,8 +885,51 @@ export default function LoanStaffDashboard() {
               }}
             >
               <span>{item.icon}</span> {item.label}
+              {item.badgeKey && badges[item.badgeKey] > 0 && (
+                <span style={s.navBadge}>{badges[item.badgeKey]}</span>
+              )}
             </div>
           ))}
+
+          {/* Combined dashboard: staff with both can_manage_loans and
+              can_manage_agro see the Agro Staff nav here too. Items navigate
+              to the Agro Staff dashboard's own route/tab rather than
+              rendering its content inline — the two dashboards stay
+              separate pages, this just surfaces both nav sections together. */}
+          {user?.can_manage_agro && (
+            <>
+              <div style={s.navSectionLabel}>Agro/Sales Staff</div>
+              {[
+                { icon: "📊", label: "Agro Dashboard", path: "/staff/agro" },
+                {
+                  icon: "📦",
+                  label: "Orders",
+                  path: "/staff/agro?tab=orders",
+                },
+                {
+                  icon: "🏪",
+                  label: "Sellers",
+                  path: "/staff/agro?tab=sellers",
+                },
+                {
+                  icon: "💸",
+                  label: "Remittances",
+                  path: "/staff/agro?tab=remittances",
+                },
+              ].map((item) => (
+                <div
+                  key={item.path}
+                  style={s.sidebarItem}
+                  onClick={() => {
+                    navigate(item.path);
+                    setMobileNavOpen(false);
+                  }}
+                >
+                  <span>{item.icon}</span> {item.label}
+                </div>
+              ))}
+            </>
+          )}
         </nav>
         <div style={s.sidebarFooter}>
           <div style={s.staffName}>{user?.name}</div>
@@ -1033,15 +1066,6 @@ export default function LoanStaffDashboard() {
                 </button>
                 <button
                   style={s.quickBtn}
-                  onClick={() => {
-                    setShowApplyForm(!showApplyForm);
-                    setSubmitted(false);
-                  }}
-                >
-                  ➕ Apply on Behalf of Seller
-                </button>
-                <button
-                  style={s.quickBtn}
                   onClick={() => setActiveTab("repayments")}
                 >
                   💳 View Repayments
@@ -1091,426 +1115,6 @@ export default function LoanStaffDashboard() {
               </div>
             </div>
 
-            {/* Apply on Behalf Form */}
-            {showApplyForm && (
-              <div style={s.applyCard}>
-                <div style={s.applyHeader}>
-                  <h3 style={s.applyTitle}>Apply Loan on Behalf of Seller</h3>
-                  <button
-                    style={s.closeBtn}
-                    onClick={() => {
-                      setShowApplyForm(false);
-                      setSubmitted(false);
-                      setSelectedSeller(null);
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {submitted ? (
-                  <div style={s.submittedSuccess}>
-                    <div style={s.submittedIcon}>✅</div>
-                    <div style={s.submittedTitle}>
-                      Application Submitted Successfully!
-                    </div>
-                    <div style={s.submittedText}>
-                      The loan application has been submitted. The seller will
-                      be notified and the application is now pending review.
-                    </div>
-                    <button
-                      style={s.submittedNewBtn}
-                      onClick={() => {
-                        setSubmitted(false);
-                        setSellerQuery("");
-                        setSellerResults([]);
-                      }}
-                    >
-                      ➕ Submit Another Application
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleApplyOnBehalf}>
-                    {/* Step 1 — Find Seller */}
-                    <div style={s.formSection}>
-                      <div style={s.formSectionTitle}>Step 1 — Find Seller</div>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          style={s.sellerSearchInput}
-                          type="text"
-                          placeholder="Search by business name, owner name, email or phone..."
-                          value={sellerQuery}
-                          onChange={(e) => {
-                            setSellerQuery(e.target.value);
-                            setSelectedSeller(null);
-                            setApplyForm((p) => ({ ...p, seller_id: "" }));
-                          }}
-                        />
-                        {sellerSearching && (
-                          <div style={s.sellerSearching}>Searching...</div>
-                        )}
-                        {sellerResults.length > 0 && (
-                          <div style={s.sellerDropdown}>
-                            {sellerResults.map((seller) => (
-                              <div
-                                key={seller.id}
-                                style={s.sellerDropdownItem}
-                                onClick={() => handleSelectSeller(seller)}
-                                onMouseEnter={(e) =>
-                                  (e.currentTarget.style.background = "#f0f7ec")
-                                }
-                                onMouseLeave={(e) =>
-                                  (e.currentTarget.style.background = "#fff")
-                                }
-                              >
-                                <div style={s.sellerDropdownName}>
-                                  {seller.business_name || seller.name}
-                                </div>
-                                <div style={s.sellerDropdownMeta}>
-                                  👤 {seller.owner_name || seller.name} · ✉{" "}
-                                  {seller.owner_email || seller.email}
-                                  {(seller.owner_phone || seller.phone) &&
-                                    ` · 📞 ${seller.owner_phone || seller.phone}`}
-                                </div>
-                                {seller.state && (
-                                  <div style={{ fontSize: 11, color: "#aaa" }}>
-                                    📍 {seller.state} · ID: {seller.id}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {sellerQuery.length >= 2 &&
-                          !sellerSearching &&
-                          sellerResults.length === 0 && (
-                            <div style={s.sellerNoResults}>
-                              No sellers found for "{sellerQuery}"
-                            </div>
-                          )}
-                      </div>
-                      {selectedSeller && (
-                        <div style={s.selectedSellerCard}>
-                          <div style={{ fontSize: 28 }}>🏪</div>
-                          <div style={{ flex: 1 }}>
-                            <div style={s.selectedSellerName}>
-                              {selectedSeller.business_name ||
-                                selectedSeller.name}
-                            </div>
-                            <div style={{ fontSize: 12, color: "#555" }}>
-                              {selectedSeller.owner_name || selectedSeller.name}{" "}
-                              ·{" "}
-                              {selectedSeller.owner_email ||
-                                selectedSeller.email}
-                              {(selectedSeller.owner_phone ||
-                                selectedSeller.phone) &&
-                                ` · ${selectedSeller.owner_phone || selectedSeller.phone}`}
-                            </div>
-                            {selectedSeller.state && (
-                              <div style={{ fontSize: 11, color: "#888" }}>
-                                📍 {selectedSeller.state} · ID:{" "}
-                                {selectedSeller.id}
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            style={s.clearSellerBtn}
-                            onClick={() => {
-                              setSelectedSeller(null);
-                              setApplyForm((p) => ({ ...p, seller_id: "" }));
-                            }}
-                          >
-                            Change
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Step 2 — Loan Details */}
-                    <div style={s.formSection}>
-                      <div style={s.formSectionTitle}>
-                        Step 2 — Loan Details
-                      </div>
-                      <div style={s.interestBanner}>
-                        <span style={{ fontSize: 22 }}>📌</span>
-                        <div>
-                          <div style={s.interestBannerTitle}>
-                            Interest Rate (from Loan Settings)
-                          </div>
-                          <div style={s.interestBannerRate}>
-                            {interestRate}% flat rate
-                          </div>
-                        </div>
-                      </div>
-                      <div style={s.applyGrid}>
-                        <div style={s.field}>
-                          <label style={s.label}>
-                            Loan Amount (₦) <span style={s.req}>*</span>
-                          </label>
-                          <input
-                            style={s.input}
-                            type="number"
-                            value={applyForm.amount}
-                            onChange={(e) =>
-                              setApplyForm((p) => ({
-                                ...p,
-                                amount: e.target.value,
-                              }))
-                            }
-                            placeholder={`Min ₦${Number(loanSettings?.min_amount || 5000).toLocaleString()}`}
-                            required
-                          />
-                        </div>
-                        <div style={s.field}>
-                          <label style={s.label}>
-                            Purpose <span style={s.req}>*</span>
-                          </label>
-                          <select
-                            style={s.input}
-                            value={applyForm.purpose}
-                            onChange={(e) =>
-                              setApplyForm((p) => ({
-                                ...p,
-                                purpose: e.target.value,
-                              }))
-                            }
-                            required
-                          >
-                            <option value="">Select purpose</option>
-                            {(loanSettings?.purposes || []).map((p) => (
-                              <option key={p.id} value={p.name}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div style={s.field}>
-                          <label style={s.label}>
-                            Duration <span style={s.req}>*</span>
-                          </label>
-                          <select
-                            style={s.input}
-                            value={applyForm.duration_months}
-                            onChange={(e) =>
-                              setApplyForm((p) => ({
-                                ...p,
-                                duration_months: e.target.value,
-                              }))
-                            }
-                            required
-                          >
-                            <option value="">Select duration</option>
-                            {(loanSettings?.durations || []).map((d) => (
-                              <option key={d.id} value={d.months}>
-                                {d.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div style={s.field}>
-                          <label style={s.label}>Repayment Preference</label>
-                          <select
-                            style={s.input}
-                            value={applyForm.repayment_preference}
-                            onChange={(e) =>
-                              setApplyForm((p) => ({
-                                ...p,
-                                repayment_preference: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="monthly">Monthly</option>
-                            <option value="weekly">Weekly</option>
-                          </select>
-                        </div>
-                      </div>
-                      {preview && (
-                        <div style={s.loanPreview}>
-                          <div style={s.previewTitle}>
-                            📊 Loan Summary (Interest: {interestRate}% from
-                            settings)
-                          </div>
-                          <div style={s.previewGrid}>
-                            {[
-                              [
-                                "Principal",
-                                `₦${preview.amount.toLocaleString()}`,
-                              ],
-                              [
-                                `Interest (${interestRate}%)`,
-                                `₦${preview.interest.toLocaleString()}`,
-                              ],
-                              [
-                                "Total Repayable",
-                                `₦${preview.total.toLocaleString()}`,
-                              ],
-                              [
-                                "Monthly Payment",
-                                `₦${preview.monthly.toLocaleString()}`,
-                              ],
-                              [
-                                "Weekly Payment",
-                                `₦${preview.weekly.toLocaleString()}`,
-                              ],
-                              ["Duration", `${preview.months} months`],
-                            ].map(([label, val]) => (
-                              <div key={label} style={s.previewItem}>
-                                <div style={s.previewLabel}>{label}</div>
-                                <div style={s.previewVal}>{val}</div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Step 3 — Identity */}
-                    <div style={s.formSection}>
-                      <div style={s.formSectionTitle}>
-                        Step 3 — Identity Verification
-                      </div>
-                      <div style={s.applyGrid}>
-                        <div style={s.field}>
-                          <label style={s.label}>
-                            NIN Number <span style={s.req}>*</span>
-                          </label>
-                          <input
-                            style={s.input}
-                            type="text"
-                            value={applyForm.nin_number}
-                            onChange={(e) =>
-                              setApplyForm((p) => ({
-                                ...p,
-                                nin_number: e.target.value,
-                              }))
-                            }
-                            placeholder="11-digit NIN"
-                            maxLength={11}
-                            required
-                          />
-                        </div>
-                        <div style={s.field}>
-                          <label style={s.label}>
-                            BVN Number <span style={s.req}>*</span>
-                          </label>
-                          <input
-                            style={s.input}
-                            type="text"
-                            value={applyForm.bvn_number}
-                            onChange={(e) =>
-                              setApplyForm((p) => ({
-                                ...p,
-                                bvn_number: e.target.value,
-                              }))
-                            }
-                            placeholder="11-digit BVN"
-                            maxLength={11}
-                            required
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Step 4 — Documents */}
-                    <div style={s.formSection}>
-                      <div style={s.formSectionTitle}>
-                        Step 4 — Supporting Documents
-                      </div>
-                      <p style={s.docNote}>
-                        Accepted: JPG, PNG, PDF, DOC, DOCX. Max 5MB each.
-                      </p>
-                      <div style={s.docsGrid2}>
-                        {[
-                          {
-                            key: "nin_document",
-                            label: "NIN Document",
-                            req: true,
-                            desc: "National ID card or NIMC slip",
-                          },
-                          {
-                            key: "bvn_document",
-                            label: "BVN Document",
-                            req: true,
-                            desc: "Bank verification letter",
-                          },
-                          {
-                            key: "bank_statement",
-                            label: "Bank Statement",
-                            req: true,
-                            desc: "Last 3–6 months",
-                          },
-                          {
-                            key: "collateral_document",
-                            label: "Collateral",
-                            req: false,
-                            desc: "Property deed, vehicle papers, etc.",
-                          },
-                          {
-                            key: "other_document",
-                            label: "Other",
-                            req: false,
-                            desc: "Any additional document",
-                          },
-                        ].map((doc) => (
-                          <div key={doc.key} style={s.docUploadField}>
-                            <label style={s.label}>
-                              {doc.label}
-                              {doc.req && <span style={s.req}> *</span>}
-                              <span
-                                style={{
-                                  fontSize: 11,
-                                  color: "#aaa",
-                                  fontWeight: 400,
-                                }}
-                              >
-                                {" "}
-                                — {doc.desc}
-                              </span>
-                            </label>
-                            <input
-                              type="file"
-                              accept=".jpg,.jpeg,.png,.pdf,.doc,.docx"
-                              style={s.fileInput}
-                              onChange={(e) =>
-                                setApplyForm((p) => ({
-                                  ...p,
-                                  documents: {
-                                    ...(p.documents || {}),
-                                    [doc.key]: e.target.files[0],
-                                  },
-                                }))
-                              }
-                            />
-                            {applyForm.documents?.[doc.key] && (
-                              <div style={s.fileSelected}>
-                                ✅ {applyForm.documents[doc.key].name}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      style={
-                        applying || !applyForm.seller_id
-                          ? s.submitBtnDisabled
-                          : s.submitBtn
-                      }
-                      disabled={applying || !applyForm.seller_id}
-                    >
-                      {applying
-                        ? "⏳ Submitting..."
-                        : !applyForm.seller_id
-                          ? "⚠️ Select a seller first"
-                          : "📋 Submit Loan Application"}
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
           </div>
         )}
 
@@ -1710,6 +1314,12 @@ export default function LoanStaffDashboard() {
                           {toMoney(app.balance)}
                         </span>
                       )}
+                      <button
+                        style={s.scheduleLinkBtn}
+                        onClick={() => handleViewSchedule(app)}
+                      >
+                        📋 View Repayment Schedule
+                      </button>
                     </div>
                   )}
                   {app.status === "rejected" && (
@@ -2415,6 +2025,23 @@ const s = {
     color: "#fff",
     borderLeft: "3px solid #f0c050",
   },
+  navBadge: {
+    marginLeft: "auto",
+    background: "#cc0000",
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: 700,
+    padding: "2px 7px",
+    borderRadius: 99,
+  },
+  navSectionLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#7ca87c",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    padding: "16px 20px 6px",
+  },
   sidebarFooter: {
     padding: "16px 20px",
     borderTop: "1px solid rgba(255,255,255,0.1)",
@@ -2951,6 +2578,18 @@ const s = {
     borderRadius: 6,
     fontSize: 13,
     marginBottom: 14,
+  },
+  scheduleLinkBtn: {
+    display: "block",
+    marginTop: 8,
+    background: "none",
+    border: "none",
+    color: "#1f4d1f",
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: "pointer",
+    padding: 0,
+    fontFamily: "inherit",
   },
   rejectedNote: {
     background: "#fff0f0",
