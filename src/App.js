@@ -69,6 +69,7 @@ import AdminBroadcastsPage from './pages/admin/AdminBroadcastsPage';
 import AdminProductApprovalsPage from './pages/admin/AdminProductApprovalsPage';
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
 import StaffComplaintDetailPage from './pages/staff/StaffComplaintDetailPage';
+import StaffNotificationsPage from './pages/staff/StaffNotificationsPage';
 
 // ── SELLER ───────────────────────────────────────────────────────────────────
 import SellerDashboardPage from './pages/seller/SellerDashboardPage';
@@ -146,6 +147,10 @@ const router = createBrowserRouter([
   {
     path: '/staff/complaints/:id',
     element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintDetailPage /></ProtectedRoute>
+  },
+  {
+    path: '/staff/notifications',
+    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffNotificationsPage /></ProtectedRoute>
   },
 
   // ── Seller ───────────────────────────────────────────────────────────────────
