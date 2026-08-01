@@ -1,4 +1,52 @@
-import { createBrowserRouter, RouterProvider, Navigate, useLocation } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, useLocation, Outlet } from 'react-router-dom';
+import PullToRefresh from 'react-simple-pull-to-refresh';
+
+// ── Pull-to-refresh layout ────────────────────────────────────────────────────
+// Wraps every page with mobile pull-to-refresh EXCEPT pages where the user
+// might have unsaved input or an active payment flow. On those pages a
+// accidental swipe-down must never wipe form state or interrupt Paystack.
+const NO_PULL_REFRESH = [
+  '/checkout',
+  '/cart',
+  '/login',
+  '/register',
+  '/become-a-seller',
+  '/forgot-password',
+  '/reset-password',
+  '/change-password',
+  '/loans/apply',
+  '/loans/', // loan detail, liquidate, schedule
+  '/admin',  // all admin pages manage data — accidental reload is disruptive
+  '/complaints/', // complaint detail has a reply form
+];
+
+function PullToRefreshLayout() {
+  const { pathname } = useLocation();
+  const isMobile = window.innerWidth < 768;
+  const isExcluded = NO_PULL_REFRESH.some((p) => pathname.startsWith(p));
+
+  if (!isMobile || isExcluded) return <Outlet />;
+
+  return (
+    <PullToRefresh
+      onRefresh={() => new Promise((resolve) => {
+        window.location.reload();
+        resolve();
+      })}
+      pullingContent=""
+      refreshingContent={
+        <div style={{
+          textAlign: 'center', padding: '12px 0',
+          fontSize: 13, color: '#1f4d1f', fontWeight: 600,
+        }}>
+          🔄 Refreshing...
+        </div>
+      }
+    >
+      <Outlet />
+    </PullToRefresh>
+  );
+}
 
 // Paystack redirects here with ?reference=... in the URL. A plain
 // <Navigate to="/loans"> drops that query string entirely, which silently
@@ -88,219 +136,150 @@ import SellerNotificationsPage from './pages/seller/SellerNotificationsPage';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 const router = createBrowserRouter([
-
-  // ── Public ──────────────────────────────────────────────────────────────────
-  { path: '/',                element: <HomePage /> },
-  { path: '/login',           element: <LoginPage /> },
-  { path: '/register',        element: <RegisterPage /> },
-  { path: '/become-a-seller', element: <SellerRegisterPage /> },
-  { path: '/forgot-password', element: <ForgotPasswordPage /> },
-  { path: '/reset-password',  element: <ResetPasswordPage /> },
-  { path: '/change-password', element: <ChangePasswordPage /> },
-
-  // ── Buyer ─────────────────────────────────────────────────────────────────
-  // Product browsing is public — the backend already serves these routes
-  // without auth (see routes/api.php "Public routes" block), and a
-  // Jumia-style storefront should let guests browse and click through from
-  // the landing page without being forced to log in first.
-  { path: '/products',    element: <ProductPage /> },
-  { path: '/product/:id', element: <ProductPage /> },
-  { path: '/cart',        element: <ProtectedRoute><CartPage /></ProtectedRoute> },
-  { path: '/checkout',    element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
-  { path: '/orders',      element: <ProtectedRoute><OrderHistoryPage /></ProtectedRoute> },
-  { path: '/loans/apply', element: <ProtectedRoute><LoanApplyPage /></ProtectedRoute> },
-  { path: '/loans',       element: <ProtectedRoute><LoansListPage /></ProtectedRoute> },
-  // Old "My Loans" URL — redirect so any existing bookmarks/links still work
-  { path: '/loans/repay', element: <RedirectToLoansPreservingQuery /> },
-  { path: '/loans/:id', element: <ProtectedRoute><LoanDetailPage /></ProtectedRoute> },
-  { path: '/loans/:id/liquidate', element: <ProtectedRoute><LoanLiquidatePage /></ProtectedRoute> },
-  { path: '/loans/:id/schedule',  element: <ProtectedRoute><LoanSchedulePage /></ProtectedRoute> },
-  { path: '/profile',     element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
-  { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
-  { path: '/complaints', element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
-  { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
-  { path: '/wishlist',        element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
-  { path: '/addresses', element: <ProtectedRoute><AddressBookPage /></ProtectedRoute> },
-  { path: '/sellers/:id',     element: <SellerStorefrontPage /> },
-  { path: '/help',            element: <HelpCenterPage /> },
-  { path: '/pages/:slug',     element: <ContentPage /> },
-  { path: '/help',          element: <HelpCenterPage /> },
-  { path: '/pages/:slug',   element: <ContentPage /> },
-
-  // ── Staff ────────────────────────────────────────────────────────────────────
   {
-    path: '/staff/agro',
-    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><AgroStaffDashboard /></ProtectedRoute>
-  },
-  {
-    path: '/staff/agro/product-approvals',
-    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffProductApprovalsPage /></ProtectedRoute>
-  },
-  {
-    path: '/staff/loans',
-    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><LoanStaffDashboard /></ProtectedRoute>
-  },
-  {
-    path: '/staff/complaints',
-    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintsPage /></ProtectedRoute>
-  },
-  {
-    path: '/staff/complaints/:id',
-    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintDetailPage /></ProtectedRoute>
-  },
-  {
-    path: '/staff/notifications',
-    element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffNotificationsPage /></ProtectedRoute>
-  },
-
-  // ── Seller ───────────────────────────────────────────────────────────────────
-  // Batch 1 (Foundation): only Dashboard is fully built. The rest of the sidebar
-  // nav points at a shared "coming soon" placeholder so nothing 404s while the
-  // remaining batches (Products, Orders, Finance, Reviews, Store Profile) land —
-  // see /areas/achoice-seller-dashboard.md for the batch plan.
-  {
-    path: '/seller/dashboard',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerDashboardPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/products',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerProductsPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/orders',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerOrdersPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/finance',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerFinancePage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/loans',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerLoansPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/flash-sales',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerFlashSalesPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/followers',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerFollowersPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/reviews',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerReviewsPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/store-preview',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerStorePreviewPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/notifications',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerNotificationsPage /></ProtectedRoute>
-  },
-  {
-    path: '/seller/profile',
-    element: <ProtectedRoute allowedRoles={['seller']}><SellerStoreProfilePage /></ProtectedRoute>
-  },
-
-  // ── Admin ────────────────────────────────────────────────────────────────────
-  {
-    path: '/admin',
+    // PullToRefreshLayout wraps ALL routes — it checks the pathname internally
+    // and skips the gesture on excluded pages (checkout, forms, admin, etc.)
+    element: <PullToRefreshLayout />,
     children: [
-      { index: true, element: <AdminLoginPage /> },
-      {
-        path: 'dashboard',
-        element: <ProtectedRoute adminOnly><AdminDashboardPage /></ProtectedRoute>
-      },
-      {
-        path: 'reports',
-        element: <ProtectedRoute adminOnly><Adminreportspage /></ProtectedRoute>
-      },
-      {
-        path: 'sellers',
-        element: <ProtectedRoute adminOnly><ManageSellersPage /></ProtectedRoute>
-      },
-      {
-        path: 'products',
-        element: <ProtectedRoute adminOnly><ManageProductsPage /></ProtectedRoute>
-      },
-      {
-        path: 'categories',
-        element: <ProtectedRoute adminOnly><ManageCategoriesPage /></ProtectedRoute>
-      },
-      {
-        path: 'flash-sales',
-        element: <ProtectedRoute adminOnly><AdminFlashSalesPage /></ProtectedRoute>
-      },
-      {
-        path: 'flash-sale-requests',
-        element: <ProtectedRoute adminOnly><AdminFlashSaleRequestsPage /></ProtectedRoute>
-      },
-      {
-        path: 'remittance-requests',
-        element: <ProtectedRoute adminOnly><AdminRemittanceRequestsPage /></ProtectedRoute>
-      },
-      {
-        path: 'user-details/:id',
-        element: <ProtectedRoute adminOnly><AdminUserDetailPage /></ProtectedRoute>
-      },
-      {
-        path: 'product-approvals',
-        element: <ProtectedRoute adminOnly><AdminProductApprovalsPage /></ProtectedRoute>
-      },
-      {
-        path: 'orders',
-        element: <ProtectedRoute adminOnly><ManageOrdersPage /></ProtectedRoute>
-      },
-      {
-        path: 'loans',
-        element: <ProtectedRoute adminOnly><ManageLoansPage /></ProtectedRoute>
-      },
-      {
-        path: 'loan-settings',
-        element: <ProtectedRoute adminOnly><LoanSettingsPage /></ProtectedRoute>
-      },
-      {
-        path: 'delivery-zones',
-        element: <ProtectedRoute adminOnly><DeliveryZonesPage /></ProtectedRoute>
-      },
-      {
-        path: 'staff',
-        element: <ProtectedRoute adminOnly><ManageStaffPage /></ProtectedRoute>
-      },
-      {
-        path: 'buyers',
-        element: <ProtectedRoute adminOnly><ManageBuyersPage /></ProtectedRoute>
-      },
-      {
-        path: 'payments',
-        element: <ProtectedRoute adminOnly><AdminPaystackPage /></ProtectedRoute>
-      },
-      {
-        path: 'settings',  // ✅ lowercase
-        element: <ProtectedRoute adminOnly><AdminSettingsPage /></ProtectedRoute>
-      },
-      {
-        path: 'complaints',
-        element: <ProtectedRoute adminOnly><AdminComplaintsPage /></ProtectedRoute>
-      },
-      {
-        path: 'complaints/:id',
-        element: <ProtectedRoute adminOnly><AdminComplaintDetailPage /></ProtectedRoute>
-      },
-      {
-        path: 'audit-log',
-        element: <ProtectedRoute adminOnly><AdminAuditLogPage /></ProtectedRoute>
-      },
-      {
-        path: 'broadcasts',
-        element: <ProtectedRoute adminOnly><AdminBroadcastsPage /></ProtectedRoute>
-      },
-    ]
-  },
 
-  // ── Fallback ─────────────────────────────────────────────────────────────────
-  { path: '*', element: <Navigate to="/" replace /> },
+      // ── Public ──────────────────────────────────────────────────────────────
+      { path: '/',                element: <HomePage /> },
+      { path: '/login',           element: <LoginPage /> },
+      { path: '/register',        element: <RegisterPage /> },
+      { path: '/become-a-seller', element: <SellerRegisterPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/reset-password',  element: <ResetPasswordPage /> },
+      { path: '/change-password', element: <ChangePasswordPage /> },
+
+      // ── Buyer ───────────────────────────────────────────────────────────────
+      { path: '/products',    element: <ProductPage /> },
+      { path: '/product/:id', element: <ProductPage /> },
+      { path: '/cart',        element: <ProtectedRoute><CartPage /></ProtectedRoute> },
+      { path: '/checkout',    element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
+      { path: '/orders',      element: <ProtectedRoute><OrderHistoryPage /></ProtectedRoute> },
+      { path: '/loans/apply', element: <ProtectedRoute><LoanApplyPage /></ProtectedRoute> },
+      { path: '/loans',       element: <ProtectedRoute><LoansListPage /></ProtectedRoute> },
+      { path: '/loans/repay', element: <RedirectToLoansPreservingQuery /> },
+      { path: '/loans/:id',             element: <ProtectedRoute><LoanDetailPage /></ProtectedRoute> },
+      { path: '/loans/:id/liquidate',   element: <ProtectedRoute><LoanLiquidatePage /></ProtectedRoute> },
+      { path: '/loans/:id/schedule',    element: <ProtectedRoute><LoanSchedulePage /></ProtectedRoute> },
+      { path: '/profile',       element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+      { path: '/notifications', element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
+      { path: '/complaints',    element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
+      { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
+      { path: '/wishlist',      element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
+      { path: '/addresses',     element: <ProtectedRoute><AddressBookPage /></ProtectedRoute> },
+      { path: '/sellers/:id',   element: <SellerStorefrontPage /> },
+      { path: '/help',          element: <HelpCenterPage /> },
+      { path: '/pages/:slug',   element: <ContentPage /> },
+
+      // ── Staff ────────────────────────────────────────────────────────────────
+      {
+        path: '/staff/agro',
+        element: <ProtectedRoute allowedRoles={['staff', 'admin']}><AgroStaffDashboard /></ProtectedRoute>
+      },
+      {
+        path: '/staff/agro/product-approvals',
+        element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffProductApprovalsPage /></ProtectedRoute>
+      },
+      {
+        path: '/staff/loans',
+        element: <ProtectedRoute allowedRoles={['staff', 'admin']}><LoanStaffDashboard /></ProtectedRoute>
+      },
+      {
+        path: '/staff/complaints',
+        element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintsPage /></ProtectedRoute>
+      },
+      {
+        path: '/staff/complaints/:id',
+        element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffComplaintDetailPage /></ProtectedRoute>
+      },
+      {
+        path: '/staff/notifications',
+        element: <ProtectedRoute allowedRoles={['staff', 'admin']}><StaffNotificationsPage /></ProtectedRoute>
+      },
+
+      // ── Seller ───────────────────────────────────────────────────────────────
+      {
+        path: '/seller/dashboard',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerDashboardPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/products',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerProductsPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/orders',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerOrdersPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/finance',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerFinancePage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/loans',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerLoansPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/flash-sales',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerFlashSalesPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/followers',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerFollowersPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/reviews',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerReviewsPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/store-preview',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerStorePreviewPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/notifications',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerNotificationsPage /></ProtectedRoute>
+      },
+      {
+        path: '/seller/profile',
+        element: <ProtectedRoute allowedRoles={['seller']}><SellerStoreProfilePage /></ProtectedRoute>
+      },
+
+      // ── Admin ────────────────────────────────────────────────────────────────
+      {
+        path: '/admin',
+        children: [
+          { index: true, element: <AdminLoginPage /> },
+          { path: 'dashboard',        element: <ProtectedRoute adminOnly><AdminDashboardPage /></ProtectedRoute> },
+          { path: 'reports',          element: <ProtectedRoute adminOnly><Adminreportspage /></ProtectedRoute> },
+          { path: 'sellers',          element: <ProtectedRoute adminOnly><ManageSellersPage /></ProtectedRoute> },
+          { path: 'products',         element: <ProtectedRoute adminOnly><ManageProductsPage /></ProtectedRoute> },
+          { path: 'categories',       element: <ProtectedRoute adminOnly><ManageCategoriesPage /></ProtectedRoute> },
+          { path: 'flash-sales',      element: <ProtectedRoute adminOnly><AdminFlashSalesPage /></ProtectedRoute> },
+          { path: 'flash-sale-requests', element: <ProtectedRoute adminOnly><AdminFlashSaleRequestsPage /></ProtectedRoute> },
+          { path: 'remittance-requests', element: <ProtectedRoute adminOnly><AdminRemittanceRequestsPage /></ProtectedRoute> },
+          { path: 'user-details/:id', element: <ProtectedRoute adminOnly><AdminUserDetailPage /></ProtectedRoute> },
+          { path: 'product-approvals', element: <ProtectedRoute adminOnly><AdminProductApprovalsPage /></ProtectedRoute> },
+          { path: 'orders',           element: <ProtectedRoute adminOnly><ManageOrdersPage /></ProtectedRoute> },
+          { path: 'loans',            element: <ProtectedRoute adminOnly><ManageLoansPage /></ProtectedRoute> },
+          { path: 'loan-settings',    element: <ProtectedRoute adminOnly><LoanSettingsPage /></ProtectedRoute> },
+          { path: 'delivery-zones',   element: <ProtectedRoute adminOnly><DeliveryZonesPage /></ProtectedRoute> },
+          { path: 'staff',            element: <ProtectedRoute adminOnly><ManageStaffPage /></ProtectedRoute> },
+          { path: 'buyers',           element: <ProtectedRoute adminOnly><ManageBuyersPage /></ProtectedRoute> },
+          { path: 'payments',         element: <ProtectedRoute adminOnly><AdminPaystackPage /></ProtectedRoute> },
+          { path: 'settings',         element: <ProtectedRoute adminOnly><AdminSettingsPage /></ProtectedRoute> },
+          { path: 'complaints',       element: <ProtectedRoute adminOnly><AdminComplaintsPage /></ProtectedRoute> },
+          { path: 'complaints/:id',   element: <ProtectedRoute adminOnly><AdminComplaintDetailPage /></ProtectedRoute> },
+          { path: 'audit-log',        element: <ProtectedRoute adminOnly><AdminAuditLogPage /></ProtectedRoute> },
+          { path: 'broadcasts',       element: <ProtectedRoute adminOnly><AdminBroadcastsPage /></ProtectedRoute> },
+        ]
+      },
+
+      // ── Fallback ─────────────────────────────────────────────────────────────
+      { path: '*', element: <Navigate to="/" replace /> },
+
+    ] // end children of PullToRefreshLayout
+  },
 ]);
 
 export default function App() {
