@@ -915,7 +915,7 @@ export default function LoanStaffDashboard() {
               to the Agro Staff dashboard's own route/tab rather than
               rendering its content inline — the two dashboards stay
               separate pages, this just surfaces both nav sections together. */}
-          {user?.can_manage_agro && (
+          {(user?.staff_profile?.can_manage_agro || user?.role === "admin") && (
             <>
               <div style={s.navSectionLabel}>Agro/Sales Staff</div>
               {[
