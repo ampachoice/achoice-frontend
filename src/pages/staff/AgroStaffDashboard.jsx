@@ -406,7 +406,7 @@ export default function AgroStaffDashboard() {
               rendering its content inline — the two dashboards remain
               separate pages/components, this just surfaces both nav
               sections together per the combined-dashboard spec. */}
-          {user?.can_manage_loans && (
+          {(user?.staff_profile?.can_manage_loans || user?.can_manage_loans) && (
             <>
               <div style={s.navSectionLabel}>Loan Staff</div>
               {[
