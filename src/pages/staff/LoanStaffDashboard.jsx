@@ -142,6 +142,28 @@ export default function LoanStaffDashboard() {
       .catch(() => {});
   }, []);
 
+  // Complaints/Notifications badges — same source StaffLayout uses on the
+  // Complaints/Notifications pages, so the count matches wherever staff land.
+  useEffect(() => {
+    api
+      .get("/staff/complaints", { params: { status: "pending" } })
+      .then((res) => {
+        const total = res.data?.total ?? res.data?.meta?.total
+          ?? (Array.isArray(res.data?.data) ? res.data.data.length
+          : Array.isArray(res.data) ? res.data.length : 0);
+        setBadges((prev) => ({ ...prev, complaints: total }));
+      })
+      .catch(() => {});
+
+    api
+      .get("/inbox/unread-count")
+      .then((res) => {
+        const n = res.data?.unread_count ?? res.data?.count ?? 0;
+        setBadges((prev) => ({ ...prev, notifications: n }));
+      })
+      .catch(() => {});
+  }, []);
+
   // Load tab data
   useEffect(() => {
     if (activeTab === "applications") {
@@ -907,7 +929,8 @@ export default function LoanStaffDashboard() {
             },
             { icon: "💳", label: "Repayments", tab: "repayments" },
             { icon: "🔍", label: "User History", tab: "history" },
-            { icon: "📋", label: "Complaints", path: "/staff/complaints" },
+            { icon: "📋", label: "Complaints", path: "/staff/complaints", badgeKey: "complaints" },
+            { icon: "🔔", label: "Notifications", path: "/staff/notifications", badgeKey: "notifications" },
           ].map((item) => (
             <div
               key={item.tab || item.path}

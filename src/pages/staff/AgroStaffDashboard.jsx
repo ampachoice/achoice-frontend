@@ -143,6 +143,35 @@ export default function AgroStaffDashboard() {
       .catch(() => {});
   }, []);
 
+  // Orders badge reuses the same /staff/agro/dashboard response already
+  // fetched into `stats` above — no extra request needed.
+  useEffect(() => {
+    if (!stats) return;
+    setBadges((prev) => ({ ...prev, orders: stats.orders?.pending ?? 0 }));
+  }, [stats]);
+
+  // Complaints/Notifications badges — same source StaffLayout uses on the
+  // Complaints/Notifications pages, so the count matches wherever staff land.
+  useEffect(() => {
+    api
+      .get("/staff/complaints", { params: { status: "pending" } })
+      .then((res) => {
+        const total = res.data?.total ?? res.data?.meta?.total
+          ?? (Array.isArray(res.data?.data) ? res.data.data.length
+          : Array.isArray(res.data) ? res.data.length : 0);
+        setBadges((prev) => ({ ...prev, complaints: total }));
+      })
+      .catch(() => {});
+
+    api
+      .get("/inbox/unread-count")
+      .then((res) => {
+        const n = res.data?.unread_count ?? res.data?.count ?? 0;
+        setBadges((prev) => ({ ...prev, notifications: n }));
+      })
+      .catch(() => {});
+  }, []);
+
   const handleUpdateOrderStatus = async (orderId, status) => {
     setUpdating(orderId);
     try {
@@ -364,7 +393,7 @@ export default function AgroStaffDashboard() {
         <nav style={s.sidebarNav}>
           {[
             { icon: "📊", label: "Dashboard", tab: "dashboard" },
-            { icon: "📦", label: "Orders", tab: "orders" },
+            { icon: "📦", label: "Orders", tab: "orders", badgeKey: "orders" },
             { icon: "🌾", label: "Inventory", tab: "inventory" },
             { icon: "🏪", label: "Sellers", tab: "sellers" },
             {
@@ -380,7 +409,8 @@ export default function AgroStaffDashboard() {
               badgeKey: "remittances",
             },
             { icon: "📈", label: "Reports", tab: "reports" },
-            { icon: "📋", label: "Complaints", path: "/staff/complaints" },
+            { icon: "📋", label: "Complaints", path: "/staff/complaints", badgeKey: "complaints" },
+            { icon: "🔔", label: "Notifications", path: "/staff/notifications", badgeKey: "notifications" },
           ].map((item) => (
             <div
               key={item.tab || item.path}
