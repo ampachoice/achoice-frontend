@@ -5,17 +5,28 @@ import StaffNotificationBell from "../components/staff/StaffNotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
 
+// Permissions live nested under staff_profile (confirmed from
+// LoanStaffDashboard's own cross-link logic) — top-level user.can_manage_*
+// is checked too as a harmless fallback in case it's ever set that way.
+function hasAgroAccess(user) {
+  return !!(user?.staff_profile?.can_manage_agro || user?.can_manage_agro);
+}
+function hasLoanAccess(user) {
+  return !!(user?.staff_profile?.can_manage_loans || user?.can_manage_loans);
+}
+
 // The one place staff nav items are defined. Add a new staff page here and
 // every page using StaffLayout picks it up automatically — no more copying
 // the sidebar markup into each new page file.
 function getNavItems(user, activePath, counts) {
   const items = [];
 
-  if (user?.can_manage_agro) {
+  if (hasAgroAccess(user)) {
     items.push({ icon: "📊", label: "Agro Dashboard", path: "/staff/agro" });
+    items.push({ icon: "📦", label: "Orders", path: "/staff/agro?tab=orders", badge: counts.orders });
     items.push({ icon: "✅", label: "Product Approvals", path: "/staff/agro/product-approvals", badge: counts.productApprovals });
   }
-  if (user?.can_manage_loans) {
+  if (hasLoanAccess(user)) {
     items.push({ icon: "💰", label: "Loan Dashboard", path: "/staff/loans", badge: counts.loanApplications });
   }
 
@@ -30,8 +41,8 @@ function getNavItems(user, activePath, counts) {
 
 // Where the logo/brand should send staff — their own home, never "/".
 function getStaffHome(user) {
-  if (user?.can_manage_agro) return "/staff/agro";
-  if (user?.can_manage_loans) return "/staff/loans";
+  if (hasAgroAccess(user)) return "/staff/agro";
+  if (hasLoanAccess(user)) return "/staff/loans";
   return "/staff/complaints";
 }
 
@@ -42,6 +53,8 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
   try { user = JSON.parse(localStorage.getItem("user")); } catch {}
 
   const [counts, setCounts] = useState({});
+  const agroAccess = hasAgroAccess(user);
+  const loanAccess = hasLoanAccess(user);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,17 +62,20 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
     // Reuses the same numbers each dashboard already displays — no new
     // backend endpoints, just surfacing them on the sidebar too, the way
     // the admin panel's badges work.
-    if (user?.can_manage_agro) {
+    if (agroAccess) {
       api.get("/staff/agro/dashboard")
         .then((res) => {
           if (cancelled) return;
-          const n = res.data?.products?.pending_review ?? 0;
-          setCounts((prev) => ({ ...prev, productApprovals: n }));
+          setCounts((prev) => ({
+            ...prev,
+            orders: res.data?.orders?.pending ?? 0,
+            productApprovals: res.data?.products?.pending_review ?? 0,
+          }));
         })
         .catch(() => {});
     }
 
-    if (user?.can_manage_loans) {
+    if (loanAccess) {
       api.get("/staff/loan/dashboard")
         .then((res) => {
           if (cancelled) return;
@@ -88,7 +104,7 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
       .catch(() => {});
 
     return () => { cancelled = true; };
-  }, [user?.can_manage_agro, user?.can_manage_loans]);
+  }, [agroAccess, loanAccess]);
 
   const navItems = getNavItems(user, activePath, counts);
   const staffHome = getStaffHome(user);
