@@ -10,10 +10,26 @@ export default function NotificationBell() {
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (!user) return;
-    api
-      .get("/notifications/unread-count")
-      .then((res) => setUnreadCount(res.data.unread_count || 0))
-      .catch(() => {});
+
+    let cancelled = false;
+    const fetchUnreadCount = () => {
+      // Lightweight single-integer endpoint — safe to poll frequently
+      // without pulling the full notification list each time.
+      api
+        .get("/inbox/unread-count")
+        .then((res) => {
+          if (cancelled) return;
+          setUnreadCount(res.data?.unread_count ?? 0);
+        })
+        .catch(() => {});
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 45000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   return (

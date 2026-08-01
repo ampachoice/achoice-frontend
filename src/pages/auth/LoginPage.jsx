@@ -86,7 +86,11 @@ export default function LoginPage() {
         navigate("/products");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Invalid email or password.");
+      if (err.response?.data?.code === "ACCOUNT_CLOSED") {
+        setError("This account has been closed. Contact support if this is a mistake.");
+      } else {
+        setError(err.response?.data?.message || "Invalid email or password.");
+      }
     } finally {
       setLoading(false);
     }

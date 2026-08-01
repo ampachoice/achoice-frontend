@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCategories } from "../../services/productService";
 import NotificationBell from "./NotificationBell";
 import BuyerDropdown from "./BuyerDropdown";
+import CloseAccountModal from "../common/CloseAccountModal";
 
 const CSS = `
   .bn-search-group { flex:1; max-width:500px; margin:0 10px; display:flex; background:#fff; border-radius:25px; overflow:hidden; border:2px solid #f0c050; min-width:0; }
@@ -40,6 +41,7 @@ export default function BuyerNav({ showSearch = false }) {
   const [selectedCat, setSelectedCat] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
 
   useEffect(() => {
     const sync = () => {
@@ -340,26 +342,49 @@ export default function BuyerNav({ showSearch = false }) {
             </div>
             <div style={{ padding: "16px 20px", borderTop: "1px solid #eee" }}>
               {token ? (
-                <button
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    background: "#fff0f0",
-                    color: "#cc0000",
-                    border: "none",
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    fontFamily: "inherit",
-                  }}
-                  onClick={() => {
-                    localStorage.clear();
-                    navigate("/login");
-                  }}
-                >
-                  🚪 Logout
-                </button>
+                <>
+                  <button
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      background: "none",
+                      color: "#a81f1f",
+                      border: "1px solid #f3b3b3",
+                      borderRadius: 8,
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      marginBottom: 8,
+                    }}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setShowCloseModal(true);
+                    }}
+                  >
+                    ⚠️ Close Account
+                  </button>
+                  <button
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "#fff0f0",
+                      color: "#cc0000",
+                      border: "none",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                    onClick={() => {
+                      localStorage.clear();
+                      navigate("/login");
+                    }}
+                  >
+                    🚪 Logout
+                  </button>
+                </>
               ) : (
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
@@ -407,6 +432,10 @@ export default function BuyerNav({ showSearch = false }) {
             </div>
           </div>
         </div>
+      )}
+
+      {showCloseModal && (
+        <CloseAccountModal onClose={() => setShowCloseModal(false)} />
       )}
     </>
   );

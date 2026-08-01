@@ -10,6 +10,7 @@ import {
 } from "../../services/productService";
 import NotificationBell from "../../components/buyer/NotificationBell";
 import BuyerDropdown from "../../components/buyer/BuyerDropdown";
+import CategorySidebar from "../../components/buyer/CategorySidebar";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CSS constant — injected via <style> tag inside Nav component.
@@ -809,6 +810,15 @@ export default function ProductPage() {
       .catch(() => {});
   }, []);
 
+  // Keep selectedCat in sync with the URL — the useState above only reads
+  // searchParams once, on first mount. Without this, navigating to this
+  // same route with a different ?category= (e.g. from CategorySidebar,
+  // which only changes the URL) never updates what's actually fetched,
+  // since the component doesn't remount for a same-route navigation.
+  useEffect(() => {
+    setSelectedCat(searchParams.get("category") || "All");
+  }, [searchParams]);
+
   // reset page on filter change
   useEffect(() => {
     setPage(1);
@@ -920,9 +930,9 @@ export default function ProductPage() {
       }
       localStorage.setItem("cart", JSON.stringify(cart));
       setCartCount(cart.reduce((a, i) => a + (i.quantity || 0), 0));
-      navigate("/cart");
+      showActionToast(`${p.name} added to cart`);
     },
-    [navigate],
+    [showActionToast],
   );
 
   const handleWishlist = async (e, productId, productName) => {
@@ -1252,6 +1262,20 @@ export default function ProductPage() {
           cartCount={cartCount}
           token={token}
         />
+      {/* Left category sidebar (Phase 19) — listing mode only, not the
+           single-product detail view. Shared with HomePage.jsx. Was
+           temporarily disabled because category clicks appeared to show
+           the same products regardless of category — root cause was
+           ProductPage not syncing selectedCat from the URL on same-route
+           navigation (fixed above), not this sidebar. */}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        {!id && (
+          <CategorySidebar
+            onLoansClick={() => navigate("/loans/apply")}
+            onContactClick={() => navigate("/pages/live-chat-support")}
+          />
+        )}
+        <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
       <div className="pp-container">
         {/* ════════════════════ LISTING ════════════════════ */}
         {!id && (
@@ -1347,7 +1371,7 @@ export default function ProductPage() {
                             handleAddToCart(p);
                           }}
                         >
-                          Add &amp; Checkout
+                          Add to Cart
                         </button>
                       </div>
                     </div>
@@ -1744,6 +1768,8 @@ export default function ProductPage() {
             </div>
           </>
         )}
+      </div>
+        </div>
       </div>
     </div>
   );

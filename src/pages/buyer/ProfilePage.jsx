@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import BuyerNav from '../../components/buyer/BuyerNav';
+import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../../services/addressService';
+import AddressFormFields, { emptyAddressForm } from '../../components/buyer/AddressFormFields';
 
 const LOGO_PATH = '/android-chrome-192x192.png';
 
@@ -22,6 +24,16 @@ export default function ProfilePage() {
   const [showPasswords, setShowPasswords] = useState({
     current: false, new: false, confirm: false,
   });
+
+  // Address Book — Phase 3
+  const [addresses, setAddresses] = useState([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+  const [addressesLoaded, setAddressesLoaded] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [addressForm, setAddressForm] = useState(emptyAddressForm());
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressActionId, setAddressActionId] = useState(null); // id currently being deleted/defaulted
 
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -44,6 +56,97 @@ export default function ProfilePage() {
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
+  };
+
+  // Lazy-load addresses the first time the tab is opened, not on initial
+  // page load — most visits to Profile are for the Profile Information
+  // tab, no need to fetch addresses every time.
+  useEffect(() => {
+    if (activeTab === 'addresses' && !addressesLoaded) {
+      fetchAddresses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const fetchAddresses = () => {
+    setAddressesLoading(true);
+    getAddresses()
+      .then((res) => {
+        setAddresses(res.data?.data || res.data || []);
+        setAddressesLoaded(true);
+      })
+      .catch(() => showToast('Failed to load saved addresses.'))
+      .finally(() => setAddressesLoading(false));
+  };
+
+  const openAddAddressForm = () => {
+    setEditingAddressId(null);
+    setAddressForm(emptyAddressForm());
+    setShowAddressForm(true);
+  };
+
+  const openEditAddressForm = (addr) => {
+    setEditingAddressId(addr.id);
+    setAddressForm({
+      label: addr.label || '',
+      full_address: addr.full_address || '',
+      state: addr.state || '',
+      lga: addr.lga || '',
+      phone: addr.phone || '',
+    });
+    setShowAddressForm(true);
+  };
+
+  const closeAddressForm = () => {
+    setShowAddressForm(false);
+    setEditingAddressId(null);
+    setAddressForm(emptyAddressForm());
+  };
+
+  const handleAddressFormSubmit = async (e) => {
+    e.preventDefault();
+    setAddressSaving(true);
+    try {
+      if (editingAddressId) {
+        await updateAddress(editingAddressId, addressForm);
+        showToast('Address updated!');
+      } else {
+        await createAddress(addressForm);
+        showToast('Address added!');
+      }
+      closeAddressForm();
+      fetchAddresses();
+    } catch (err) {
+      showToast(err?.response?.data?.message || 'Failed to save address.');
+    } finally {
+      setAddressSaving(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    if (!window.confirm('Delete this address?')) return;
+    setAddressActionId(id);
+    try {
+      await deleteAddress(id);
+      showToast('Address deleted.');
+      fetchAddresses();
+    } catch (err) {
+      showToast(err?.response?.data?.message || 'Failed to delete address.');
+    } finally {
+      setAddressActionId(null);
+    }
+  };
+
+  const handleSetDefaultAddress = async (id) => {
+    setAddressActionId(id);
+    try {
+      await setDefaultAddress(id);
+      fetchAddresses();
+    } catch (err) {
+      showToast(err?.response?.data?.message || 'Failed to set default address.');
+    } finally {
+      setAddressActionId(null);
+    }
   };
 
   const handleProfileSave = async (e) => {
@@ -168,6 +271,9 @@ export default function ProfilePage() {
           .pf-tabs { flex-direction:column; }
           .pf-tabs button { width:100%; box-sizing:border-box; }
 
+          .pf-address-card { flex-direction:column !important; align-items:stretch !important; }
+          .pf-address-actions { flex-direction:row !important; justify-content:flex-end !important; flex-wrap:wrap; gap:14px !important; }
+
           .pf-footer { padding:16px 16px; }
           .pf-footer-bottom { flex-direction:column; text-align:center; gap:6px; }
         }
@@ -234,6 +340,12 @@ export default function ProfilePage() {
             onClick={() => setActiveTab('password')}
           >
             Change Password
+          </button>
+          <button
+            style={activeTab === 'addresses' ? s.tabActive : s.tab}
+            onClick={() => setActiveTab('addresses')}
+          >
+            Saved Addresses
           </button>
         </div>
 
@@ -384,6 +496,109 @@ export default function ProfilePage() {
             </form>
           </div>
         )}
+
+        {/* Saved Addresses Tab */}
+        {activeTab === 'addresses' && (
+          <div className="pf-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 6 }}>
+              <div>
+                <h2 style={s.cardTitle}>Saved Addresses</h2>
+                <p style={{ ...s.cardSub, marginBottom: 0 }}>
+                  Save multiple delivery addresses and pick one at checkout instead of retyping every time.
+                </p>
+              </div>
+              {!showAddressForm && (
+                <button style={s.addAddressBtn} onClick={openAddAddressForm}>
+                  + Add New Address
+                </button>
+              )}
+            </div>
+
+            {showAddressForm && (
+              <form onSubmit={handleAddressFormSubmit} style={{ ...s.addressFormBox, marginTop: 20 }}>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1f4d1f', marginBottom: 16 }}>
+                  {editingAddressId ? 'Edit Address' : 'Add New Address'}
+                </h3>
+                <AddressFormFields
+                  form={addressForm}
+                  onChange={setAddressForm}
+                  rowClassName="pf-form-grid"
+                  styles={{ row2: { marginBottom: 0 }, field: s.field, label: s.label, input: s.input }}
+                />
+                <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                  <button
+                    type="submit"
+                    style={{ ...(addressSaving ? s.submitBtnDisabled : s.submitBtn), width: 'auto', padding: '11px 24px' }}
+                    disabled={addressSaving}
+                  >
+                    {addressSaving ? 'Saving...' : editingAddressId ? 'Save Changes' : 'Add Address'}
+                  </button>
+                  <button
+                    type="button"
+                    style={s.cancelBtn}
+                    onClick={closeAddressForm}
+                    disabled={addressSaving}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div style={{ marginTop: 24 }}>
+              {addressesLoading && (
+                <p style={{ color: '#888', fontSize: 14 }}>Loading addresses...</p>
+              )}
+              {!addressesLoading && addresses.length === 0 && (
+                <div style={s.emptyAddressBox}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>📍</div>
+                  <p style={{ color: '#888', fontSize: 14, margin: 0 }}>
+                    No saved addresses yet. Add one to speed up checkout.
+                  </p>
+                </div>
+              )}
+              {!addressesLoading &&
+                addresses.map((addr) => (
+                  <div key={addr.id} className="pf-address-card" style={s.addressCard}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                        <span style={s.addressLabel}>{addr.label || 'Home'}</span>
+                        {addr.is_default && <span style={s.defaultBadge}>Default</span>}
+                      </div>
+                      <div style={{ fontSize: 14, color: '#333', marginBottom: 3 }}>
+                        {addr.full_address}
+                      </div>
+                      <div style={{ fontSize: 13, color: '#888' }}>
+                        {[addr.lga, addr.state].filter(Boolean).join(', ')}
+                        {addr.phone && ` · ${addr.phone}`}
+                      </div>
+                    </div>
+                    <div className="pf-address-actions" style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                      {!addr.is_default && (
+                        <button
+                          style={s.smallLinkBtn}
+                          onClick={() => handleSetDefaultAddress(addr.id)}
+                          disabled={addressActionId === addr.id}
+                        >
+                          {addressActionId === addr.id ? 'Setting...' : 'Set as Default'}
+                        </button>
+                      )}
+                      <button style={s.smallLinkBtn} onClick={() => openEditAddressForm(addr)}>
+                        Edit
+                      </button>
+                      <button
+                        style={{ ...s.smallLinkBtn, color: '#cc0000' }}
+                        onClick={() => handleDeleteAddress(addr.id)}
+                        disabled={addressActionId === addr.id}
+                      >
+                        {addressActionId === addr.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -425,4 +640,14 @@ const s = {
   passwordMatch: { padding: '10px 14px', borderRadius: 6, fontSize: 13, marginBottom: 20 },
   submitBtn: { padding: '12px 28px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 7, fontSize: 15, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' },
   submitBtnDisabled: { padding: '12px 28px', background: '#ccc', color: '#fff', border: 'none', borderRadius: 7, fontSize: 15, cursor: 'not-allowed', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' },
+
+  // Address Book
+  addAddressBtn: { padding: '10px 20px', background: '#1f4d1f', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+  cancelBtn: { padding: '11px 20px', background: '#fff', color: '#555', border: '1px solid #ddd', borderRadius: 7, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' },
+  addressFormBox: { background: '#f7f5f0', border: '1px solid #e8e4dc', borderRadius: 10, padding: 20 },
+  emptyAddressBox: { textAlign: 'center', padding: '32px 16px', background: '#f7f5f0', borderRadius: 10, border: '1px dashed #ddd' },
+  addressCard: { display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #eee' },
+  addressLabel: { fontSize: 14, fontWeight: 700, color: '#1f4d1f' },
+  defaultBadge: { fontSize: 10, fontWeight: 700, color: '#1a7a3a', background: '#eafaf0', padding: '2px 9px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: 0.3 },
+  smallLinkBtn: { background: 'none', border: 'none', color: '#1f4d1f', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0, textAlign: 'right' },
 };

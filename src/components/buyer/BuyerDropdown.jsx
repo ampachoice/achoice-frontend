@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import CloseAccountModal from "../common/CloseAccountModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BuyerDropdown — drop this into any buyer page navbar
@@ -16,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 export default function BuyerDropdown({ cartCount = 0, onLogout }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
   const ref = useRef(null);
 
   const userRaw = localStorage.getItem("user");
@@ -59,6 +61,7 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
     { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
     { icon: "📋", label: "My Loans", path: "/loans/repay" },
     { icon: "📝", label: "Complaints & Refunds", path: "/complaints" },
+    { icon: "🔔", label: "Notifications", path: "/notifications" },
   ];
 
   if (!user) {
@@ -125,6 +128,23 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 
           <div style={s.divider} />
 
+          {/* Account Management */}
+          <div style={s.sectionLabel}>Account Management</div>
+          <div
+            style={s.menuItem}
+            onClick={() => {
+              setOpen(false);
+              setShowCloseModal(true);
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#fff0f0")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          >
+            <span style={s.menuIcon}>⚠️</span>
+            <span style={{ ...s.menuLabel, color: "#a81f1f" }}>Close Account</span>
+          </div>
+
+          <div style={s.divider} />
+
           {/* Logout */}
           <div
             style={s.logoutItem}
@@ -138,6 +158,10 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
             <span style={{ ...s.menuLabel, color: "#cc0000" }}>Logout</span>
           </div>
         </div>
+      )}
+
+      {showCloseModal && (
+        <CloseAccountModal onClose={() => setShowCloseModal(false)} />
       )}
     </div>
   );
@@ -225,6 +249,10 @@ const s = {
   menuName: { fontSize: 14, fontWeight: 600, color: "#111" },
   menuEmail: { fontSize: 11, color: "#888", marginTop: 2 },
   divider: { height: 1, background: "#f0ece4" },
+  sectionLabel: {
+    fontSize: 10, fontWeight: 700, color: "#aaa", textTransform: "uppercase",
+    letterSpacing: 0.5, padding: "10px 16px 4px",
+  },
   menuItem: {
     display: "flex",
     alignItems: "center",

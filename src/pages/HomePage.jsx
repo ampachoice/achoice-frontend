@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { getAllProducts } from "../services/productService";
 import api from "../services/api";
 import farmerImg from "../assets/farmer.jpg";
+import CategorySidebar from "../components/buyer/CategorySidebar";
 import NotificationBell from "../components/buyer/NotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
@@ -74,7 +75,7 @@ const injectCSS = () => {
     .hp-carousel-track { display: flex; transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94); will-change: transform; }
     .hp-carousel-slide {
       min-width: 100%; position: relative; height: 560px;
-      display: flex; align-items: center; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
     }
     .hp-carousel-slide-bg {
       position: absolute; inset: 0;
@@ -288,6 +289,10 @@ const injectCSS = () => {
       .hp-carousel-slide { height: 340px; }
       .hp-carousel-title { font-size: 22px !important; }
     }
+
+    /* Left category sidebar (Phase 19) now lives in the shared
+       CategorySidebar component (components/buyer/CategorySidebar.jsx),
+       used here and on ProductPage.jsx. */
   `;
   document.head.appendChild(style);
 };
@@ -364,6 +369,10 @@ export default function HomePage() {
     autoPlayRef.current = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % totalSlides);
     }, 5000);
+  };
+
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -868,6 +877,20 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* ── Left category sidebar (Phase 19) — persistent quick-nav for
+           categories + shortcuts into the Loans and Contact sections that
+           already exist further down this page. Shared component also used
+           on ProductPage.jsx; handles its own mobile drawer + top-left
+           trigger, so no page-specific mobile handling needed here. */}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        <CategorySidebar
+          onLoansClick={() => scrollToSection("loans")}
+          onContactClick={() => scrollToSection("contact")}
+          contactSubtext={`${phone} · ${email}`}
+        />
+
+        <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
 
       {/* ✅ HERO CAROUSEL — Auto-slides every 5 seconds */}
       <div className="hp-carousel">
@@ -2207,11 +2230,16 @@ export default function HomePage() {
           </span>
         </div>
       </footer>
+
+        </div>
+      </div>
     </div>
   );
 }
 
 const s = {
+  // Left category sidebar styles now live in the shared CategorySidebar
+  // component (components/buyer/CategorySidebar.jsx).
   topBar: {
     background: "#1f4d1f",
     color: "#fff",

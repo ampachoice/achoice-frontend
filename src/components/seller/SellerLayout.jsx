@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getSellerProfile } from "../../services/sellerService";
+import CloseAccountModal from "../common/CloseAccountModal";
 
 const LOGO_PATH = "/achoice logo.png";
 
@@ -54,6 +55,7 @@ export default function SellerLayout({
     () => typeof window !== "undefined" && window.innerWidth <= MOBILE_BREAKPOINT
   );
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
 
   // Seller status — drives the pending-approval banner and the "Add Product"
   // gate across every seller page, per the Phase 1 requirement.
@@ -136,6 +138,23 @@ export default function SellerLayout({
               {item.label}
             </div>
           ))}
+
+          <div style={{ height: 1, background: "#f0ece4", margin: "6px 0" }} />
+
+          {/* Account Management */}
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: 0.5, padding: "6px 12px 4px" }}>
+            Account Management
+          </div>
+          <div
+            style={s.settingsDropdownItem}
+            onClick={() => {
+              setSettingsOpen(false);
+              setShowCloseModal(true);
+            }}
+          >
+            <span style={{ fontSize: 15 }}>⚠️</span>
+            <span style={{ color: "#a81f1f" }}>Close Account</span>
+          </div>
         </div>
       )}
     </div>
@@ -264,6 +283,10 @@ export default function SellerLayout({
 
         {children}
       </div>
+
+      {showCloseModal && (
+        <CloseAccountModal onClose={() => setShowCloseModal(false)} />
+      )}
     </div>
   );
 }

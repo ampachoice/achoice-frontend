@@ -1,22 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSellers } from "../../services/adminService";
+import { getCategoryTree } from "../../services/productService";
 import api from "../../services/api";
 import axios from "axios";
 import AdminLayout from "../../components/admin/AdminLayout";
-
-const BACKEND_CATEGORIES = [
-  { id: 1, name: "Grains", slug: "grains" },
-  { id: 2, name: "Vegetables", slug: "vegetables" },
-  { id: 3, name: "Fruits", slug: "fruits" },
-  { id: 4, name: "Tubers", slug: "tubers" },
-  { id: 5, name: "Livestock", slug: "livestock" },
-  { id: 6, name: "Poultry", slug: "poultry" },
-  { id: 7, name: "Fishery", slug: "fishery" },
-  { id: 8, name: "Dairy", slug: "dairy" },
-  { id: 9, name: "Processed", slug: "processed" },
-  { id: 10, name: "Other", slug: "other" },
-];
 
 export default function ManageProductsPage() {
   const navigate = useNavigate();
@@ -24,7 +12,7 @@ export default function ManageProductsPage() {
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState(null);
   const [sellers, setSellers] = useState([]);
-  const [categories, setCategories] = useState(BACKEND_CATEGORIES);
+  const [categories, setCategories] = useState([]); // parent/subcategory tree, from GET /api/categories
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -47,7 +35,7 @@ export default function ManageProductsPage() {
     discount_price: "",
     quantity: "",
     unit: "bag",
-    category: "",
+    category_id: "",
     status: "available",
     min_order_qty: 1,
   });
@@ -60,7 +48,7 @@ export default function ManageProductsPage() {
       const [pRes, sRes, cRes, pendingRes] = await Promise.allSettled([
         api.get(`/products?page=${pageNum}&per_page=20`),
         getSellers(),
-        api.get("/settings/categories"),
+        getCategoryTree(),
         api.get("/admin/products/pending-review?per_page=1"),
       ]);
       if (pRes.status === "fulfilled") {
@@ -72,8 +60,7 @@ export default function ManageProductsPage() {
       if (sRes.status === "fulfilled")
         setSellers(sRes.value.data.data || sRes.value.data || []);
       if (cRes.status === "fulfilled" && cRes.value.data) {
-        const catData = cRes.value.data.categories || cRes.value.data || [];
-        setCategories(catData.length > 0 ? catData : BACKEND_CATEGORIES);
+        setCategories(cRes.value.data || []);
       }
       if (pendingRes.status === "fulfilled")
         setPendingCount(pendingRes.value.data?.total ?? 0);
@@ -128,7 +115,7 @@ export default function ManageProductsPage() {
       discount_price: product.discount_price || "",
       quantity: product.quantity || "",
       unit: product.unit || "bag",
-      category: product.category || "",
+      category_id: product.category_id ?? "",
       status: product.status || "available",
       min_order_qty: product.min_order_qty || 1,
     });
@@ -170,6 +157,7 @@ export default function ManageProductsPage() {
       const payload = {
         ...editForm,
         seller_id: Number(editForm.seller_id),
+        category_id: Number(editForm.category_id),
         price: Number(editForm.price),
         discount_price: editForm.discount_price
           ? Number(editForm.discount_price)
@@ -225,6 +213,7 @@ export default function ManageProductsPage() {
       const payload = {
         ...formData,
         seller_id: Number(formData.seller_id),
+        category_id: Number(formData.category_id),
         price: Number(formData.price),
         discount_price: formData.discount_price
           ? Number(formData.discount_price)
@@ -245,7 +234,7 @@ export default function ManageProductsPage() {
         discount_price: "",
         quantity: "",
         unit: "bag",
-        category: "",
+        category_id: "",
         status: "available",
         min_order_qty: 1,
       });
@@ -257,6 +246,22 @@ export default function ManageProductsPage() {
       setSubmitting(false);
     }
   };
+
+  // Filter dropdown still matches against the product list's slug-based
+  // `category` field, so flatten parents + subcategories into one list of
+  // { id, name, slug } options rather than grouping them here.
+  const flatCategories = useMemo(
+    () =>
+      categories.flatMap((parent) => [
+        { id: parent.id, name: parent.name, slug: parent.slug },
+        ...(parent.subcategories || []).map((sub) => ({
+          id: sub.id,
+          name: `${parent.name} — ${sub.name}`,
+          slug: sub.slug,
+        })),
+      ]),
+    [categories],
+  );
 
   const filtered = products.filter((p) => {
     const matchSearch = (p.name || "")
@@ -329,17 +334,27 @@ export default function ManageProductsPage() {
                     <label style={s.label}>Category</label>
                     <select
                       style={s.input}
-                      name="category"
-                      value={editForm.category}
+                      name="category_id"
+                      value={editForm.category_id}
                       onChange={handleEditChange}
                       required
                     >
                       <option value="">Select category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.slug || cat.id} value={cat.slug}>
-                          {cat.name}
-                        </option>
-                      ))}
+                      {categories.map((parent) =>
+                        parent.subcategories?.length > 0 ? (
+                          <optgroup key={parent.id} label={parent.name}>
+                            {parent.subcategories.map((sub) => (
+                              <option key={sub.id} value={sub.id}>
+                                {sub.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : (
+                          <option key={parent.id} value={parent.id}>
+                            {parent.name}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
                   <div style={s.field}>
@@ -548,17 +563,27 @@ export default function ManageProductsPage() {
                   <label style={s.label}>Category</label>
                   <select
                     style={s.input}
-                    name="category"
-                    value={formData.category}
+                    name="category_id"
+                    value={formData.category_id}
                     onChange={handleChange}
                     required
                   >
                     <option value="">Select category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.slug || cat.id} value={cat.slug}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    {categories.map((parent) =>
+                      parent.subcategories?.length > 0 ? (
+                        <optgroup key={parent.id} label={parent.name}>
+                          {parent.subcategories.map((sub) => (
+                            <option key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        <option key={parent.id} value={parent.id}>
+                          {parent.name}
+                        </option>
+                      ),
+                    )}
                   </select>
                 </div>
                 <div style={s.field}>
@@ -688,7 +713,7 @@ export default function ManageProductsPage() {
             onChange={(e) => setFilterCategory(e.target.value)}
           >
             <option value="all">All Categories</option>
-            {categories.map((cat) => (
+            {flatCategories.map((cat) => (
               <option key={cat.slug} value={cat.slug}>
                 {cat.name}
               </option>

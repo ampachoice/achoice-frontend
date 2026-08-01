@@ -1,43 +1,116 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getMyOrders, confirmDelivery } from '../../services/orderService';
+import { getMyOrders, confirmDelivery, getOrderTracking } from '../../services/orderService';
 import api from '../../services/api';
 import BuyerNav from '../../components/buyer/BuyerNav';
 
 const LOGO_PATH = '/android-chrome-192x192.png';
 
-const statusSteps = ['pending', 'processing', 'shipped', 'delivered'];
+const STAGE_STYLE = {
+  cancelled: { dot: '#cc0000', label: '#cc0000' },
+  cancellation_pending: { dot: '#b36b00', label: '#b36b00' },
+};
 
-function OrderTracker({ status }) {
-  const currentStep = statusSteps.indexOf(status);
+function formatStageTime(ts) {
+  if (!ts) return null;
+  return new Date(ts).toLocaleString('en-NG', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+}
+
+function formatEstimatedDelivery(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString('en-NG', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  });
+}
+
+// Renders the live order-tracking timeline fetched from
+// GET /api/orders/{id}/tracking. Every stage in the response is always
+// rendered — `completed` drives the fill/outline styling, `timestamp` shows
+// when (or "—" while pending). Cancelled orders get an extra trailing stage
+// from the backend ('cancelled' or 'cancellation_pending') which is styled
+// in red/amber instead of the normal green progression.
+function OrderTracker({ tracking }) {
+  if (tracking?.loading) {
+    return <div style={t.trackerMessage}>Loading tracking info...</div>;
+  }
+  if (tracking?.error) {
+    return <div style={{ ...t.trackerMessage, color: '#cc0000' }}>{tracking.error}</div>;
+  }
+  const data = tracking?.data;
+  if (!data || !Array.isArray(data.stages) || data.stages.length === 0) {
+    return <div style={t.trackerMessage}>Tracking information isn't available yet.</div>;
+  }
+
+  const stages = data.stages;
+  const lastCompletedIndex = stages.reduce(
+    (acc, stage, i) => (stage.completed ? i : acc),
+    -1,
+  );
+
   return (
-    <div style={t.tracker}>
-      {statusSteps.map((step, i) => (
-        <div key={step} style={t.trackerStep}>
-          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-            <div style={{
-              ...t.trackerDot,
-              background: i <= currentStep ? '#1f4d1f' : '#e0e0e0',
-              border: i === currentStep ? '3px solid #f0c050' : '3px solid transparent',
-            }}>
-              {i < currentStep ? '✓' : i + 1}
-            </div>
-            {i < statusSteps.length - 1 && (
-              <div style={{
-                ...t.trackerLine,
-                background: i < currentStep ? '#1f4d1f' : '#e0e0e0',
-              }} />
-            )}
-          </div>
-          <div style={{
-            ...t.trackerLabel,
-            color: i <= currentStep ? '#1f4d1f' : '#aaa',
-            fontWeight: i === currentStep ? 700 : 400,
-          }}>
-            {step.charAt(0).toUpperCase() + step.slice(1)}
-          </div>
+    <div>
+      {data.estimated_delivery && (
+        <div style={t.estimateBanner}>
+          📦 Estimated delivery: <strong>{formatEstimatedDelivery(data.estimated_delivery)}</strong>
         </div>
-      ))}
+      )}
+
+      <div style={t.tracker}>
+        {stages.map((stage, i) => {
+          const override = STAGE_STYLE[stage.status];
+          const dotColor = override
+            ? override.dot
+            : stage.completed
+              ? '#1f4d1f'
+              : '#e0e0e0';
+          const labelColor = override
+            ? override.label
+            : stage.completed
+              ? '#1f4d1f'
+              : '#aaa';
+          return (
+            <div key={stage.status} style={t.trackerStep}>
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                <div style={{
+                  ...t.trackerDot,
+                  background: dotColor,
+                  border: i === lastCompletedIndex ? '3px solid #f0c050' : '3px solid transparent',
+                }}>
+                  {stage.completed ? '✓' : i + 1}
+                </div>
+                {i < stages.length - 1 && (
+                  <div style={{
+                    ...t.trackerLine,
+                    background: stage.completed ? '#1f4d1f' : '#e0e0e0',
+                  }} />
+                )}
+              </div>
+              <div style={{ ...t.trackerLabel, color: labelColor, fontWeight: stage.completed ? 700 : 400 }}>
+                {stage.label}
+              </div>
+              <div style={t.trackerTime}>
+                {formatStageTime(stage.timestamp) || '—'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {Array.isArray(data.items_summary) && data.items_summary.length > 1 && (
+        <div style={t.itemsSummary}>
+          <div style={t.itemsSummaryTitle}>Item-by-item status</div>
+          {data.items_summary.map((item, i) => (
+            <div key={i} style={t.itemsSummaryRow}>
+              <span>{item.product_name}</span>
+              <span style={t.itemsSummaryStatus}>
+                {item.status?.replace(/_/g, ' ')}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -53,6 +126,7 @@ export default function OrderHistoryPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [tracking, setTracking] = useState({}); // { [orderId]: { loading, error, data } }
   const [lastRef, setLastRef] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
@@ -178,6 +252,24 @@ if (reference) {
   const getOrderTotal = (order) =>
     Number(order.total_amount || order.total || order.grand_total || 0);
 
+  const toggleExpand = (orderId) => {
+    const next = expandedOrder === orderId ? null : orderId;
+    setExpandedOrder(next);
+    if (next && !tracking[next]) {
+      setTracking(prev => ({ ...prev, [next]: { loading: true, error: null, data: null } }));
+      getOrderTracking(next)
+        .then(res => {
+          setTracking(prev => ({ ...prev, [next]: { loading: false, error: null, data: res.data } }));
+        })
+        .catch(() => {
+          setTracking(prev => ({
+            ...prev,
+            [next]: { loading: false, error: 'Failed to load tracking info.', data: null },
+          }));
+        });
+    }
+  };
+
   const filtered = orders.filter(o => {
     const matchSearch = !search || (o.order_number || `Order #${o.id}`).toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || o.status === filter;
@@ -292,7 +384,7 @@ if (reference) {
                   </div>
                   <button
                     style={s.toggleBtn}
-                    onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                    onClick={() => toggleExpand(order.id)}
                   >
                     {isExpanded ? 'Hide ▲' : 'Details ▼'}
                   </button>
@@ -332,12 +424,10 @@ if (reference) {
                 <div style={s.expandedSection}>
 
                   {/* Tracker */}
-                  {order.status !== 'cancelled' && (
-                    <div style={s.trackerSection}>
-                      <div style={s.sectionTitle}>Order Tracking</div>
-                      <OrderTracker status={order.status} />
-                    </div>
-                  )}
+                  <div style={s.trackerSection}>
+                    <div style={s.sectionTitle}>Order Tracking</div>
+                    <OrderTracker tracking={tracking[order.id]} />
+                  </div>
 
                   {/* Items */}
                   {order.items && order.items.length > 0 && (
@@ -438,11 +528,21 @@ if (reference) {
 }
 
 const t = {
+  trackerMessage: { fontSize: 13, color: '#888', padding: '10px 0' },
+  estimateBanner: {
+    background: '#f0f7ec', border: '1px solid #a8d5a8', borderRadius: 8,
+    padding: '10px 16px', fontSize: 13.5, color: '#1f4d1f', marginBottom: 16,
+  },
   tracker: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '12px 0' },
   trackerStep: { display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 },
   trackerDot: { width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0 },
   trackerLine: { flex: 1, height: 3, marginTop: 0 },
   trackerLabel: { fontSize: 11, textAlign: 'center', marginTop: 6 },
+  trackerTime: { fontSize: 10, color: '#aaa', textAlign: 'center', marginTop: 3 },
+  itemsSummary: { marginTop: 18, borderTop: '1px solid #f0f0f0', paddingTop: 14 },
+  itemsSummaryTitle: { fontSize: 12, fontWeight: 700, color: '#555', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
+  itemsSummaryRow: { display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#333', padding: '6px 0', borderBottom: '1px solid #f7f5f0' },
+  itemsSummaryStatus: { color: '#1f4d1f', fontWeight: 600, textTransform: 'capitalize' },
 };
 
 const s = {

@@ -49,6 +49,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import Adminreportspage   from './pages/admin/Adminreportspage';
 import ManageSellersPage  from './pages/admin/ManageSellersPage';
 import ManageProductsPage from './pages/admin/ManageProductsPage';
+import ManageCategoriesPage from './pages/admin/ManageCategoriesPage';
 import AdminFlashSalesPage from './pages/admin/AdminFlashSalesPage';
 import AdminFlashSaleRequestsPage from './pages/admin/AdminFlashSaleRequestsPage';
 import AdminRemittanceRequestsPage from './pages/admin/AdminRemittanceRequestsPage';
@@ -64,6 +65,7 @@ import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
 import AdminComplaintsPage from './pages/admin/AdminComplaintsPage';
 import AdminComplaintDetailPage from './pages/admin/AdminComplaintDetailPage';
 import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
+import AdminBroadcastsPage from './pages/admin/AdminBroadcastsPage';
 import AdminProductApprovalsPage from './pages/admin/AdminProductApprovalsPage';
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
 import StaffComplaintDetailPage from './pages/staff/StaffComplaintDetailPage';
@@ -218,6 +220,10 @@ const router = createBrowserRouter([
         element: <ProtectedRoute adminOnly><ManageProductsPage /></ProtectedRoute>
       },
       {
+        path: 'categories',
+        element: <ProtectedRoute adminOnly><ManageCategoriesPage /></ProtectedRoute>
+      },
+      {
         path: 'flash-sales',
         element: <ProtectedRoute adminOnly><AdminFlashSalesPage /></ProtectedRoute>
       },
@@ -280,6 +286,10 @@ const router = createBrowserRouter([
       {
         path: 'audit-log',
         element: <ProtectedRoute adminOnly><AdminAuditLogPage /></ProtectedRoute>
+      },
+      {
+        path: 'broadcasts',
+        element: <ProtectedRoute adminOnly><AdminBroadcastsPage /></ProtectedRoute>
       },
     ]
   },
