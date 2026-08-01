@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getMyOrders, confirmDelivery, getOrderTracking } from '../../services/orderService';
 import api from '../../services/api';
@@ -172,6 +173,12 @@ if (reference) {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleRefresh = async () => {
+    const res = await getMyOrders();
+    const raw = res.data;
+    setOrders(raw?.data || (Array.isArray(raw) ? raw : []));
+  };
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
   const handleConfirmDelivery = async (orderId) => {
   if (!window.confirm('Confirm that you have received this order?')) return;
@@ -276,8 +283,10 @@ if (reference) {
     return matchSearch && matchFilter;
   });
 
-  return (
+  const isMobile = window.innerWidth < 768;
+  const pageContent = (
     <div style={s.page}>
+
       {toast && <div style={s.toast}>{toast}</div>}
       {showCancelModal && (<div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}><div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 460, padding: 28 }}><h3 style={{ margin: "0 0 14px", fontSize: 18, color: "#111" }}>Cancel Order?</h3><p style={{ color: "#b36b00", fontWeight: 600, fontSize: 13, marginBottom: 16 }}>Please note: If payment was made, refunds take at least 14 working days to process.</p><textarea style={{ width: "100%", minHeight: 90, padding: 12, border: "1.5px solid #ddd", borderRadius: 8, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 16 }} placeholder="Please tell us why you want to cancel this order (minimum 10 characters)..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} /><div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}><button style={{ padding: "10px 20px", background: "#f5f5f5", color: "#555", border: "1px solid #ddd", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={() => setShowCancelModal(null)}>Keep My Order</button><button style={{ padding: "10px 20px", background: cancelSubmitting ? "#aaa" : "#cc0000", color: "#fff", border: "none", borderRadius: 7, cursor: cancelSubmitting ? "not-allowed" : "pointer", fontFamily: "inherit", fontWeight: 600 }} onClick={submitCancellation} disabled={cancelSubmitting}>{cancelSubmitting ? "Submitting..." : "Submit Cancellation Request"}</button></div></div></div>)}
 
@@ -524,8 +533,12 @@ if (reference) {
         </div>
       </footer>
     </div>
-  );
-}
+      );
+
+      return isMobile
+        ? <PullToRefresh onRefresh={handleRefresh}>{pageContent}</PullToRefresh>
+        : pageContent;
+    }
 
 const t = {
   trackerMessage: { fontSize: 13, color: '#888', padding: '10px 0' },
