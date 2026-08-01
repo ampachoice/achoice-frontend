@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useNavigate, Link } from "react-router-dom";
 import { getAllProducts } from "../services/productService";
 import api from "../services/api";
@@ -724,6 +725,32 @@ export default function HomePage() {
     );
   };
 
+  const isMobile = window.innerWidth < 768;
+
+  const handleRefresh = async () => {
+    CATEGORIES.forEach(({ slug }) => {
+      api.get(`/products/category/${slug}`)
+        .then((r) => {
+          const data = r.data?.data || (Array.isArray(r.data) ? r.data : []);
+          setCategoryRails((prev) => ({
+            ...prev,
+            [slug]: { loading: false, products: (Array.isArray(data) ? data : []).slice(0, RAIL_PRODUCTS_LIMIT) },
+          }));
+        }).catch(() => {});
+    });
+    await api.get('/flash-sales')
+      .then((r) => {
+        setFlashSales(Array.isArray(r.data?.flash_sales) ? r.data.flash_sales : []);
+        setFlashSalesFetchedAt(Date.now());
+      }).catch(() => {});
+    await getAllProducts({ page: currentPage, per_page: PRODUCTS_PER_PAGE, search: search || undefined })
+      .then((res) => {
+        const pData = res.data;
+        setProducts(Array.isArray(pData?.data) ? pData.data : (Array.isArray(pData) ? pData : []));
+        if (pData?.meta || pData?.last_page) setMeta(pData.meta || pData);
+      }).catch(() => {});
+  };
+
   const phone = siteSetting?.contact_phone || "09067794991";
   const email = siteSetting?.contact_email || "support@achoice.ng";
   const address =
@@ -732,7 +759,7 @@ export default function HomePage() {
   const siteName = siteSetting?.site_name || "ACHOICE LIMITED";
   const tagline = siteSetting?.tagline || "Your needs our solutions";
 
-  return (
+  const pageContent = (
     <div
       style={{
         minHeight: "100vh",
@@ -2233,8 +2260,12 @@ export default function HomePage() {
 
         </div>
       </div>
-    </div>
+</div>
   );
+
+  return isMobile
+    ? <PullToRefresh onRefresh={handleRefresh}>{pageContent}</PullToRefresh>
+    : pageContent;
 }
 
 const s = {
