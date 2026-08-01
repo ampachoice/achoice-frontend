@@ -125,6 +125,23 @@ export default function LoanStaffDashboard() {
       .catch(() => {});
   }, []);
 
+  // Cross-link badge — pending remittance requests count, for the
+  // "Agro/Sales Staff" nav section shown to combined-permission staff.
+  // Reuses /staff/agro/dashboard (the same endpoint AgroStaffDashboard
+  // itself uses) rather than a separate count endpoint.
+  useEffect(() => {
+    if (!(user?.staff_profile?.can_manage_agro || user?.role === "admin")) return;
+    api
+      .get("/staff/agro/dashboard")
+      .then((res) => {
+        setBadges((prev) => ({
+          ...prev,
+          agroRemittances: res.data?.remittance_requests_pending,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   // Load tab data
   useEffect(() => {
     if (activeTab === "applications") {
@@ -934,6 +951,7 @@ export default function LoanStaffDashboard() {
                   icon: "💸",
                   label: "Remittances",
                   path: "/staff/agro?tab=remittances",
+                  badgeKey: "agroRemittances",
                 },
               ].map((item) => (
                 <div
@@ -945,6 +963,9 @@ export default function LoanStaffDashboard() {
                   }}
                 >
                   <span>{item.icon}</span> {item.label}
+                  {item.badgeKey && badges[item.badgeKey] > 0 && (
+                    <span style={s.navBadge}>{badges[item.badgeKey]}</span>
+                  )}
                 </div>
               ))}
             </>

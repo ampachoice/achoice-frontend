@@ -162,6 +162,23 @@ export default function AgroStaffDashboard() {
       .catch(() => {});
   }, []);
 
+  // Cross-link badge — pending loan applications count, for the "Loan
+  // Staff" nav section shown to combined-permission staff. Reuses
+  // /staff/loan/dashboard (the same endpoint LoanStaffDashboard itself
+  // uses) rather than a separate count endpoint.
+  useEffect(() => {
+    if (!(user?.staff_profile?.can_manage_loans || user?.role === "admin")) return;
+    api
+      .get("/staff/loan/dashboard")
+      .then((res) => {
+        setBadges((prev) => ({
+          ...prev,
+          loanApplications: res.data?.applications?.pending,
+        }));
+      })
+      .catch(() => {});
+  }, []);
+
   const handleUpdateOrderStatus = async (orderId, status) => {
     setUpdating(orderId);
     try {
@@ -424,6 +441,7 @@ export default function AgroStaffDashboard() {
                   icon: "📄",
                   label: "Applications",
                   path: "/staff/loans?tab=applications",
+                  badgeKey: "loanApplications",
                 },
                 {
                   icon: "💳",
@@ -440,6 +458,9 @@ export default function AgroStaffDashboard() {
                   }}
                 >
                   <span>{item.icon}</span> {item.label}
+                  {item.badgeKey && badges[item.badgeKey] > 0 && (
+                    <span style={s.navBadge}>{badges[item.badgeKey]}</span>
+                  )}
                 </div>
               ))}
             </>
