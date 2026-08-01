@@ -13,7 +13,7 @@ const EXCLUDED = [
   '/login',
   '/register',
   '/become-a-seller',
-  '/admin',
+//  '/admin',
 ];
 
 export default function AppPullToRefresh({ children }) {

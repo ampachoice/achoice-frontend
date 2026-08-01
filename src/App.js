@@ -16,7 +16,7 @@ const NO_PULL_REFRESH = [
   '/change-password',
   '/loans/apply',
   '/loans/', // loan detail, liquidate, schedule
-  '/admin',  // all admin pages manage data — accidental reload is disruptive
+ // '/admin',  // all admin pages manage data — accidental reload is disruptive
   '/complaints/', // complaint detail has a reply form
 ];
 
