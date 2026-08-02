@@ -381,9 +381,9 @@ export default function LoanStaffDashboard() {
     form.append("type", docForm.type);
     form.append("description", docForm.type.replace(/_/g, " "));
     try {
-      await api.post(`/loans/${loanId}/documents`, form, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // No manual Content-Type — axios sets the correct multipart boundary
+      // itself from the FormData object.
+      await api.post(`/loans/${loanId}/documents`, form);
       showToast("✅ Document uploaded!");
       setDocForm({ type: "nin_document", file: null });
       const r = await api.get(`/loans/${loanId}/documents`);

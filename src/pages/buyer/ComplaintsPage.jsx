@@ -71,9 +71,9 @@ export default function ComplaintsPage() {
       if (orderId) payload.append("order_id", orderId);
       if (evidence) payload.append("evidence", evidence);
 
-      const res = await api.post("/complaints", payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // No manual Content-Type — axios sets the correct multipart boundary
+      // itself from the FormData object.
+      const res = await api.post("/complaints", payload);
 
       const newComplaint = res.data.complaint || res.data;
       setComplaints(prev => [newComplaint, ...prev]);
