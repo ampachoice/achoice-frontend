@@ -305,11 +305,14 @@ export default function LoanApplyPage() {
           form.append("type", def.type);
           form.append("description", def.label);
           try {
-            // No manual Content-Type here — axios detects the FormData body
-            // and sets the correct multipart header (with boundary) itself.
-            // A hardcoded "multipart/form-data" string has no boundary, which
-            // is what was silently breaking every upload.
-            await api.post(`/loans/${loanId}/documents`, form);
+            // The api instance sets a default JSON Content-Type — merely
+            // omitting headers here isn't enough, since axios only lets
+            // the browser generate the multipart boundary when no
+            // Content-Type is set anywhere, including instance defaults.
+            // Setting it to undefined explicitly strips it for this call.
+            await api.post(`/loans/${loanId}/documents`, form, {
+              headers: { "Content-Type": undefined },
+            });
             setUploadProgress((p) => ({ ...p, [def.key]: "done" }));
           } catch (uploadErr) {
             setUploadProgress((p) => ({ ...p, [def.key]: "failed" }));
