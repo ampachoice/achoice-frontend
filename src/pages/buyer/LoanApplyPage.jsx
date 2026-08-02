@@ -297,31 +297,38 @@ export default function LoanApplyPage() {
           { key: "other", type: "other", label: "Other" },
         ];
 
-        for (const def of docDefs) {
-          if (!documents[def.key]) continue;
-          setUploadProgress((p) => ({ ...p, [def.key]: "uploading" }));
-          const form = new FormData();
-          form.append("document", documents[def.key]);
-          form.append("type", def.type);
-          form.append("description", def.label);
-          try {
-            // The api instance sets a default JSON Content-Type — merely
-            // omitting headers here isn't enough, since axios only lets
-            // the browser generate the multipart boundary when no
-            // Content-Type is set anywhere, including instance defaults.
-            // Setting it to undefined explicitly strips it for this call.
-            await api.post(`/loans/${loanId}/documents`, form, {
-              headers: { "Content-Type": undefined },
-            });
-            setUploadProgress((p) => ({ ...p, [def.key]: "done" }));
-          } catch (uploadErr) {
-            setUploadProgress((p) => ({ ...p, [def.key]: "failed" }));
-            console.error(
-              "Upload failed for " + def.key + ":",
-              uploadErr?.response?.data || uploadErr?.message,
-            );
-          }
-        }
+        // Uploaded concurrently, not one-by-one — each doc is an
+        // independent request, so there's no reason to make later ones
+        // wait on earlier ones finishing. Cuts total wait from "sum of
+        // every upload" down to "the slowest single upload."
+        const uploadTasks = docDefs
+          .filter((def) => documents[def.key])
+          .map(async (def) => {
+            setUploadProgress((p) => ({ ...p, [def.key]: "uploading" }));
+            const form = new FormData();
+            form.append("document", documents[def.key]);
+            form.append("type", def.type);
+            form.append("description", def.label);
+            try {
+              // The api instance sets a default JSON Content-Type — merely
+              // omitting headers here isn't enough, since axios only lets
+              // the browser generate the multipart boundary when no
+              // Content-Type is set anywhere, including instance defaults.
+              // Setting it to undefined explicitly strips it for this call.
+              await api.post(`/loans/${loanId}/documents`, form, {
+                headers: { "Content-Type": undefined },
+              });
+              setUploadProgress((p) => ({ ...p, [def.key]: "done" }));
+            } catch (uploadErr) {
+              setUploadProgress((p) => ({ ...p, [def.key]: "failed" }));
+              console.error(
+                "Upload failed for " + def.key + ":",
+                uploadErr?.response?.data || uploadErr?.message,
+              );
+            }
+          });
+
+        await Promise.all(uploadTasks);
       }
 
       setSubmittedLoan(res.data?.loan || null);
