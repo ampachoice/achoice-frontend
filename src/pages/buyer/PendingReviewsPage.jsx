@@ -12,7 +12,6 @@ export default function PendingReviewsPage() {
   const [activeItem, setActiveItem] = useState(null); // item being reviewed
   const [form, setForm] = useState({ rating: 5, title: '', comment: '' });
   const [submitting, setSubmitting] = useState(false);
-  const [successIds, setSuccessIds] = useState([]); // product_ids already reviewed this session
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
 
@@ -21,12 +20,13 @@ export default function PendingReviewsPage() {
   useEffect(() => {
     api.get('/reviews/pending')
       .then((res) => {
-        const data = res.data?.data || res.data || [];
+        // Backend shape: { pending_reviews: [{ product_id, order_id, product_name, product_image, order_number, delivered_at }] }
+        const data = res.data?.pending_reviews || [];
         setPending(Array.isArray(data) ? data : []);
         // Auto-open if navigated here from a notification with ?product_id=X
         const pid = searchParams.get('product_id');
         if (pid) {
-          const match = data.find((item) => String(item.product_id || item.product?.id) === String(pid));
+          const match = data.find((item) => String(item.product_id) === String(pid));
           if (match) setActiveItem(match);
         }
       })
@@ -45,7 +45,7 @@ export default function PendingReviewsPage() {
     if (!form.comment.trim()) { setError('Please write a comment.'); return; }
     setSubmitting(true);
     setError('');
-    const productId = activeItem.product_id || activeItem.product?.id;
+    const productId = activeItem.product_id;
     const orderId = activeItem.order_id;
     try {
       await submitProductReview(productId, {
@@ -54,12 +54,11 @@ export default function PendingReviewsPage() {
         title: form.title,
         comment: form.comment,
       });
-      setSuccessIds((prev) => [...prev, productId]);
       setActiveItem(null);
       showToast('✅ Review submitted! It will appear after approval.');
       // Remove from list
       setPending((prev) => prev.filter(
-        (item) => (item.product_id || item.product?.id) !== productId
+        (item) => !(item.product_id === productId && item.order_id === orderId)
       ));
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to submit. Please try again.');
@@ -118,13 +117,12 @@ export default function PendingReviewsPage() {
         )}
 
         {!loading && pending.map((item) => {
-          const product = item.product || {};
-          const productId = item.product_id || product.id;
-          const img = product.image || product.images?.[0]?.image_url;
-          const isActive = activeItem && (activeItem.product_id || activeItem.product?.id) === productId;
+          const productId = item.product_id;
+          const img = item.product_image;
+          const isActive = activeItem && activeItem.product_id === productId && activeItem.order_id === item.order_id;
 
           return (
-            <div key={productId} style={{
+            <div key={`${productId}-${item.order_id}`} style={{
               background: '#fff', borderRadius: 12, border: '1px solid #e8e4dc',
               marginBottom: 14, overflow: 'hidden',
             }}>
@@ -137,14 +135,14 @@ export default function PendingReviewsPage() {
                   overflow: 'hidden', flexShrink: 0, display: 'flex',
                   alignItems: 'center', justifyContent: 'center', fontSize: 24,
                 }}>
-                  {img ? <img src={img} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '📦'}
+                  {img ? <img src={img} alt={item.product_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '📦'}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#111', marginBottom: 2 }}>
-                    {product.name || 'Product'}
+                    {item.product_name || 'Product'}
                   </div>
                   <div style={{ fontSize: 12, color: '#888' }}>
-                    Order #{item.order_number || item.order_id}
+                    Order {item.order_number || `#${item.order_id}`}
                     {item.delivered_at && ` · Delivered ${new Date(item.delivered_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' })}`}
                   </div>
                 </div>

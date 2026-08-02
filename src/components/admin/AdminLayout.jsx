@@ -194,6 +194,17 @@ export default function AdminLayout({
         }));
       })
       .catch(() => {});
+
+    // Same pagination pattern — reviews awaiting moderation
+    api
+      .get("/admin/reviews/pending")
+      .then((res) => {
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/review-moderation": res.data?.total,
+        }));
+      })
+      .catch(() => {});
   }, []);
 
   const mergedBadges = { ...autoBadges, ...badges };
