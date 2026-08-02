@@ -321,6 +321,7 @@ export default function BuyerNav({ showSearch = false }) {
                 { label: "💰 Apply for Loan", path: "/loans/apply" },
                 { label: "📋 My Loans", path: "/loans/repay" },
                 { label: "📝 Complaints & Refunds", path: "/complaints" },
+                { label: "⭐ Pending Reviews", path: "/reviews/pending" },
                 { label: "🔔 Notifications", path: "/notifications" },
                 { label: "🏪 Become a Seller", path: "/become-a-seller" },
               ].map((item) => (
