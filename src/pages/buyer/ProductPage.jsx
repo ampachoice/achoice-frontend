@@ -755,11 +755,13 @@ export default function ProductPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
 
-  // review form
+  // review form — order_id no longer typed manually; the "Leave a Review"
+  // block on the product page is now read-only guidance pointing to
+  // Pending Reviews, since reviews require a confirmed delivered order.
   const [reviewForm, setReviewForm] = useState({
     rating: 5,
+    title: "",
     comment: "",
-    order_id: "",
   });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
@@ -995,7 +997,7 @@ export default function ProductPage() {
     try {
       await submitProductReview(id, reviewForm);
       setReviewSuccess(true);
-      setReviewForm({ rating: 5, comment: "", order_id: "" });
+      setReviewForm({ rating: 5, title: "", comment: "" });
       const res = await getProductReviews(id);
       const rd = res.data;
       setReviews(rd?.data || rd?.reviews || (Array.isArray(rd) ? rd : []));
@@ -1705,81 +1707,18 @@ export default function ProductPage() {
               {user && (
                 <div className="pp-review-form">
                   <h3>Leave a Review</h3>
-                  {reviewSuccess && (
-                    <div className="pp-review-ok">
-                      ✅ Review submitted! Thank you.
-                    </div>
-                  )}
-                  {reviewError && (
-                    <div className="pp-review-err">⚠️ {reviewError}</div>
-                  )}
-                  <form onSubmit={handleReviewSubmit}>
-                    <div className="pp-review-field">
-                      <label className="pp-review-label">Rating</label>
-                      <select
-                        className="pp-review-select"
-                        value={reviewForm.rating}
-                        onChange={(e) =>
-                          setReviewForm({
-                            ...reviewForm,
-                            rating: Number(e.target.value),
-                          })
-                        }
-                      >
-                        {[5, 4, 3, 2, 1].map((n) => (
-                          <option key={n} value={n}>
-                            {n} Star{n > 1 ? "s" : ""} {"★".repeat(n)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="pp-review-field">
-                      <label className="pp-review-label">
-                    Order ID{" "}
-                    <span style={{ color: "#cc0000", fontWeight: 400 }}>
-                      *required
-                    </span>
-                  </label>
-                  <p style={{ fontSize: 12, color: "#888", margin: "2px 0 6px" }}>
-                    Find your Order ID in My Orders — e.g. ACH-XXXXXXXX
+                  <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, marginBottom: 16 }}>
+                    Reviews can only be left after your order has been delivered.
+                    Head to <strong>Pending Reviews</strong> in your account menu to review
+                    products from your delivered orders.
                   </p>
-                  <input
-                    className="pp-review-input"
-                    type="text"
-                    placeholder="e.g. ACH-XXXXXXXX"
-                    value={reviewForm.order_id}
-                    onChange={(e) =>
-                      setReviewForm({
-                        ...reviewForm,
-                        order_id: e.target.value,
-                      })
-                    }
-                  />
-                    </div>
-                    <div className="pp-review-field">
-                      <label className="pp-review-label">Your Review</label>
-                      <textarea
-                        className="pp-review-textarea"
-                        rows={4}
-                        required
-                        placeholder="Share your honest experience with this product…"
-                        value={reviewForm.comment}
-                        onChange={(e) =>
-                          setReviewForm({
-                            ...reviewForm,
-                            comment: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="pp-review-submit"
-                      disabled={reviewSubmitting || !reviewForm.comment.trim()}
-                    >
-                      {reviewSubmitting ? "Submitting…" : "Submit Review →"}
-                    </button>
-                  </form>
+                  <button
+                    type="button"
+                    className="pp-review-submit"
+                    onClick={() => navigate("/reviews/pending")}
+                  >
+                    Go to Pending Reviews →
+                  </button>
                 </div>
               )}
             </div>

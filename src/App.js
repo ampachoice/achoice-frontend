@@ -81,6 +81,7 @@ import NotificationsPage from './pages/buyer/NotificationsPage';
 import ComplaintsPage  from './pages/buyer/ComplaintsPage';
 import ComplaintDetailPage from './pages/buyer/ComplaintDetailPage';
 import WishlistPage         from './pages/buyer/WishlistPage';
+import PendingReviewsPage   from './pages/buyer/PendingReviewsPage';
 import AddressBookPage from './pages/buyer/AddressBookPage';
 import SellerStorefrontPage from './pages/buyer/SellerStorefrontPage';
 import ContentPage     from './pages/ContentPage';
@@ -113,6 +114,7 @@ import AdminSettingsPage  from './pages/admin/AdminSettingsPage';
 import AdminComplaintsPage from './pages/admin/AdminComplaintsPage';
 import AdminComplaintDetailPage from './pages/admin/AdminComplaintDetailPage';
 import AdminAuditLogPage from './pages/admin/AdminAuditLogPage';
+import AdminReviewModerationPage from './pages/admin/AdminReviewModerationPage';
 import AdminBroadcastsPage from './pages/admin/AdminBroadcastsPage';
 import AdminProductApprovalsPage from './pages/admin/AdminProductApprovalsPage';
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage';
@@ -168,6 +170,7 @@ const router = createBrowserRouter([
       { path: '/complaints',    element: <ProtectedRoute><ComplaintsPage /></ProtectedRoute> },
       { path: '/complaints/:id', element: <ProtectedRoute><ComplaintDetailPage /></ProtectedRoute> },
       { path: '/wishlist',      element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
+      { path: '/reviews/pending', element: <ProtectedRoute><PendingReviewsPage /></ProtectedRoute> },
       { path: '/addresses',     element: <ProtectedRoute><AddressBookPage /></ProtectedRoute> },
       { path: '/sellers/:id',   element: <SellerStorefrontPage /> },
       { path: '/help',          element: <HelpCenterPage /> },
@@ -271,6 +274,7 @@ const router = createBrowserRouter([
           { path: 'complaints',       element: <ProtectedRoute adminOnly><AdminComplaintsPage /></ProtectedRoute> },
           { path: 'complaints/:id',   element: <ProtectedRoute adminOnly><AdminComplaintDetailPage /></ProtectedRoute> },
           { path: 'audit-log',        element: <ProtectedRoute adminOnly><AdminAuditLogPage /></ProtectedRoute> },
+          { path: 'review-moderation', element: <ProtectedRoute adminOnly><AdminReviewModerationPage /></ProtectedRoute> },
           { path: 'broadcasts',       element: <ProtectedRoute adminOnly><AdminBroadcastsPage /></ProtectedRoute> },
         ]
       },

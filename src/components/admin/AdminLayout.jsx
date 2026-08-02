@@ -25,6 +25,7 @@ const SIDEBAR_ITEMS = [
   { icon: "🎫", label: "Flash Sale Requests", path: "/admin/flash-sale-requests" },
   { icon: "📦", label: "Orders", path: "/admin/orders" },
   { icon: "💰", label: "Loans", path: "/admin/loans" },
+  { icon: "⭐", label: "Review Moderation", path: "/admin/review-moderation" },
 ];
 
 // Configuration / setup items — moved into the top-right Settings dropdown
