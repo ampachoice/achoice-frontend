@@ -622,14 +622,6 @@ const router = createBrowserRouter([
               </ProtectedRoute>
             ),
           },
-          {
-            path: "notifications",
-            element: (
-              <ProtectedRoute adminOnly>
-                <AdminNotificationsPage />
-              </ProtectedRoute>
-            ),
-          },
         ],
       },
 
