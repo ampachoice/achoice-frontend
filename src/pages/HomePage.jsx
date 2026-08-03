@@ -327,6 +327,9 @@ export default function HomePage() {
   const [spotlightSellers, setSpotlightSellers] = useState([]);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
 
+  // Customer testimonials — live approved reviews, replaces hardcoded list
+  const [testimonials, setTestimonials] = useState([]);
+
   // Genuine admin-curated Featured Products row (GET /products/featured) —
   // distinct from the full searchable catalog section further down the page.
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -457,6 +460,14 @@ export default function HomePage() {
       )
       .catch(() => {})
       .finally(() => setSpotlightLoading(false));
+
+    // Customer testimonials — top 20 recent approved reviews platform-wide
+    api
+      .get("/reviews/recent?limit=20")
+      .then((r) =>
+        setTestimonials(Array.isArray(r.data?.reviews) ? r.data.reviews : [])
+      )
+      .catch(() => {});
 
     // Genuine admin-curated Featured Products (is_featured, no expiry) —
     // separate from Flash Sales and from the full searchable catalog below.
@@ -1824,7 +1835,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials — hidden entirely if no approved reviews exist yet */}
+      {testimonials.length > 0 && (
       <section
         className="hp-section"
         style={{ padding: "56px 40px", backgroundColor: "#f7f5f0" }}
@@ -1833,40 +1845,30 @@ export default function HomePage() {
         <h2 className="hp-section-title" style={s.sectionTitle}>
           What Our Customers Say
         </h2>
-        <div className="hp-test-grid" style={s.testGrid}>
-          {[
-            {
-              name: "Chinedu Okafor",
-              location: "Lagos",
-              text: "Buying yams and vegetables here has been stress-free and always fresh. Delivery is prompt too.",
-            },
-            {
-              name: "Amina Yusuf",
-              location: "Kano",
-              text: "I love how affordable their foodstuff is compared to the market. Great for family shopping.",
-            },
-            {
-              name: "Bola Adeyemi",
-              location: "Ibadan",
-              text: "Their produce is very healthy, and I have never had complaints. Highly recommend for bulk buyers.",
-            },
-            {
-              name: "Ngozi Eze",
-              location: "Enugu",
-              text: "As a caterer, I rely on them for large orders. The quality and freshness are always consistent.",
-            },
-          ].map((t) => (
+        <div
+          className="hp-test-scroll"
+          style={{
+            display: "flex",
+            gap: 16,
+            overflowX: "auto",
+            paddingBottom: 12,
+            scrollSnapType: "x proximity",
+          }}
+        >
+          {testimonials.map((t) => (
             <div
-              key={t.name}
+              key={t.id}
               style={{
                 background: "#fff",
                 borderRadius: 10,
                 padding: 20,
                 border: "1px solid #e8e4dc",
+                flex: "0 0 260px",
+                scrollSnapAlign: "start",
               }}
             >
               <div style={{ color: "#f0c050", fontSize: 14, marginBottom: 10 }}>
-                ★★★★★
+                {"★".repeat(t.rating)}{"☆".repeat(5 - t.rating)}
               </div>
               <p
                 style={{
@@ -1877,7 +1879,7 @@ export default function HomePage() {
                   fontStyle: "italic",
                 }}
               >
-                "{t.text}"
+                "{t.comment}"
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div
@@ -1895,14 +1897,14 @@ export default function HomePage() {
                     flexShrink: 0,
                   }}
                 >
-                  {t.name.charAt(0)}
+                  {(t.user?.name || "?").charAt(0)}
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>
-                    {t.name}
+                    {t.user?.name || "Anonymous"}
                   </div>
                   <div style={{ fontSize: 11, color: "#888" }}>
-                    {t.location}
+                    {t.product?.name}
                   </div>
                 </div>
               </div>
@@ -1910,6 +1912,7 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Newsletter */}
       <section
