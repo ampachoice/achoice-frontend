@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AdminUserSearchBar from "./AdminUserSearchBar";
+import NotificationBell from "../buyer/NotificationBell";
 import api from "../../services/api";
 
 const LOGO_PATH = "/achoice logo.png";
@@ -406,7 +407,12 @@ export default function AdminLayout({
                 >
                   ☰
                 </button>
-                {settingsMenu}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={s.bellWrap}>
+                    <NotificationBell to="/admin/notifications" />
+                  </div>
+                  {settingsMenu}
+                </div>
               </div>
 
               {/* Row 1.5: user search, own row for width */}
@@ -440,6 +446,9 @@ export default function AdminLayout({
               <div style={s.headerRight}>
                 {dateNode}
                 {headerActions}
+                <div style={s.bellWrap}>
+                  <NotificationBell to="/admin/notifications" />
+                </div>
                 {settingsMenu}
               </div>
             </>
@@ -615,6 +624,16 @@ const s = {
     background: "#fff",
     fontSize: 18,
     cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellWrap: {
+    width: 40,
+    height: 40,
+    flexShrink: 0,
+    borderRadius: 10,
+    background: "#1f4d1f",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Bell } from "lucide-react";
 import api from "../../services/api";
 
-export default function NotificationBell() {
+export default function NotificationBell({ to = "/notifications" }) {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -34,7 +34,7 @@ export default function NotificationBell() {
 
   return (
     <div
-      onClick={() => navigate("/notifications")}
+      onClick={() => navigate(to)}
       style={{
         position: "relative",
         cursor: "pointer",
