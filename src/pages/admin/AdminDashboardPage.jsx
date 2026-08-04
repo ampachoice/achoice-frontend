@@ -17,6 +17,7 @@ function BarChart({ data, color = "#1f4d1f" }) {
       const dash = dashRes.data;
       setOverview(dash.overview);
       setLoans(dash.loans);
+      setFinancials(dash.financials);
       setRecentOrders(dash.recent_orders || []);
       setRecentLoans(dash.recent_loans || []);
       setRevenueStats(revRes.data);
@@ -144,6 +145,7 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const [overview, setOverview] = useState(null);
   const [loans, setLoans] = useState(null);
+  const [financials, setFinancials] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentLoans, setRecentLoans] = useState([]);
   const [revenueStats, setRevenueStats] = useState(null);
@@ -157,6 +159,7 @@ export default function AdminDashboardPage() {
         const dash = dashRes.data;
         setOverview(dash.overview);
         setLoans(dash.loans);
+        setFinancials(dash.financials);
         setRecentOrders(dash.recent_orders || []);
         setRecentLoans(dash.recent_loans || []);
         setRevenueStats(revRes.data);
@@ -196,6 +199,7 @@ export default function AdminDashboardPage() {
     const dash = dashRes.data;
     setOverview(dash.overview);
     setLoans(dash.loans);
+    setFinancials(dash.financials);
     setRecentOrders(dash.recent_orders || []);
     setRecentLoans(dash.recent_loans || []);
     setRevenueStats(revRes.data);
@@ -250,6 +254,18 @@ export default function AdminDashboardPage() {
                   value: `₦${Number(overview?.total_revenue || 0).toLocaleString()}`,
                   icon: "💵",
                   color: "#1f4d1f",
+                },
+                {
+                  label: "Total Commission Earned",
+                  value: `₦${Number(financials?.total_commission_earned || 0).toLocaleString()}`,
+                  icon: "🪙",
+                  color: "#1f4d1f",
+                },
+                {
+                  label: "Total Interest Earned",
+                  value: `₦${Number(financials?.total_interest_earned || 0).toLocaleString()}`,
+                  icon: "📈",
+                  color: "#c8860a",
                 },
                 {
                   label: "Active Loans",
