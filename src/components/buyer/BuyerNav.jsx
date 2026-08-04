@@ -18,6 +18,21 @@ const CSS = `
   }
 `;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BuyerNav — the single shared desktop/mobile header for every buyer page.
+//
+// Extracted directly from ProductPage.jsx's nav, which was the one page
+// where this actually rendered correctly and consistently. Every other
+// buyer page had built its own slightly-different version independently —
+// different logo paths (some broken), some missing the cart icon or Become
+// a Seller button, some missing BuyerDropdown entirely, some with icons
+// overlapping. This component exists so there is exactly one nav to
+// maintain instead of six-plus slightly different copies.
+//
+// Usage: <BuyerNav /> — no props needed, it's fully self-contained.
+// Pass showSearch to opt in to the category+search bar (e.g. <BuyerNav showSearch />
+// on the products listing page). Defaults to false so it's hidden everywhere else.
+// ─────────────────────────────────────────────────────────────────────────────
 export default function BuyerNav({ showSearch = false }) {
   const navigate = useNavigate();
   const logout = useLogout();
@@ -37,18 +52,14 @@ export default function BuyerNav({ showSearch = false }) {
     };
     sync();
     window.addEventListener("storage", sync);
-    window.addEventListener("cartUpdated", sync);
-    return () => {
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("cartUpdated", sync);
-    };
+    return () => window.removeEventListener("storage", sync);
   }, []);
 
   useEffect(() => {
     if (!showSearch) return;
     getCategories()
       .then((res) => setCategories(["All", ...(res.data || [])]))
-      .catch((err) => console.error("Category fetch failed:", err));
+      .catch(() => {});
   }, [showSearch]);
 
   const handleSearchSubmit = (e) => {
@@ -124,6 +135,7 @@ export default function BuyerNav({ showSearch = false }) {
           </form>
         )}
 
+        {/* Right side actions */}
         <div
           style={{
             display: "flex",
@@ -227,6 +239,7 @@ export default function BuyerNav({ showSearch = false }) {
               </div>
             )}
           </div>
+          {/* Mobile hamburger — reveals the actions above via the mobile menu below, which already duplicates Become a Seller / Sign In / Get Started */}
           <button
             className="bn-hamburger-btn"
             style={{
@@ -245,6 +258,7 @@ export default function BuyerNav({ showSearch = false }) {
         </div>
       </nav>
 
+      {/* Mobile dropdown menu */}
       {menuOpen && (
         <div
           style={{

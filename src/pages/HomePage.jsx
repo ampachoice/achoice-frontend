@@ -6,12 +6,15 @@ import api from "../services/api";
 import farmerImg from "../assets/farmer.jpg";
 import CategorySidebar from "../components/buyer/CategorySidebar";
 import NotificationBell from "../components/buyer/NotificationBell";
-import { useAuth } from "../context/AuthContext";
-import { getHomePathForUser } from "../utils/authRedirect";
+
+
 
 const LOGO_PATH = "/achoice logo.png";
 const PRODUCTS_PER_PAGE = 8;
 
+// Category quick-links / rails — slug must match the backend's product
+// `category` enum exactly (grains, vegetables, fruits, tubers, livestock,
+// poultry, fishery, dairy, processed) so GET /products/category/{slug} works.
 const CATEGORIES = [
   { slug: "grains", label: "Grains", icon: "🌾" },
   { slug: "vegetables", label: "Vegetables", icon: "🥬" },
@@ -25,6 +28,7 @@ const CATEGORIES = [
 ];
 const RAIL_PRODUCTS_LIMIT = 12;
 
+// Default carousel slides — replaced by admin banner settings
 const DEFAULT_SLIDES = [
   {
     image: farmerImg,
@@ -288,19 +292,16 @@ const injectCSS = () => {
       .hp-carousel-slide { height: 340px; }
       .hp-carousel-title { font-size: 22px !important; }
     }
+
+    /* Left category sidebar (Phase 19) now lives in the shared
+       CategorySidebar component (components/buyer/CategorySidebar.jsx),
+       used here and on ProductPage.jsx. */
   `;
   document.head.appendChild(style);
 };
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const handleAccountClick = () => {
-    const destination = getHomePathForUser(user);
-    navigate(destination);
-  };
-
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -315,25 +316,34 @@ export default function HomePage() {
   const [newsletterMsg, setNewsletterMsg] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Category rails — { [slug]: { loading, products } }
   const [categoryRails, setCategoryRails] = useState({});
 
+  // Flash sales — fetched with a client timestamp so the countdown can tick
+  // locally between polls without drifting (server seconds_remaining is the source of truth).
   const [flashSales, setFlashSales] = useState([]);
   const [flashSalesFetchedAt, setFlashSalesFetchedAt] = useState(null);
-  const [tick, setTick] = useState(0);
+  const [tick, setTick] = useState(0); // increments every second to force countdown re-render
 
+  // Top Seller Spotlight
   const [spotlightSellers, setSpotlightSellers] = useState([]);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
 
+  // Customer testimonials — live approved reviews, replaces hardcoded list
   const [testimonials, setTestimonials] = useState([]);
 
+  // Genuine admin-curated Featured Products row (GET /products/featured) —
+  // distinct from the full searchable catalog section further down the page.
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [featuredLoading, setFeaturedLoading] = useState(true);
 
+  // Carousel state
   const [currentSlide, setCurrentSlide] = useState(0);
   const autoPlayRef = useRef(null);
 
   const token = localStorage.getItem("token");
 
+  // Build slides from banner settings or use defaults
   const slides = (() => {
     if (
       bannerSetting?.slides &&
@@ -342,6 +352,7 @@ export default function HomePage() {
     ) {
       return bannerSetting.slides;
     }
+    // Single banner setting — make it slide 1, rest are defaults
     const s1 = {
       ...DEFAULT_SLIDES[0],
       image: bannerSetting?.image_url || farmerImg,
@@ -391,6 +402,8 @@ export default function HomePage() {
       .then((r) => setSiteSetting(r.data))
       .catch(() => {});
 
+    // Category rails — fetch each category independently so a slow/empty
+    // one never blocks the others; an empty category is simply hidden.
     CATEGORIES.forEach(({ slug }) => {
       setCategoryRails((prev) => ({
         ...prev,
@@ -419,6 +432,8 @@ export default function HomePage() {
         );
     });
 
+    // Flash sales — poll every 45s (within the 30-60s window) since
+    // quantity_left can hit 0 before the countdown does.
     const fetchFlashSales = () => {
       api
         .get("/flash-sales")
@@ -434,6 +449,7 @@ export default function HomePage() {
     const flashPollRef = setInterval(fetchFlashSales, 45000);
     const tickRef = setInterval(() => setTick((t) => t + 1), 1000);
 
+    // Top Seller Spotlight
     setSpotlightLoading(true);
     api
       .get("/sellers/spotlight?limit=6")
@@ -447,6 +463,7 @@ export default function HomePage() {
       .catch(() => {})
       .finally(() => setSpotlightLoading(false));
 
+    // Customer testimonials — top 20 recent approved reviews platform-wide
     api
       .get("/reviews/recent?limit=20")
       .then((r) =>
@@ -454,6 +471,8 @@ export default function HomePage() {
       )
       .catch(() => {});
 
+    // Genuine admin-curated Featured Products (is_featured, no expiry) —
+    // separate from Flash Sales and from the full searchable catalog below.
     setFeaturedLoading(true);
     api
       .get("/products/featured")
@@ -491,6 +510,7 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, [currentPage, search]);
 
+  // Restart autoplay when slide changes manually
   const handleManualNav = (idx) => {
     goToSlide(idx);
     startAutoPlay();
@@ -512,6 +532,13 @@ export default function HomePage() {
     setTimeout(() => setNewsletterMsg(""), 4000);
   };
 
+  // Live countdown for a flash sale: server gave us seconds_remaining as of
+  // flashSalesFetchedAt, so we tick it down locally between polls (30-60s cadence)
+  // instead of re-deriving it from ends_at, per the "don't calculate client-side" note.
+  // Live countdown for a flash sale: server gave us seconds_remaining as of
+  // flashSalesFetchedAt, so we tick it down locally between polls (30-60s cadence)
+  // instead of re-deriving it from ends_at, per the "don't calculate client-side" note.
+  // `tick` (incremented every second) is the dependency that drives the re-render.
   const liveFlashSales = useMemo(() => {
     return flashSales
       .map((sale) => {
@@ -557,6 +584,7 @@ export default function HomePage() {
     return "★".repeat(r) + "☆".repeat(5 - r);
   };
 
+  // Compact product card used inside the horizontal category rails.
   const renderRailCard = (product) => {
     const imageUrl =
       product.images?.[0]?.image_url ||
@@ -797,7 +825,7 @@ export default function HomePage() {
               Become a Seller
             </button>
             {token ? (
-              <button style={s.btnSolid} onClick={handleAccountClick}>
+              <button style={s.btnSolid} onClick={() => navigate("/orders")}>
                 My Account
               </button>
             ) : (
@@ -858,7 +886,7 @@ export default function HomePage() {
               <button
                 style={{ ...s.btnSolid, flex: 1 }}
                 onClick={() => {
-                  handleAccountClick();
+                  navigate("/orders");
                   setMenuOpen(false);
                 }}
               >
@@ -890,6 +918,11 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* ── Left category sidebar (Phase 19) — persistent quick-nav for
+           categories + shortcuts into the Loans and Contact sections that
+           already exist further down this page. Shared component also used
+           on ProductPage.jsx; handles its own mobile drawer + top-left
+           trigger, so no page-specific mobile handling needed here. */}
       <div style={{ display: "flex", alignItems: "flex-start" }}>
         <CategorySidebar
           onLoansClick={() => scrollToSection("loans")}
@@ -899,7 +932,7 @@ export default function HomePage() {
 
         <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
 
-      {/* HERO CAROUSEL */}
+      {/* ✅ HERO CAROUSEL — Auto-slides every 5 seconds */}
       <div className="hp-carousel">
         <div
           className="hp-carousel-track"
@@ -939,6 +972,7 @@ export default function HomePage() {
           ))}
         </div>
 
+        {/* Prev / Next arrows */}
         <button
           className="hp-carousel-prev"
           onClick={() => handleManualNav(currentSlide - 1)}
@@ -952,6 +986,7 @@ export default function HomePage() {
           ›
         </button>
 
+        {/* Dots */}
         <div className="hp-carousel-dots">
           {slides.map((_, idx) => (
             <button
@@ -978,7 +1013,7 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* Flash Sales */}
+      {/* Flash Sales — hidden entirely if none are currently active */}
       {liveFlashSales.length > 0 && (
         <section className="hp-flash-section">
           <div className="hp-flash-header">
@@ -1473,7 +1508,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products — admin-curated (is_featured), no expiry, distinct from Flash Sales */}
       {!featuredLoading && featuredProducts.length > 0 && (
         <section className="hp-rail-section">
           <div className="hp-rail-header">
@@ -1490,7 +1525,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* Category Rails */}
+      {/* Category Rails — one shelf per category, hidden if that category has no products yet */}
       {CATEGORIES.map((cat) => {
         const rail = categoryRails[cat.slug];
         if (!rail || rail.loading || rail.products.length === 0) return null;
@@ -1802,7 +1837,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Testimonials — hidden entirely if no approved reviews exist yet */}
       {testimonials.length > 0 && (
       <section
         className="hp-section"
@@ -2239,6 +2274,8 @@ export default function HomePage() {
 }
 
 const s = {
+  // Left category sidebar styles now live in the shared CategorySidebar
+  // component (components/buyer/CategorySidebar.jsx).
   topBar: {
     background: "#1f4d1f",
     color: "#fff",
