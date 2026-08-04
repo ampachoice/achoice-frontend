@@ -1,11 +1,29 @@
-import { useState, useEffect } from "react"
-import PullToRefresh from 'react-simple-pull-to-refresh'
-import { useNavigate } from "react-router-dom"
-import api from "../../services/api"
-import AdminLayout from "../../components/admin/AdminLayout"
+import { useState, useEffect, useRef } from "react";
+import PullToRefresh from 'react-simple-pull-to-refresh';
+import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import AdminLayout from "../../components/admin/AdminLayout";
 
+
+// ── Tiny bar chart (pure CSS) ─────────────────────────────────────────────────
 function BarChart({ data, color = "#1f4d1f" }) {
-  const max = Math.max(...data.map((d) => d.value), 1)
+  const max = Math.max(...data.map((d) => d.value), 1);
+
+  const handleRefresh = async () => {
+      const [dashRes, revRes] = await Promise.all([
+        api.get("/admin/dashboard"),
+        api.get("/admin/stats/revenue"),
+      ]);
+      const dash = dashRes.data;
+      setOverview(dash.overview);
+      setLoans(dash.loans);
+      setFinancials(dash.financials);
+      setRecentOrders(dash.recent_orders || []);
+      setRecentLoans(dash.recent_loans || []);
+      setRevenueStats(revRes.data);
+    };
+
+    const isMobile = window.innerWidth < 768;
 
   return (
     <div
@@ -14,7 +32,7 @@ function BarChart({ data, color = "#1f4d1f" }) {
         alignItems: "flex-end",
         gap: 6,
         height: 120,
-        padding: "0 4px"
+        padding: "0 4px",
       }}
     >
       {data.map((d, i) => (
@@ -25,7 +43,7 @@ function BarChart({ data, color = "#1f4d1f" }) {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 4
+            gap: 4,
           }}
         >
           <div style={{ fontSize: 9, color: "#888", whiteSpace: "nowrap" }}>
@@ -38,7 +56,7 @@ function BarChart({ data, color = "#1f4d1f" }) {
               borderRadius: "3px 3px 0 0",
               height: `${Math.max((d.value / max) * 90, d.value > 0 ? 4 : 0)}px`,
               transition: "height 0.5s ease",
-              opacity: 0.85
+              opacity: 0.85,
             }}
           />
           <div style={{ fontSize: 9, color: "#888", whiteSpace: "nowrap" }}>
@@ -47,22 +65,23 @@ function BarChart({ data, color = "#1f4d1f" }) {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
+// ── Tiny line chart (SVG) ─────────────────────────────────────────────────────
 function LineChart({ data, color = "#f0c050" }) {
   const w = 340,
     h = 100,
-    pad = 16
-  const max = Math.max(...data.map((d) => d.value), 1)
+    pad = 16;
+  const max = Math.max(...data.map((d) => d.value), 1);
   const pts = data.map((d, i) => ({
     x: pad + (i / Math.max(data.length - 1, 1)) * (w - pad * 2),
-    y: h - pad - (d.value / max) * (h - pad * 2)
-  }))
+    y: h - pad - (d.value / max) * (h - pad * 2),
+  }));
   const path = pts
     .map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`)
-    .join(" ")
-  const area = `${path} L${pts[pts.length - 1].x},${h - pad} L${pts[0].x},${h - pad} Z`
+    .join(" ");
+  const area = `${path} L${pts[pts.length - 1].x},${h - pad} L${pts[0].x},${h - pad} Z`;
   return (
     <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ overflow: "visible" }}>
       <defs>
@@ -104,7 +123,7 @@ function LineChart({ data, color = "#f0c050" }) {
         </text>
       ))}
     </svg>
-  )
+  );
 }
 
 const MONTHS = [
@@ -119,35 +138,35 @@ const MONTHS = [
   "Sep",
   "Oct",
   "Nov",
-  "Dec"
-]
+  "Dec",
+];
 
 export default function AdminDashboardPage() {
-  const navigate = useNavigate()
-  const [overview, setOverview] = useState(null)
-  const [loans, setLoans] = useState(null)
-  const [financials, setFinancials] = useState(null)
-  const [recentOrders, setRecentOrders] = useState([])
-  const [recentLoans, setRecentLoans] = useState([])
-  const [revenueStats, setRevenueStats] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate();
+  const [overview, setOverview] = useState(null);
+  const [loans, setLoans] = useState(null);
+  const [financials, setFinancials] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentLoans, setRecentLoans] = useState([]);
+  const [revenueStats, setRevenueStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}")
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
     Promise.all([api.get("/admin/dashboard"), api.get("/admin/stats/revenue")])
       .then(([dashRes, revRes]) => {
-        const dash = dashRes.data
-        setOverview(dash.overview)
-        setLoans(dash.loans)
-        setFinancials(dash.financials)
-        setRecentOrders(dash.recent_orders || [])
-        setRecentLoans(dash.recent_loans || [])
-        setRevenueStats(revRes.data)
+        const dash = dashRes.data;
+        setOverview(dash.overview);
+        setLoans(dash.loans);
+        setFinancials(dash.financials);
+        setRecentOrders(dash.recent_orders || []);
+        setRecentLoans(dash.recent_loans || []);
+        setRevenueStats(revRes.data);
       })
       .catch((err) => console.error(err))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
   const getStatusStyle = (status) =>
     ({
@@ -158,359 +177,344 @@ export default function AdminDashboardPage() {
       completed: { background: "#f0f0f0", color: "#555" },
       delivered: { background: "#eafaf0", color: "#1a7a3a" },
       shipped: { background: "#e7f7ff", color: "#0077aa" },
-      processing: { background: "#fff8e7", color: "#b36b00" }
-    })[status] || { background: "#f0f0f0", color: "#555" }
+      processing: { background: "#fff8e7", color: "#b36b00" },
+    })[status] || { background: "#f0f0f0", color: "#555" };
 
+  // Build chart data from monthly_revenue
   const buildChartData = (monthly) => {
-    if (!monthly?.length) return []
+    if (!monthly?.length) return [];
     return [...monthly].reverse().map((m) => ({
       label: MONTHS[m.month - 1],
-      value: Number(m.revenue || 0)
-    }))
-  }
+      value: Number(m.revenue || 0),
+    }));
+  };
 
-  const chartData = buildChartData(revenueStats?.monthly_revenue)
+  const chartData = buildChartData(revenueStats?.monthly_revenue);
 
   const handleRefresh = async () => {
     const [dashRes, revRes] = await Promise.all([
       api.get("/admin/dashboard"),
-      api.get("/admin/stats/revenue")
-    ])
-    const dash = dashRes.data
-    setOverview(dash.overview)
-    setLoans(dash.loans)
-    setFinancials(dash.financials)
-    setRecentOrders(dash.recent_orders || [])
-    setRecentLoans(dash.recent_loans || [])
-    setRevenueStats(revRes.data)
-  }
+      api.get("/admin/stats/revenue"),
+    ]);
+    const dash = dashRes.data;
+    setOverview(dash.overview);
+    setLoans(dash.loans);
+    setFinancials(dash.financials);
+    setRecentOrders(dash.recent_orders || []);
+    setRecentLoans(dash.recent_loans || []);
+    setRevenueStats(revRes.data);
+  };
 
-  const isMobile = window.innerWidth < 768
-
-  const statCardsConfig = [
-    {
-      label: "Total Buyers",
-      value: overview?.total_buyers,
-      icon: "👥",
-      color: "#1a4fa0",
-      path: "/admin/buyers"
-    },
-    {
-      label: "Total Sellers",
-      value: overview?.total_sellers,
-      icon: "🏪",
-      color: "#1f4d1f",
-      path: "/admin/sellers"
-    },
-    {
-      label: "Total Products",
-      value: overview?.total_products,
-      icon: "🌾",
-      color: "#c8860a",
-      path: "/admin/products"
-    },
-    {
-      label: "Total Orders",
-      value: overview?.total_orders,
-      icon: "📦",
-      color: "#7b2d8b",
-      path: "/admin/orders"
-    },
-    {
-      label: "Pending Orders",
-      value: overview?.pending_orders,
-      icon: "⏳",
-      color: "#cc0000",
-      path: "/admin/orders?status=pending"
-    },
-    {
-      label: "Total Revenue",
-      value: `₦${Number(overview?.total_revenue || 0).toLocaleString()}`,
-      icon: "💵",
-      color: "#1f4d1f",
-      path: "/admin/finance/revenue"
-    },
-    {
-      label: "Total Commission Earned",
-      value: `₦${Number(financials?.total_commission_earned || 0).toLocaleString()}`,
-      icon: "🪙",
-      color: "#1f4d1f",
-      path: "/admin/finance/commissions"
-    },
-    {
-      label: "Total Interest Earned",
-      value: `₦${Number(financials?.total_interest_earned || 0).toLocaleString()}`,
-      icon: "📈",
-      color: "#c8860a",
-      path: "/admin/finance/interest"
-    },
-    {
-      label: "Active Loans",
-      value: loans?.active_loans,
-      icon: "🔄",
-      color: "#1a4fa0",
-      path: "/admin/loans?status=active"
-    },
-    {
-      label: "Total Disbursed",
-      value: `₦${Number(loans?.total_disbursed || 0).toLocaleString()}`,
-      icon: "💸",
-      color: "#c8860a",
-      path: "/admin/loans?type=disbursed"
-    },
-    {
-      label: "Total Repaid",
-      value: `₦${Number(loans?.total_repaid || 0).toLocaleString()}`,
-      icon: "✅",
-      color: "#1f4d1f",
-      path: "/admin/loans?type=repaid"
-    }
-  ]
-
+  const isMobile = window.innerWidth < 768;
   const pageContent = (
     <AdminLayout
       title="Dashboard"
       subtitle={`Welcome back, ${user.name || "Admin"}`}
       showDate
     >
-      {loading ? (
-        <p style={s.loading}>Loading dashboard...</p>
-      ) : (
-        <>
-          <div style={s.statsGrid}>
-            {statCardsConfig.map((stat) => (
-              <div
-                key={stat.label}
-                style={{ ...s.statCard, cursor: "pointer" }}
-                onClick={() => navigate(stat.path)}
-              >
-                <div style={s.statTop}>
-                  <div style={s.statLabel}>{stat.label}</div>
-                  <div style={s.statIcon}>{stat.icon}</div>
-                </div>
-                <div style={{ ...s.statValue, color: stat.color }}>
-                  {stat.value ?? 0}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {chartData.length > 0 && (
-            <div style={s.chartsRow}>
-              <div style={s.chartCard}>
-                <div style={s.chartHeader}>
-                  <div>
-                    <div style={s.chartTitle}>Monthly Sales Revenue</div>
-                    <div style={s.chartSub}>
-                      Last {chartData.length} months
-                    </div>
+        {loading ? (
+          <p style={s.loading}>Loading dashboard...</p>
+        ) : (
+          <>
+            {/* ── Stats Grid ── */}
+            <div style={s.statsGrid}>
+              {[
+                {
+                  label: "Total Buyers",
+                  value: overview?.total_buyers,
+                  icon: "👥",
+                  color: "#1a4fa0",
+                },
+                {
+                  label: "Total Sellers",
+                  value: overview?.total_sellers,
+                  icon: "🏪",
+                  color: "#1f4d1f",
+                },
+                {
+                  label: "Total Products",
+                  value: overview?.total_products,
+                  icon: "🌾",
+                  color: "#c8860a",
+                },
+                {
+                  label: "Total Orders",
+                  value: overview?.total_orders,
+                  icon: "📦",
+                  color: "#7b2d8b",
+                },
+                {
+                  label: "Pending Orders",
+                  value: overview?.pending_orders,
+                  icon: "⏳",
+                  color: "#cc0000",
+                },
+                {
+                  label: "Total Revenue",
+                  value: `₦${Number(overview?.total_revenue || 0).toLocaleString()}`,
+                  icon: "💵",
+                  color: "#1f4d1f",
+                },
+                {
+                  label: "Total Commission Earned",
+                  value: `₦${Number(financials?.total_commission_earned || 0).toLocaleString()}`,
+                  icon: "🪙",
+                  color: "#1f4d1f",
+                },
+                {
+                  label: "Total Interest Earned",
+                  value: `₦${Number(financials?.total_interest_earned || 0).toLocaleString()}`,
+                  icon: "📈",
+                  color: "#c8860a",
+                },
+                {
+                  label: "Active Loans",
+                  value: loans?.active_loans,
+                  icon: "🔄",
+                  color: "#1a4fa0",
+                },
+                {
+                  label: "Total Disbursed",
+                  value: `₦${Number(loans?.total_disbursed || 0).toLocaleString()}`,
+                  icon: "💸",
+                  color: "#c8860a",
+                },
+                {
+                  label: "Total Repaid",
+                  value: `₦${Number(loans?.total_repaid || 0).toLocaleString()}`,
+                  icon: "✅",
+                  color: "#1f4d1f",
+                },
+              ].map((stat) => (
+                <div key={stat.label} style={s.statCard}>
+                  <div style={s.statTop}>
+                    <div style={s.statLabel}>{stat.label}</div>
+                    <div style={s.statIcon}>{stat.icon}</div>
                   </div>
-                  <div style={s.chartBadge}>Bar</div>
-                </div>
-                <BarChart data={chartData} color="#1f4d1f" />
-              </div>
-
-              <div style={s.chartCard}>
-                <div style={s.chartHeader}>
-                  <div>
-                    <div style={s.chartTitle}>Revenue Trend</div>
-                    <div style={s.chartSub}>
-                      Last {chartData.length} months
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      ...s.chartBadge,
-                      background: "#fff8e7",
-                      color: "#b36b00"
-                    }}
-                  >
-                    Line
+                  <div style={{ ...s.statValue, color: stat.color }}>
+                    {stat.value ?? 0}
                   </div>
                 </div>
-                <LineChart data={chartData} color="#f0c050" />
-              </div>
+              ))}
             </div>
-          )}
 
-          {revenueStats && (
-            <div style={s.topRow}>
-              <div style={s.topCard}>
-                <div style={s.activityHeader}>
-                  <h2 style={s.activityTitle}>🌾 Top Products</h2>
-                </div>
-                {revenueStats.top_products?.map((p, i) => (
-                  <div key={p.id} style={s.topItem}>
-                    <div style={s.topRank}>#{i + 1}</div>
-                    <div style={s.topInfo}>
-                      <div style={s.topName}>{p.name}</div>
-                      <div style={s.topMeta}>
-                        {p.category} · {p.order_items_count} sold
+            {/* ── Charts Row ── */}
+            {chartData.length > 0 && (
+              <div style={s.chartsRow}>
+                {/* Bar chart — sales volume */}
+                <div style={s.chartCard}>
+                  <div style={s.chartHeader}>
+                    <div>
+                      <div style={s.chartTitle}>Monthly Sales Revenue</div>
+                      <div style={s.chartSub}>
+                        Last {chartData.length} months
                       </div>
                     </div>
-                    <div style={s.topValue}>
-                      ₦{Number(p.price).toLocaleString()}
+                    <div style={s.chartBadge}>Bar</div>
+                  </div>
+                  <BarChart data={chartData} color="#1f4d1f" />
+                </div>
+
+                {/* Line chart — revenue trend */}
+                <div style={s.chartCard}>
+                  <div style={s.chartHeader}>
+                    <div>
+                      <div style={s.chartTitle}>Revenue Trend</div>
+                      <div style={s.chartSub}>
+                        Last {chartData.length} months
+                      </div>
                     </div>
+                    <div
+                      style={{
+                        ...s.chartBadge,
+                        background: "#fff8e7",
+                        color: "#b36b00",
+                      }}
+                    >
+                      Line
+                    </div>
+                  </div>
+                  <LineChart data={chartData} color="#f0c050" />
+                </div>
+              </div>
+            )}
+
+            {/* ── Top Products & Top Sellers ── */}
+            {revenueStats && (
+              <div style={s.topRow}>
+                {/* Top Products */}
+                <div style={s.topCard}>
+                  <div style={s.activityHeader}>
+                    <h2 style={s.activityTitle}>🌾 Top Products</h2>
+                  </div>
+                  {revenueStats.top_products?.map((p, i) => (
+                    <div key={p.id} style={s.topItem}>
+                      <div style={s.topRank}>#{i + 1}</div>
+                      <div style={s.topInfo}>
+                        <div style={s.topName}>{p.name}</div>
+                        <div style={s.topMeta}>
+                          {p.category} · {p.order_items_count} sold
+                        </div>
+                      </div>
+                      <div style={s.topValue}>
+                        ₦{Number(p.price).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Top Sellers */}
+                <div style={s.topCard}>
+                  <div style={s.activityHeader}>
+                    <h2 style={s.activityTitle}>🏪 Top Sellers</h2>
+                    <span
+                      style={s.viewAll}
+                      onClick={() => navigate("/admin/sellers")}
+                    >
+                      View all
+                    </span>
+                  </div>
+                  {revenueStats.top_sellers?.map((sel, i) => (
+                    <div key={sel.id} style={s.topItem}>
+                      <div style={s.topRank}>#{i + 1}</div>
+                      <div style={s.topInfo}>
+                        <div style={s.topName}>{sel.business_name}</div>
+                        <div style={s.topMeta}>{sel.user?.name}</div>
+                      </div>
+                      <div style={s.topValue}>
+                        ₦{Number(sel.earnings_balance).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Loan Summary ── */}
+            {loans && (
+              <div style={s.loanSummaryRow}>
+                {[
+                  {
+                    label: "Pending Applications",
+                    value: loans.pending_applications,
+                    color: "#b36b00",
+                    bg: "#fff8e7",
+                  },
+                  {
+                    label: "Active Loans",
+                    value: loans.active_loans,
+                    color: "#1a4fa0",
+                    bg: "#e7f0ff",
+                  },
+                  {
+                    label: "Total Disbursed",
+                    value: `₦${Number(loans.total_disbursed).toLocaleString()}`,
+                    color: "#1f4d1f",
+                    bg: "#eafaf0",
+                  },
+                  {
+                    label: "Outstanding Balance",
+                    value: `₦${Number(loans.outstanding).toLocaleString()}`,
+                    color: "#cc0000",
+                    bg: "#fff0f0",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    style={{ ...s.loanStatCard, background: item.bg }}
+                  >
+                    <div style={{ ...s.loanStatValue, color: item.color }}>
+                      {item.value}
+                    </div>
+                    <div style={s.loanStatLabel}>{item.label}</div>
                   </div>
                 ))}
               </div>
+            )}
 
-              <div style={s.topCard}>
+            {/* ── Recent Activity ── */}
+            <div style={s.activityGrid}>
+              <div style={s.activityCard}>
                 <div style={s.activityHeader}>
-                  <h2 style={s.activityTitle}>🏪 Top Sellers</h2>
+                  <h2 style={s.activityTitle}>Recent Orders</h2>
                   <span
                     style={s.viewAll}
-                    onClick={() => navigate("/admin/sellers")}
+                    onClick={() => navigate("/admin/orders")}
                   >
                     View all
                   </span>
                 </div>
-                {revenueStats.top_sellers?.map((sel, i) => (
-                  <div key={sel.id} style={s.topItem}>
-                    <div style={s.topRank}>#{i + 1}</div>
-                    <div style={s.topInfo}>
-                      <div style={s.topName}>{sel.business_name}</div>
-                      <div style={s.topMeta}>{sel.user?.name}</div>
+                {recentOrders.length === 0 ? (
+                  <p style={s.empty}>No orders yet</p>
+                ) : (
+                  recentOrders.map((order) => (
+                    <div key={order.id} style={s.activityItem}>
+                      <div>
+                        <div style={s.activityId}>Order #{order.id}</div>
+                        <div style={s.activityMeta}>
+                          {order.buyer?.name} — ₦
+                          {Number(
+                            order.total_amount || order.total || 0,
+                          ).toLocaleString()}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          ...s.statusBadge,
+                          ...getStatusStyle(order.status),
+                        }}
+                      >
+                        {order.status}
+                      </div>
                     </div>
-                    <div style={s.topValue}>
-                      ₦{Number(sel.earnings_balance).toLocaleString()}
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
-            </div>
-          )}
 
-          {loans && (
-            <div style={s.loanSummaryRow}>
-              {[
-                {
-                  label: "Pending Applications",
-                  value: loans.pending_applications,
-                  color: "#b36b00",
-                  bg: "#fff8e7",
-                  path: "/admin/loans?status=pending"
-                },
-                {
-                  label: "Active Loans",
-                  value: loans.active_loans,
-                  color: "#1a4fa0",
-                  bg: "#e7f0ff",
-                  path: "/admin/loans?status=active"
-                },
-                {
-                  label: "Total Disbursed",
-                  value: `₦${Number(loans.total_disbursed).toLocaleString()}`,
-                  color: "#1f4d1f",
-                  bg: "#eafaf0",
-                  path: "/admin/loans?type=disbursed"
-                },
-                {
-                  label: "Outstanding Balance",
-                  value: `₦${Number(loans.outstanding).toLocaleString()}`,
-                  color: "#cc0000",
-                  bg: "#fff0f0",
-                  path: "/admin/loans?type=outstanding"
-                }
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{ ...s.loanStatCard, background: item.bg, cursor: "pointer" }}
-                  onClick={() => navigate(item.path)}
-                >
-                  <div style={{ ...s.loanStatValue, color: item.color }}>
-                    {item.value}
-                  </div>
-                  <div style={s.loanStatLabel}>{item.label}</div>
+              <div style={s.activityCard}>
+                <div style={s.activityHeader}>
+                  <h2 style={s.activityTitle}>Recent Loans</h2>
+                  <span
+                    style={s.viewAll}
+                    onClick={() => navigate("/admin/loans")}
+                  >
+                    View all
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-
-          <div style={s.activityGrid}>
-            <div style={s.activityCard}>
-              <div style={s.activityHeader}>
-                <h2 style={s.activityTitle}>Recent Orders</h2>
-                <span
-                  style={s.viewAll}
-                  onClick={() => navigate("/admin/orders")}
-                >
-                  View all
-                </span>
+                {recentLoans.length === 0 ? (
+                  <p style={s.empty}>No loans yet</p>
+                ) : (
+                  recentLoans.map((loan) => (
+                    <div key={loan.id} style={s.activityItem}>
+                      <div>
+                        <div style={s.activityId}>
+                          ₦{Number(loan.amount).toLocaleString()}
+                        </div>
+                        <div style={s.activityMeta}>
+                          {loan.user?.name} — {loan.purpose}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          ...s.statusBadge,
+                          ...getStatusStyle(loan.status),
+                        }}
+                      >
+                        {loan.status}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-              {recentOrders.length === 0 ? (
-                <p style={s.empty}>No orders yet</p>
-              ) : (
-                recentOrders.map((order) => (
-                  <div key={order.id} style={s.activityItem}>
-                    <div>
-                      <div style={s.activityId}>Order #{order.id}</div>
-                      <div style={s.activityMeta}>
-                        {order.buyer?.name} , ₦
-                        {Number(
-                          order.total_amount || order.total || 0
-                        ).toLocaleString()}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        ...s.statusBadge,
-                        ...getStatusStyle(order.status)
-                      }}
-                    >
-                      {order.status}
-                    </div>
-                  </div>
-                ))
-              )}
             </div>
+          </>
+        )}
+ </AdminLayout>
+  );
 
-            <div style={s.activityCard}>
-              <div style={s.activityHeader}>
-                <h2 style={s.activityTitle}>Recent Loans</h2>
-                <span
-                  style={s.viewAll}
-                  onClick={() => navigate("/admin/loans")}
-                >
-                  View all
-                </span>
-              </div>
-              {recentLoans.length === 0 ? (
-                <p style={s.empty}>No loans yet</p>
-              ) : (
-                recentLoans.map((loan) => (
-                  <div key={loan.id} style={s.activityItem}>
-                    <div>
-                      <div style={s.activityId}>
-                        ₦{Number(loan.amount).toLocaleString()}
-                      </div>
-                      <div style={s.activityMeta}>
-                        {loan.user?.name} , {loan.purpose}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        ...s.statusBadge,
-                        ...getStatusStyle(loan.status)
-                      }}
-                    >
-                      {loan.status}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </AdminLayout>
-  )
-
-  return isMobile ? (
-    <PullToRefresh onRefresh={handleRefresh}>{pageContent}</PullToRefresh>
-  ) : (
-    pageContent
-  )
+  return isMobile
+    ? <PullToRefresh onRefresh={handleRefresh}>{pageContent}</PullToRefresh>
+    : pageContent;
 }
 
 const s = {
@@ -518,7 +522,7 @@ const s = {
     display: "flex",
     minHeight: "100vh",
     backgroundColor: "#f0f2f5",
-    fontFamily: "Arial, sans-serif"
+    fontFamily: "Arial, sans-serif",
   },
   sidebar: {
     width: 240,
@@ -528,14 +532,14 @@ const s = {
     position: "fixed",
     top: 0,
     left: 0,
-    height: "100vh"
+    height: "100vh",
   },
   sidebarLogo: {
     display: "flex",
     alignItems: "center",
     gap: 10,
     padding: 20,
-    borderBottom: "1px solid rgba(255,255,255,0.1)"
+    borderBottom: "1px solid rgba(255,255,255,0.1)",
   },
   sidebarLogoImg: { width: 40, height: 40, objectFit: "contain" },
   sidebarLogoName: { fontSize: 14, fontWeight: 700, color: "#fff" },
@@ -548,12 +552,12 @@ const s = {
     padding: "12px 20px",
     color: "#a8d5a8",
     fontSize: 14,
-    cursor: "pointer"
+    cursor: "pointer",
   },
   sidebarItemActive: {
     background: "rgba(255,255,255,0.1)",
     color: "#fff",
-    borderLeft: "4px solid #f0c050"
+    borderLeft: "4px solid #f0c050",
   },
   sidebarIcon: { fontSize: 16 },
   badge: {
@@ -563,17 +567,17 @@ const s = {
     fontSize: 10,
     fontWeight: 700,
     padding: "2px 6px",
-    borderRadius: 99
+    borderRadius: 99,
   },
   sidebarFooter: {
     padding: "16px 20px",
-    borderTop: "1px solid rgba(255,255,255,0.1)"
+    borderTop: "1px solid rgba(255,255,255,0.1)",
   },
   sidebarUser: {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    marginBottom: 12
+    marginBottom: 12,
   },
   sidebarAvatar: {
     width: 34,
@@ -581,7 +585,7 @@ const s = {
     background: "#fff",
     borderRadius: "50%",
     overflow: "hidden",
-    border: "2px solid #f0c050"
+    border: "2px solid #f0c050",
   },
   avatarImg: { width: "100%", height: "100%", objectFit: "cover" },
   sidebarUserName: { fontSize: 13, fontWeight: 600, color: "#fff" },
@@ -594,20 +598,20 @@ const s = {
     border: "1px solid rgba(255,255,255,0.2)",
     borderRadius: 6,
     fontSize: 13,
-    cursor: "pointer"
+    cursor: "pointer",
   },
   main: { flex: 1, marginLeft: 240, padding: 32 },
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 28
+    marginBottom: 28,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 700,
     color: "#111",
-    marginBottom: 4
+    marginBottom: 4,
   },
   headerSub: { fontSize: 14, color: "#888" },
   headerDate: { fontSize: 13, color: "#888" },
@@ -617,42 +621,42 @@ const s = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
     gap: 14,
-    marginBottom: 24
+    marginBottom: 24,
   },
   statCard: {
     background: "#fff",
     borderRadius: 10,
     border: "1px solid #e8e4dc",
     padding: 18,
-    transition: "transform 0.15s ease, box-shadow 0.15s ease"
   },
   statTop: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10
+    marginBottom: 10,
   },
   statLabel: { fontSize: 12, color: "#888" },
   statIcon: { fontSize: 20 },
   statValue: { fontSize: 26, fontWeight: 700 },
 
+  // Charts
   chartsRow: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
     gap: 16,
-    marginBottom: 24
+    marginBottom: 24,
   },
   chartCard: {
     background: "#fff",
     borderRadius: 10,
     border: "1px solid #e8e4dc",
-    padding: 20
+    padding: 20,
   },
   chartHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16
+    marginBottom: 16,
   },
   chartTitle: { fontSize: 15, fontWeight: 700, color: "#111" },
   chartSub: { fontSize: 12, color: "#888", marginTop: 2 },
@@ -662,27 +666,28 @@ const s = {
     fontSize: 10,
     fontWeight: 700,
     padding: "3px 8px",
-    borderRadius: 4
+    borderRadius: 4,
   },
 
+  // Top products/sellers
   topRow: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
     gap: 16,
-    marginBottom: 24
+    marginBottom: 24,
   },
   topCard: {
     background: "#fff",
     borderRadius: 10,
     border: "1px solid #e8e4dc",
-    padding: 20
+    padding: 20,
   },
   topItem: {
     display: "flex",
     alignItems: "center",
     gap: 12,
     padding: "10px 0",
-    borderBottom: "1px solid #f5f5f5"
+    borderBottom: "1px solid #f5f5f5",
   },
   topRank: { fontSize: 12, fontWeight: 700, color: "#c8860a", width: 24 },
   topInfo: { flex: 1 },
@@ -691,21 +696,21 @@ const s = {
     fontSize: 11,
     color: "#888",
     marginTop: 2,
-    textTransform: "capitalize"
+    textTransform: "capitalize",
   },
   topValue: { fontSize: 13, fontWeight: 700, color: "#1f4d1f" },
 
+  // Loan summary
   loanSummaryRow: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
     gap: 14,
-    marginBottom: 24
+    marginBottom: 24,
   },
   loanStatCard: {
     borderRadius: 10,
     padding: "16px 20px",
     border: "1px solid #e8e4dc",
-    transition: "transform 0.15s ease, box-shadow 0.15s ease"
   },
   loanStatValue: { fontSize: 22, fontWeight: 700, marginBottom: 4 },
   loanStatLabel: { fontSize: 12, color: "#666" },
@@ -713,33 +718,33 @@ const s = {
   activityGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: 16
+    gap: 16,
   },
   activityCard: {
     background: "#fff",
     borderRadius: 10,
     border: "1px solid #e8e4dc",
-    padding: 20
+    padding: 20,
   },
   activityHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16
+    marginBottom: 16,
   },
   activityTitle: { fontSize: 16, fontWeight: 700, color: "#111" },
   viewAll: {
     fontSize: 13,
     color: "#1f4d1f",
     cursor: "pointer",
-    fontWeight: 500
+    fontWeight: 500,
   },
   activityItem: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     padding: "10px 0",
-    borderBottom: "1px solid #f0f0f0"
+    borderBottom: "1px solid #f0f0f0",
   },
   activityId: { fontSize: 14, fontWeight: 600, color: "#111", marginBottom: 2 },
   activityMeta: { fontSize: 12, color: "#888", textTransform: "capitalize" },
@@ -748,7 +753,7 @@ const s = {
     fontWeight: 600,
     padding: "4px 10px",
     borderRadius: 99,
-    textTransform: "capitalize"
+    textTransform: "capitalize",
   },
-  empty: { color: "#888", fontSize: 13, textAlign: "center", padding: 20 }
-}
+  empty: { color: "#888", fontSize: 13, textAlign: "center", padding: 20 },
+};
