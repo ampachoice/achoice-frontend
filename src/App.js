@@ -112,6 +112,7 @@ import Adminreportspage from "./pages/admin/Adminreportspage";
 import ManageSellersPage from "./pages/admin/ManageSellersPage";
 import ManageProductsPage from "./pages/admin/ManageProductsPage";
 import ManageCategoriesPage from "./pages/admin/ManageCategoriesPage";
+import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 import AdminFlashSalesPage from "./pages/admin/AdminFlashSalesPage";
 import AdminFlashSaleRequestsPage from "./pages/admin/AdminFlashSaleRequestsPage";
 import AdminRemittanceRequestsPage from "./pages/admin/AdminRemittanceRequestsPage";
@@ -475,6 +476,14 @@ const router = createBrowserRouter([
             element: (
               <ProtectedRoute adminOnly>
                 <ManageCategoriesPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "notifications",
+            element: (
+              <ProtectedRoute adminOnly>
+                <AdminNotificationsPage />
               </ProtectedRoute>
             ),
           },
