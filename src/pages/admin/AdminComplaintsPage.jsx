@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
-import NotificationBell from "../../components/buyer/NotificationBell";
 import AdminLayout from "../../components/admin/AdminLayout";
-
 
 export default function AdminComplaintsPage() {
   const navigate = useNavigate();
@@ -81,124 +79,120 @@ export default function AdminComplaintsPage() {
       `}</style>
 
       <AdminLayout
-            title="Complaints Management"
-            headerActions={
-              <>
-                <NotificationBell />
-                <div className="ac-filters">
-              {userFilter && complaints.length > 0 && (
-                <div
+        title="Complaints Management"
+        headerActions={
+          <div className="ac-filters">
+            {userFilter && complaints.length > 0 && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#1f4d1f",
+                  fontWeight: 600,
+                  marginTop: 4,
+                }}
+              >
+                Filtering by:{" "}
+                {complaints[0].user?.name || "buyer #" + userFilter}{" "}
+                <span
                   style={{
-                    fontSize: 12,
-                    color: "#1f4d1f",
-                    fontWeight: 600,
-                    marginTop: 4,
+                    color: "#cc0000",
+                    cursor: "pointer",
+                    textDecoration: "underline",
                   }}
+                  onClick={() => navigate("/admin/complaints")}
                 >
-                  Filtering by:{" "}
-                  {complaints[0].user?.name || "buyer #" + userFilter}{" "}
-                  <span
-                    style={{
-                      color: "#cc0000",
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                    }}
-                    onClick={() => navigate("/admin/complaints")}
+                  Clear
+                </span>
+              </div>
+            )}
+            <select
+              className="ac-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="under_review">Under Review</option>
+              <option value="resolved">Resolved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <select
+              className="ac-select"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">All Categories</option>
+              <option value="orders">Orders</option>
+              <option value="loan">Loan</option>
+            </select>
+          </div>
+        }
+      >
+        {loading ? (
+          <div className="ac-loading">Loading complaints...</div>
+        ) : complaints.length === 0 ? (
+          <div className="ac-empty">No complaints found.</div>
+        ) : (
+          <div className="ac-table" style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Subject</th>
+                  <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Buyer</th>
+                  <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Category</th>
+                  <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Type</th>
+                  <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Status</th>
+                  <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {complaints.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => navigate(`/admin/complaints/${c.id}`)}
                   >
-                    Clear
-                  </span>
-                </div>
-              )}
-              <select
-                className="ac-select"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="under_review">Under Review</option>
-                <option value="resolved">Resolved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <select
-                className="ac-select"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <option value="">All Categories</option>
-                <option value="orders">Orders</option>
-                <option value="loan">Loan</option>
-              </select>
-                </div>
-              </>
-            }
-          >
-
-          {loading ? (
-            <div className="ac-loading">Loading complaints...</div>
-          ) : complaints.length === 0 ? (
-            <div className="ac-empty">No complaints found.</div>
-          ) : (
-            <div className="ac-table" style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Subject</th>
-                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Buyer</th>
-                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Category</th>
-                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Type</th>
-                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Status</th>
-                    <th style={{ whiteSpace: "nowrap", textAlign: "left", padding: "10px 14px" }}>Date</th>
+                    <td>
+                      {c.subject}
+                      {c.unread_count > 0 && (
+                        <span className="ac-unread">
+                          {c.unread_count} new
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {c.user?.name || "-"}
+                      <br />
+                      <span style={{ color: "#aaa", fontSize: 11 }}>
+                        {c.user?.email}
+                      </span>
+                    </td>
+                    <td style={{ textTransform: "capitalize" }}>
+                      {c.category}
+                    </td>
+                    <td>{c.type?.replace(/_/g, " ")}</td>
+                    <td>
+                      <span
+                        className="ac-badge"
+                        style={getStatusStyle(c.status)}
+                      >
+                        {c.status?.replace(/_/g, " ")}
+                      </span>
+                    </td>
+                    <td>
+                      {c.created_at
+                        ? new Date(c.created_at).toLocaleDateString("en-NG", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "-"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {complaints.map((c) => (
-                    <tr
-                      key={c.id}
-                      onClick={() => navigate(`/admin/complaints/${c.id}`)}
-                    >
-                      <td>
-                        {c.subject}
-                        {c.unread_count > 0 && (
-                          <span className="ac-unread">
-                            {c.unread_count} new
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {c.user?.name || "-"}
-                        <br />
-                        <span style={{ color: "#aaa", fontSize: 11 }}>
-                          {c.user?.email}
-                        </span>
-                      </td>
-                      <td style={{ textTransform: "capitalize" }}>
-                        {c.category}
-                      </td>
-                      <td>{c.type?.replace(/_/g, " ")}</td>
-                      <td>
-                        <span
-                          className="ac-badge"
-                          style={getStatusStyle(c.status)}
-                        >
-                          {c.status?.replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td>
-                        {c.created_at
-                          ? new Date(c.created_at).toLocaleDateString("en-NG", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </AdminLayout>
       {toast && <div className="ac-toast">{toast}</div>}
     </>
