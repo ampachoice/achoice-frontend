@@ -6,8 +6,7 @@ import api from "../services/api";
 import farmerImg from "../assets/farmer.jpg";
 import CategorySidebar from "../components/buyer/CategorySidebar";
 import NotificationBell from "../components/buyer/NotificationBell";
-
-
+import { getHomePathForUser } from "../utils/authRedirect";
 
 const LOGO_PATH = "/achoice logo.png";
 const PRODUCTS_PER_PAGE = 8;
@@ -61,6 +60,14 @@ const DEFAULT_SLIDES = [
     btnColor: "#f0c050",
   },
 ];
+
+const getNotificationPath = (user) => {
+  if (!user) return "/notifications";
+  if (user.role === "admin") return "/admin/notifications";
+  if (user.role === "staff") return "/staff/notifications";
+  if (user.role === "seller") return "/seller/notifications";
+  return "/notifications";
+};
 
 const injectCSS = () => {
   if (document.getElementById("homepage-css")) return;
@@ -807,13 +814,23 @@ export default function HomePage() {
           </a>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
-            style={{ ...s.cartBtn, position: "relative" }}
-            onClick={() => navigate("/cart")}
-          >
-            🛒 {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
-          </div>
-          {token && <NotificationBell />}
+          {(() => {
+                const currentUser = JSON.parse(localStorage.getItem("user") || "null");
+                const isBuyerOrGuest = !currentUser || currentUser.role === "buyer";
+                return isBuyerOrGuest ? (
+                  <div
+                    style={{ ...s.cartBtn, position: "relative" }}
+                    onClick={() => navigate("/cart")}
+                  >
+                    🛒 {cartCount > 0 && <span style={s.cartBadge}>{cartCount}</span>}
+                  </div>
+                ) : null;
+              })()}
+          {token && (
+                  <NotificationBell
+                    to={getNotificationPath(JSON.parse(localStorage.getItem("user") || "null"))}
+                  />
+                )}
           <div
             className="hp-nav-actions-desktop"
             style={{ display: "flex", gap: 8 }}
@@ -825,7 +842,16 @@ export default function HomePage() {
               Become a Seller
             </button>
             {token ? (
-              <button style={s.btnSolid} onClick={() => navigate("/orders")}>
+              <button
+                style={s.btnSolid}
+                onClick={() =>
+                  navigate(
+                    getHomePathForUser(
+                      JSON.parse(localStorage.getItem("user") || "null"),
+                    ),
+                  )
+                }
+              >
                 My Account
               </button>
             ) : (
@@ -886,7 +912,11 @@ export default function HomePage() {
               <button
                 style={{ ...s.btnSolid, flex: 1 }}
                 onClick={() => {
-                  navigate("/orders");
+                  navigate(
+                    getHomePathForUser(
+                      JSON.parse(localStorage.getItem("user") || "null"),
+                    ),
+                  );
                   setMenuOpen(false);
                 }}
               >
