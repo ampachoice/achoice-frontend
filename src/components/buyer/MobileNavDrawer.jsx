@@ -62,11 +62,11 @@ export default function MobileNavDrawer({ cartCount = 0, onLogout }) {
       badge: cartCount > 0 ? cartCount : null,
     },
     { icon: "📦", label: "My Orders", path: "/orders" },
-    { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
+  //  { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
     { icon: "📋", label: "My Loans", path: "/loans/repay" },
     { icon: "📝", label: "Complaints & Refunds", path: "/complaints" },
-    { icon: "⭐", label: "Pending Reviews", path: "/reviews/pending" },
-    { icon: "🔔", label: "Notifications", path: "/notifications" },
+    { icon: "⭐", label: "Rate Products", path: "/reviews/pending" },
+  //  { icon: "🔔", label: "Notifications", path: "/notifications" },
   ];
 
   return (

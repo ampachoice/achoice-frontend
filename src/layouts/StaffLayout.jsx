@@ -5,9 +5,6 @@ import StaffNotificationBell from "../components/staff/StaffNotificationBell";
 
 const LOGO_PATH = "/achoice logo.png";
 
-// Permissions live nested under staff_profile (confirmed from
-// LoanStaffDashboard's own cross-link logic) — top-level user.can_manage_*
-// is checked too as a harmless fallback in case it's ever set that way.
 function hasAgroAccess(user) {
   return !!(user?.staff_profile?.can_manage_agro || user?.can_manage_agro);
 }
@@ -15,9 +12,6 @@ function hasLoanAccess(user) {
   return !!(user?.staff_profile?.can_manage_loans || user?.can_manage_loans);
 }
 
-// The one place staff nav items are defined. Add a new staff page here and
-// every page using StaffLayout picks it up automatically — no more copying
-// the sidebar markup into each new page file.
 function getNavItems(user, activePath, counts) {
   const items = [];
 
@@ -39,7 +33,6 @@ function getNavItems(user, activePath, counts) {
   }));
 }
 
-// Where the logo/brand should send staff — their own home, never "/".
 function getStaffHome(user) {
   if (hasAgroAccess(user)) return "/staff/agro";
   if (hasLoanAccess(user)) return "/staff/loans";
@@ -59,9 +52,6 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
   useEffect(() => {
     let cancelled = false;
 
-    // Reuses the same numbers each dashboard already displays — no new
-    // backend endpoints, just surfacing them on the sidebar too, the way
-    // the admin panel's badges work.
     if (agroAccess) {
       api.get("/staff/agro/dashboard")
         .then((res) => {
@@ -79,10 +69,6 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
       api.get("/staff/loan/dashboard")
         .then((res) => {
           if (cancelled) return;
-          // Loans still needing staff attention = pending decisions PLUS
-          // approved loans awaiting disbursement — the system can
-          // auto-approve, so "approved" is a real action queue too, not
-          // just a resting state. Mirrors the admin dashboard's formula.
           const n = (res.data?.applications?.pending ?? 0) + (res.data?.applications?.approved ?? 0);
           setCounts((prev) => ({ ...prev, loanApplications: n }));
         })
@@ -122,7 +108,13 @@ export default function StaffLayout({ activePath, children, mobileNavOpen, setMo
         .stl-sidebar-logo img { width:40px; height:40px; object-fit:contain; }
         .stl-sidebar-name { font-size:14px; font-weight:700; color:#fff; }
         .stl-sidebar-sub { font-size:10px; color:#a8d5a8; }
-        .stl-sidebar-nav { flex:1; padding:16px 0; }
+        .stl-sidebar-nav { flex:1; padding:16px 0; overflow-y:auto; overflow-x:hidden; }
+        /* Long nav lists (agro + loan + complaints + notifications, each with
+           its own badge) previously had nowhere to scroll -- the sidebar sits
+           at a fixed height:100vh with no overflow rule, so items past the
+           bottom of the screen were simply unreachable. Scoping the scroll
+           to just the nav section keeps the logo header and logout footer
+           pinned in place, exactly as before. */
         .stl-sidebar-item { display:flex; align-items:center; gap:10px; padding:12px 20px; color:#a8d5a8; font-size:14px; cursor:pointer; }
         .stl-sidebar-item-active { background:rgba(255,255,255,0.15); color:#fff; border-left:3px solid #f0c050; }
         .stl-badge { margin-left:auto; background:#e53935; color:#fff; font-size:11px; font-weight:700; min-width:18px; height:18px; border-radius:99px; display:flex; align-items:center; justify-content:center; padding:0 5px; }

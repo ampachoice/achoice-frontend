@@ -3,18 +3,6 @@ import { useNavigate } from "react-router-dom";
 import CloseAccountModal from "../common/CloseAccountModal";
 import useLogout from "../../hooks/useLogout";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BuyerDropdown — drop this into any buyer page navbar
-//
-// Usage:
-//   import BuyerDropdown from '../../components/buyer/BuyerDropdown';
-//   <BuyerDropdown />
-//
-// Optional props:
-//   cartCount  — number shown on cart badge (default 0)
-//   onLogout   — custom logout handler (default: centralized logout via useLogout)
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function BuyerDropdown({ cartCount = 0, onLogout }) {
   const navigate = useNavigate();
   const logout = useLogout();
@@ -26,7 +14,6 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
   const user = userRaw ? JSON.parse(userRaw) : null;
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : "?";
 
-  // Close when clicking outside
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -59,15 +46,14 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
       badge: cartCount > 0 ? cartCount : null,
     },
     { icon: "📦", label: "My Orders", path: "/orders" },
-    { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
+  //  { icon: "💰", label: "Apply for Loan", path: "/loans/apply" },
     { icon: "📋", label: "My Loans", path: "/loans/repay" },
     { icon: "📝", label: "Complaints & Refunds", path: "/complaints" },
-    { icon: "⭐", label: "Pending Reviews", path: "/reviews/pending" },
-    { icon: "🔔", label: "Notifications", path: "/notifications" },
+    { icon: "⭐", label: "Rate Products", path: "/reviews/pending" },
+ //   { icon: "🔔", label: "Notifications", path: "/notifications" },
   ];
 
   if (!user) {
-    // Not logged in — show sign in / register buttons
     return (
       <div style={s.authRow}>
         <button style={s.btnOutline} onClick={() => navigate("/login")}>
@@ -82,7 +68,6 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 
   return (
     <div style={s.wrapper} ref={ref}>
-      {/* Trigger button */}
       <div style={s.trigger} onClick={() => setOpen(!open)}>
         <div style={s.avatar}>{initial}</div>
         <div style={s.triggerInfo}>
@@ -95,10 +80,8 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
         </span>
       </div>
 
-      {/* Dropdown menu */}
       {open && (
         <div style={s.menu}>
-          {/* Header */}
           <div style={s.menuHeader}>
             <div style={s.menuAvatar}>{initial}</div>
             <div>
@@ -109,7 +92,6 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 
           <div style={s.divider} />
 
-          {/* Menu items */}
           {menuItems.map((item) => (
             <div
               key={item.path}
@@ -130,7 +112,6 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 
           <div style={s.divider} />
 
-          {/* Account Management */}
           <div style={s.sectionLabel}>Account Management</div>
           <div
             style={s.menuItem}
@@ -147,7 +128,6 @@ export default function BuyerDropdown({ cartCount = 0, onLogout }) {
 
           <div style={s.divider} />
 
-          {/* Logout */}
           <div
             style={s.logoutItem}
             onClick={handleLogout}
@@ -218,8 +198,16 @@ const s = {
     boxShadow: "0 8px 32px rgba(0,0,0,0.24)",
     minWidth: 230,
     maxWidth: "calc(100vw - 28px)",
+    // Long menu (9 items + header + account management + logout) could
+    // previously grow taller than the viewport on short screens with no
+    // way to reach the bottom items. Capping height and scrolling the
+    // list internally keeps the trigger button and outside-click handling
+    // working exactly as before -- only the menu's own overflow behavior
+    // changes.
+    maxHeight: "calc(100vh - 100px)",
+    overflowY: "auto",
+    overflowX: "hidden",
     zIndex: 2000,
-    overflow: "hidden",
   },
   menuHeader: {
     display: "flex",
@@ -275,7 +263,6 @@ const s = {
     transition: "background 0.15s",
   },
 
-  // Not-logged-in state
   authRow: { display: "flex", gap: 10 },
   btnOutline: {
     padding: "8px 16px",
