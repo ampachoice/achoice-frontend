@@ -26,13 +26,14 @@ const SIDEBAR_ITEMS = [
   { icon: "🎫", label: "Flash Sale Requests", path: "/admin/flash-sale-requests" },
   { icon: "📦", label: "Orders", path: "/admin/orders" },
   { icon: "💰", label: "Loans", path: "/admin/loans" },
-  { icon: "⭐", label: "Review Moderation", path: "/admin/review-moderation" },
+  { icon: "⭐", label: "Ratings Moderation", path: "/admin/review-moderation" },
 ];
 
 // Configuration / setup items — moved into the top-right Settings dropdown
 const SETTINGS_ITEMS = [
   { icon: "👥", label: "Staff", path: "/admin/staff" },
   { icon: "📢", label: "Broadcasts", path: "/admin/broadcasts" },
+  { icon: "📧", label: "Newsletter", path: "/admin/newsletter" },
   { icon: "💳", label: "Payments", path: "/admin/payments" },
   { icon: "⚙️", label: "Loan Settings", path: "/admin/loan-settings" },
   { icon: "🗂️", label: "Categories", path: "/admin/categories" },

@@ -130,6 +130,7 @@ import AdminComplaintDetailPage from "./pages/admin/AdminComplaintDetailPage";
 import AdminAuditLogPage from "./pages/admin/AdminAuditLogPage";
 import AdminReviewModerationPage from "./pages/admin/AdminReviewModerationPage";
 import AdminBroadcastsPage from "./pages/admin/AdminBroadcastsPage";
+import AdminNewsletterPage from "./pages/admin/AdminNewsletterPage";
 import AdminProductApprovalsPage from "./pages/admin/AdminProductApprovalsPage";
 import StaffComplaintsPage from "./pages/staff/StaffComplaintsPage";
 import StaffComplaintDetailPage from "./pages/staff/StaffComplaintDetailPage";
@@ -628,6 +629,14 @@ const router = createBrowserRouter([
             element: (
               <ProtectedRoute adminOnly>
                 <AdminBroadcastsPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "newsletter",
+            element: (
+              <ProtectedRoute adminOnly>
+                <AdminNewsletterPage />
               </ProtectedRoute>
             ),
           },
