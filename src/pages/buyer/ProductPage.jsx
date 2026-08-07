@@ -579,11 +579,11 @@ function ProductNav({
                 { label: "👤 My Profile", path: "/profile" },
                 { label: "🛒 Cart", path: "/cart" },
                 { label: "📦 My Orders", path: "/orders" },
-                { label: "💰 Apply for Loan", path: "/loans/apply" },
+                //{ label: "💰 Apply for Loan", path: "/loans/apply" },
                 { label: "📋 My Loans", path: "/loans/repay" },
                 { label: "📝 Complaints & Refunds", path: "/complaints" },
-                { label: "⭐ Pending Reviews", path: "/reviews/pending" },
-                { label: "🔔 Notifications", path: "/notifications" },
+                { label: "⭐ Rate Products", path: "/reviews/pending" },
+               // { label: "🔔 Notifications", path: "/notifications" },
                 { label: "🏪 Become a Seller", path: "/become-a-seller" },
               ].map((item) => (
                 <div
