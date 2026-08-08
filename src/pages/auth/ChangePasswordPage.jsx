@@ -89,7 +89,7 @@ export default function ChangePasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.new_password !== form.new_password_confirmation) { setError('New passwords do not match.'); return; }
-    if (form.new_password.length < 8) { setError('New password must be at least 8 characters.'); return; }
+    if (!requirements.every((r) => r.met)) { setError('Your new password does not meet all the requirements below.'); return; }
     setLoading(true); setError(null);
     try {
       await api.post('/auth/change-password', form);
@@ -123,6 +123,10 @@ export default function ChangePasswordPage() {
 
   const requirements = [
     { text: 'At least 8 characters',              met: form.new_password.length >= 8 },
+    { text: 'One uppercase letter (A-Z)',          met: /[A-Z]/.test(form.new_password) },
+    { text: 'One lowercase letter (a-z)',          met: /[a-z]/.test(form.new_password) },
+    { text: 'One number (0-9)',                    met: /[0-9]/.test(form.new_password) },
+    { text: 'One symbol (e.g. ! @ # $ %)',         met: /[^A-Za-z0-9]/.test(form.new_password) },
     { text: 'Different from temporary password',  met: form.new_password !== form.current_password && form.new_password.length > 0 },
   ];
 

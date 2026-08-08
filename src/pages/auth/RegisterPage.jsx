@@ -167,6 +167,10 @@ export default function RegisterPage() {
       setError("Passwords do not match.");
       return;
     }
+    if (!passwordRules.every((r) => r.met)) {
+      setError("Your password does not meet all the requirements below.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -202,6 +206,15 @@ export default function RegisterPage() {
   };
 
   const pwMatch = formData.password && formData.password_confirmation;
+
+  // Matches the backend's actual policy: min 8 chars, upper + lower + number + symbol.
+  const passwordRules = [
+    { text: "At least 8 characters", met: formData.password.length >= 8 },
+    { text: "One uppercase letter (A-Z)", met: /[A-Z]/.test(formData.password) },
+    { text: "One lowercase letter (a-z)", met: /[a-z]/.test(formData.password) },
+    { text: "One number (0-9)", met: /[0-9]/.test(formData.password) },
+    { text: "One symbol (e.g. ! @ # $ %)", met: /[^A-Za-z0-9]/.test(formData.password) },
+  ];
 
   return (
     <div className="rp-wrap">
@@ -527,6 +540,22 @@ export default function RegisterPage() {
                           : "✕ Passwords do not match"}
                       </div>
                     )}
+                  </div>
+
+                  <div className="rp-req-box">
+                    <div className="rp-req-title">Password requirements</div>
+                    {passwordRules.map((r) => (
+                      <div
+                        key={r.text}
+                        className="rp-req"
+                        style={{ color: r.met ? "#1a7a3a" : "#888" }}
+                      >
+                        <span style={{ fontSize: 15 }}>
+                          {r.met ? "✓" : "○"}
+                        </span>{" "}
+                        {r.text}
+                      </div>
+                    ))}
                   </div>
 
                   <button

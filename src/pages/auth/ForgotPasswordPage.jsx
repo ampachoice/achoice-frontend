@@ -103,8 +103,11 @@ export default function ForgotPasswordPage() {
     try {
       await api.post('/forgot-password', { email });
       setSuccess(true);
-    } catch {
-      setError('Email not found. Please check and try again.');
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          'Email not found. Please check and try again.',
+      );
     } finally { setLoading(false); }
   };
 

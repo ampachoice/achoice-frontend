@@ -112,10 +112,19 @@ export default function ResetPasswordPage() {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  // Matches the backend's actual policy: min 8 chars, upper + lower + number + symbol.
+  const passwordRules = [
+    { text: 'At least 8 characters', met: formData.password.length >= 8 },
+    { text: 'One uppercase letter (A-Z)', met: /[A-Z]/.test(formData.password) },
+    { text: 'One lowercase letter (a-z)', met: /[a-z]/.test(formData.password) },
+    { text: 'One number (0-9)', met: /[0-9]/.test(formData.password) },
+    { text: 'One symbol (e.g. ! @ # $ %)', met: /[^A-Za-z0-9]/.test(formData.password) },
+  ];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.password_confirmation) { setError('Passwords do not match.'); return; }
-    if (formData.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!passwordRules.every((r) => r.met)) { setError('Your password does not meet all the requirements below.'); return; }
     setLoading(true); setError(null);
     try {
       await api.post('/reset-password', {
@@ -125,8 +134,14 @@ export default function ResetPasswordPage() {
         password_confirmation: formData.password_confirmation,
       });
       setSuccess(true);
-    } catch {
-      setError('Reset failed. The link may have expired. Please request a new one.');
+    } catch (err) {
+      const message = err.response?.data?.errors
+        ? Object.values(err.response.data.errors)[0][0]
+        : err.response?.data?.message;
+      setError(
+        message ||
+          'Reset failed. The link may have expired. Please request a new one.',
+      );
     } finally { setLoading(false); }
   };
 
@@ -224,10 +239,7 @@ export default function ResetPasswordPage() {
                 {/* Requirements */}
                 <div className="rsp-req-box">
                   <div className="rsp-req-title">Password requirements</div>
-                  {[
-                    { text:'At least 8 characters',       met: formData.password.length >= 8 },
-                    { text:'Contains letters and numbers', met: /[a-zA-Z]/.test(formData.password) && /[0-9]/.test(formData.password) },
-                  ].map(r => (
+                  {passwordRules.map(r => (
                     <div key={r.text} className="rsp-req" style={{ color: r.met ? '#1a7a3a' : '#888' }}>
                       <span style={{ fontSize:15 }}>{r.met ? '✓' : '○'}</span> {r.text}
                     </div>
