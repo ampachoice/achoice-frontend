@@ -371,7 +371,9 @@ export default function ManageOrdersPage() {
                     </button>
                   )}
                 {order.payment_method === "pay_on_delivery" &&
-                  order.payment_status === "pod_pending" && (
+                  order.payment_status === "pod_pending" &&
+                  order.status !== "cancelled" &&
+                  order.status !== "cancellation_pending" && (
                     <button
                       style={
                         updating === order.id

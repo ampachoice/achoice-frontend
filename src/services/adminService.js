@@ -24,7 +24,7 @@ export const searchUsers = (params) => api.get('/admin/user-search', { params })
 export const getUserFullProfile = (id) => api.get(`/admin/user-search/${id}`);
 export const suspendUserAccount = (id) => api.patch(`/admin/users/${id}/suspend`);
 export const activateUserAccount = (id) => api.patch(`/admin/users/${id}/activate`);
-export const banUserAccount = (id) => api.patch(`/admin/users/${id}/ban`);
+export const banUserAccount = (id, data) => api.patch(`/admin/users/${id}/ban`, data);
 export const restrictUserAccount = (id, data) => api.patch(`/admin/users/${id}/restrict`, data);
 
 // Categories — full tree (including inactive), create/edit/delete. To create
