@@ -138,14 +138,30 @@ export default function AdminLayout({
       })
       .catch(() => {});
 
-    // Same pagination pattern as complaints — these endpoints all
-    // return a Laravel paginator, which serializes with a "total" key.
+    // Sellers badge = pending seller approvals + pending remittance
+    // requests, so admins get a heads-up from the sidebar for either kind
+    // of thing needing attention on that page. Both endpoints return a
+    // Laravel paginator (same "total" key pattern as complaints/reviews),
+    // fetched independently since a failure in one shouldn't blank the
+    // other's count — combined via functional updates so whichever
+    // resolves first doesn't get clobbered by the other.
     api
       .get("/admin/sellers/pending-approval")
       .then((res) => {
         setAutoBadges((prev) => ({
           ...prev,
-          "/admin/sellers": res.data?.total,
+          "/admin/sellers": (prev["/admin/sellers"] || 0) + (res.data?.total || 0),
+        }));
+      })
+      .catch(() => {});
+
+    api
+      .get("/admin/remittance-requests", { params: { status: "pending" } })
+      .then((res) => {
+        const total = res.data?.total ?? (Array.isArray(res.data) ? res.data.length : 0);
+        setAutoBadges((prev) => ({
+          ...prev,
+          "/admin/sellers": (prev["/admin/sellers"] || 0) + total,
         }));
       })
       .catch(() => {});
