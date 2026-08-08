@@ -69,6 +69,12 @@ export default function AdminLayout({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
   const [autoBadges, setAutoBadges] = useState({});
+  // Optional per-sidebar-item tooltip text explaining what a combined badge
+  // count is made of (e.g. Sellers = pending approvals + pending
+  // remittance requests). Keyed by path, same as autoBadges. Only items
+  // whose badge blends more than one kind of thing need an entry here —
+  // everything else just shows the bare number as before.
+  const [badgeTooltips, setBadgeTooltips] = useState({});
   const [liveUsers, setLiveUsers] = useState({ buyers: 0, sellers: 0, staff: 0 });
   const [isMobile, setIsMobile] = useState(
     () =>
@@ -145,13 +151,40 @@ export default function AdminLayout({
     // fetched independently since a failure in one shouldn't blank the
     // other's count — combined via functional updates so whichever
     // resolves first doesn't get clobbered by the other.
+    //
+    // Each fetch also writes its own line into badgeTooltips["/admin/sellers"]
+    // keyed by a stable id (not array index) and re-sorted by id on every
+    // update, so the two lines always land in the same order regardless of
+    // which request finishes first — avoids "1 remittance / 2 approvals"
+    // flipping to "2 approvals / 1 remittance" between renders.
+    const sellerTooltipLine = (id, text) => {
+      setBadgeTooltips((prev) => {
+        const lines = { ...(prev["/admin/sellers-lines"] || {}), [id]: text };
+        const ordered = ["approvals", "remittance"]
+          .map((k) => lines[k])
+          .filter(Boolean);
+        return {
+          ...prev,
+          "/admin/sellers-lines": lines,
+          "/admin/sellers": ordered.join("\n"),
+        };
+      });
+    };
+
     api
       .get("/admin/sellers/pending-approval")
       .then((res) => {
+        const total = res.data?.total || 0;
         setAutoBadges((prev) => ({
           ...prev,
-          "/admin/sellers": (prev["/admin/sellers"] || 0) + (res.data?.total || 0),
+          "/admin/sellers": (prev["/admin/sellers"] || 0) + total,
         }));
+        if (total > 0) {
+          sellerTooltipLine(
+            "approvals",
+            `${total} seller approval${total === 1 ? "" : "s"} pending`,
+          );
+        }
       })
       .catch(() => {});
 
@@ -163,6 +196,12 @@ export default function AdminLayout({
           ...prev,
           "/admin/sellers": (prev["/admin/sellers"] || 0) + total,
         }));
+        if (total > 0) {
+          sellerTooltipLine(
+            "remittance",
+            `${total} remittance request${total === 1 ? "" : "s"} pending`,
+          );
+        }
       })
       .catch(() => {});
 
@@ -386,7 +425,12 @@ export default function AdminLayout({
             >
               <span style={s.sidebarIcon}>{item.icon}</span> {item.label}
               {mergedBadges[item.path] > 0 && (
-                <span style={s.badge}>{mergedBadges[item.path]}</span>
+                <span
+                  style={s.badge}
+                  title={badgeTooltips[item.path] || undefined}
+                >
+                  {mergedBadges[item.path]}
+                </span>
               )}
             </div>
           ))}
