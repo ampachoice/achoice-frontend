@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
+import PasswordConfirmModal from "../../components/common/PasswordConfirmModal";
 
 
 export default function ManageBuyersPage() {
@@ -28,6 +29,10 @@ export default function ManageBuyersPage() {
   const [expandedBuyer, setExpandedBuyer] = useState(null);
   const [detailMap, setDetailMap] = useState({});
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Password-confirm gate for the ban action -- holds the buyer being
+  // banned while the modal is open; null means the modal is closed.
+  const [banTarget, setBanTarget] = useState(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -81,23 +86,28 @@ export default function ManageBuyersPage() {
     }
   };
 
-  const handleBan = async (buyer) => {
-    if (
-      !window.confirm(
-        `Permanently ban ${buyer.name}? This will revoke all their active sessions immediately.`,
-      )
-    )
-      return;
+  // Opens the password-confirm modal instead of banning directly --
+  // window.confirm() previously fired the request immediately with no
+  // password check, which no longer matches the backend's requirement.
+  const handleBan = (buyer) => {
+    setBanTarget(buyer);
+  };
+
+  // Fired by PasswordConfirmModal once the admin types their password and
+  // submits. Throws on failure so the modal's own error display picks up
+  // the backend's 403/422 message -- this function itself doesn't need
+  // its own try/catch beyond the finally cleanup.
+  const handleConfirmBan = async (password) => {
+    const buyer = banTarget;
     setActing(buyer.id);
     try {
-      const res = await api.patch(`/admin/users/${buyer.id}/ban`);
+      const res = await api.patch(`/admin/users/${buyer.id}/ban`, { password });
       const updated = res.data?.user || res.data;
       setBuyers((prev) =>
         prev.map((b) => (b.id === buyer.id ? { ...b, ...updated } : b)),
       );
       showToast(res.data?.message || "Buyer banned.");
-    } catch (err) {
-      showToast(err.response?.data?.message || "Failed to ban buyer.");
+      setBanTarget(null);
     } finally {
       setActing(null);
     }
@@ -515,6 +525,20 @@ export default function ManageBuyersPage() {
           </div>
         )}
       </AdminLayout>
+
+      <PasswordConfirmModal
+        open={!!banTarget}
+        title="Confirm Ban"
+        description={
+          banTarget
+            ? `This will permanently ban ${banTarget.name} and revoke all their active sessions immediately. Enter your password to confirm.`
+            : ""
+        }
+        confirmLabel="Ban Buyer"
+        danger
+        onConfirm={handleConfirmBan}
+        onCancel={() => setBanTarget(null)}
+      />
     </>
   );
 }

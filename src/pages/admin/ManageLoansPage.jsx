@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
+import PasswordConfirmModal from "../../components/common/PasswordConfirmModal";
 
 
 export default function ManageLoansPage() {
@@ -9,6 +10,9 @@ export default function ManageLoansPage() {
   const [toast, setToast] = useState("");
   const [deciding, setDeciding] = useState(null);
   const [disbursing, setDisbursing] = useState(null);
+  // Password-confirm gate for disbursement -- holds the loan awaiting
+  // confirmation while the modal is open; null means the modal is closed.
+  const [disburseTarget, setDisburseTarget] = useState(null);
   const [filter, setFilter] = useState("all");
   const [loanSettings, setLoanSettings] = useState(null);
   const [showApproveModal, setShowApproveModal] = useState(null);
@@ -244,24 +248,26 @@ export default function ManageLoansPage() {
     }
   };
 
-  const handleDisburse = async (loan) => {
-    if (
-      !window.confirm(
-        `Confirm disbursement for ${loan.user?.name || "Applicant"}?\n\nAmount: ₦${Number(loan.amount).toLocaleString()}\n\n⚠️ Only click OK AFTER you have transferred the money manually.`,
-      )
-    )
-      return;
+  // Opens the password-confirm modal instead of disbursing directly --
+  // window.confirm() previously fired the request immediately with no
+  // password check, which no longer matches the backend's requirement.
+  const handleDisburse = (loan) => {
+    setDisburseTarget(loan);
+  };
+
+  // Fired by PasswordConfirmModal once the admin types their password and
+  // submits. Throws on failure so the modal's own error display picks up
+  // the backend's 403/422 message.
+  const handleConfirmDisburse = async (password) => {
+    const loan = disburseTarget;
     setDisbursing(loan.id);
     try {
-      await api.patch(`/admin/loans/${loan.id}/disburse`);
+      await api.patch(`/admin/loans/${loan.id}/disburse`, { password });
       showToast(
         "✅ Loan disbursed! Repayment schedule activated. SMS sent to buyer.",
       );
+      setDisburseTarget(null);
       fetchLoans();
-    } catch (err) {
-      showToast(
-        err.response?.data?.message || "Disbursement failed. Please try again.",
-      );
     } finally {
       setDisbursing(null);
     }
@@ -1293,6 +1299,19 @@ export default function ManageLoansPage() {
           </div>
         )}
       </AdminLayout>
+
+      <PasswordConfirmModal
+        open={!!disburseTarget}
+        title="Confirm Disbursement"
+        description={
+          disburseTarget
+            ? `You are about to activate the repayment schedule for ${disburseTarget.user?.name || "this applicant"}'s loan of ₦${Number(disburseTarget.amount).toLocaleString()}. Only proceed AFTER you have transferred the money manually. Enter your password to confirm.`
+            : ""
+        }
+        confirmLabel="Confirm Disbursement"
+        onConfirm={handleConfirmDisburse}
+        onCancel={() => setDisburseTarget(null)}
+      />
     </>
   );
 }

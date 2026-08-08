@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AdminLayout from "../../components/admin/AdminLayout";
+import PasswordConfirmModal from "../../components/common/PasswordConfirmModal";
 import api from "../../services/api";
 import {
   getUserFullProfile,
@@ -80,9 +81,28 @@ export default function AdminUserDetailPage() {
 
   const handleSuspend = () => runAction(() => suspendUserAccount(id), "User suspended.");
   const handleActivate = () => runAction(() => activateUserAccount(id), "User activated.");
-  const handleBan = () => {
-    if (!window.confirm("Permanently ban this user and revoke all their active sessions?")) return;
-    runAction(() => banUserAccount(id), "User banned.");
+  // Opens the password-confirm modal instead of banning directly --
+  // window.confirm() previously fired the request immediately with no
+  // password check, which no longer matches the backend's requirement.
+  const [showBanConfirm, setShowBanConfirm] = useState(false);
+  const handleBan = () => setShowBanConfirm(true);
+
+  // Deliberately NOT using runAction here -- runAction swallows errors
+  // internally (shows a toast, never rethrows), which would make
+  // PasswordConfirmModal think a wrong-password attempt succeeded and
+  // close itself. This mirrors runAction's success behavior (toast +
+  // reload) but lets failures propagate so the modal can show the
+  // backend's 403/422 message inline and stay open.
+  const handleConfirmBan = async (password) => {
+    setActing(true);
+    try {
+      await banUserAccount(id, { password });
+      showToast("User banned.");
+      setShowBanConfirm(false);
+      load();
+    } finally {
+      setActing(false);
+    }
   };
   const handleSaveRestrictions = () =>
     runAction(
@@ -148,6 +168,7 @@ export default function AdminUserDetailPage() {
   const statusColors = STATUS_COLORS[user.status] || { bg: "#eee", color: "#555" };
 
   return (
+    <>
     <AdminLayout
       title={user.name}
       subtitle={`User ID: ${user.id}`}
@@ -384,6 +405,21 @@ export default function AdminUserDetailPage() {
         </div>
       )}
     </AdminLayout>
+
+      <PasswordConfirmModal
+        open={showBanConfirm}
+        title="Ban User Permanently"
+        description={
+          user
+            ? `This will permanently ban ${user.name} and revoke all their active sessions immediately. This action cannot be undone. Enter your password to confirm.`
+            : "Enter your password to confirm."
+        }
+        confirmLabel="Ban Permanently"
+        danger
+        onConfirm={handleConfirmBan}
+        onCancel={() => setShowBanConfirm(false)}
+      />
+    </>
   );
 }
 

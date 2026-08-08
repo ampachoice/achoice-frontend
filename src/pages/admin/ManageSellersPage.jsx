@@ -948,6 +948,8 @@ export default function ManageSellersPage() {
   const [remitPreview, setRemitPreview] = useState(null);
   const [remitPreviewLoading, setRemitPreviewLoading] = useState(false);
   const [remitting, setRemitting] = useState(false);
+  const [remitPassword, setRemitPassword] = useState("");
+  const [remitError, setRemitError] = useState("");
 
   // Seller approval workflow
   const [filterPending, setFilterPending] = useState(false);
@@ -1060,22 +1062,35 @@ export default function ManageSellersPage() {
     if (remitting) return;
     setRemitModalOpen(false);
     setRemitPreview(null);
+    setRemitPassword("");
+    setRemitError("");
   };
 
   const confirmRemit = async () => {
     if (!selectedSeller) return;
+    if (!remitPassword) {
+      setRemitError("Please enter your password to confirm.");
+      return;
+    }
     setRemitting(true);
+    setRemitError("");
     try {
-      const res = await api.patch(`/admin/sellers/${selectedSeller.id}/remit`);
+      const res = await api.patch(`/admin/sellers/${selectedSeller.id}/remit`, {
+        password: remitPassword,
+      });
       showToast(
         `Remitted ₦${Number(res.data.net_to_remit).toLocaleString()} to ${res.data.seller} ` +
           `(Gross ₦${Number(res.data.gross_amount).toLocaleString()} − Commission ₦${Number(res.data.commission_2pct).toLocaleString()})`,
       );
       setRemitModalOpen(false);
       setRemitPreview(null);
+      setRemitPassword("");
       handleSelectSeller(selectedSeller);
     } catch (err) {
-      showToast(err.response?.data?.message || "Remittance failed");
+      // Surfaces the backend's 403 "wrong password" / 422 "missing
+      // password" message right in the modal instead of a passing toast,
+      // so the admin sees it while still looking at the password field.
+      setRemitError(err.response?.data?.message || "Remittance failed");
     } finally {
       setRemitting(false);
     }
@@ -1858,6 +1873,55 @@ export default function ManageSellersPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid #eee" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: "#444",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Your Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter your password to confirm"
+                    value={remitPassword}
+                    onChange={(e) => {
+                      setRemitPassword(e.target.value);
+                      setRemitError("");
+                    }}
+                    disabled={remitting}
+                    style={{
+                      width: "100%",
+                      padding: "11px 14px",
+                      border: "1.5px solid #ddd",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontFamily: "inherit",
+                      boxSizing: "border-box",
+                      outline: "none",
+                    }}
+                  />
+                  {remitError && (
+                    <div
+                      style={{
+                        background: "#fff0f0",
+                        color: "#cc0000",
+                        padding: "9px 12px",
+                        borderRadius: 6,
+                        fontSize: 12.5,
+                        marginTop: 10,
+                        border: "1px solid #ffb3b3",
+                      }}
+                    >
+                      ⚠️ {remitError}
+                    </div>
+                  )}
                 </div>
 
                 <div style={s.modalActions}>

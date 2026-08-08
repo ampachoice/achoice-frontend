@@ -19,6 +19,8 @@ export default function AdminRemittanceRequestsPage() {
 
   // Confirm remittance modal state
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [approvePassword, setApprovePassword] = useState("");
+  const [approveError, setApproveError] = useState("");
 
   const showToast = (msg) => {
     setToast(msg);
@@ -59,17 +61,27 @@ export default function AdminRemittanceRequestsPage() {
   // Step 1 — open confirmation modal instead of calling API directly
   const openConfirm = (reqRow) => {
     setConfirmTarget(reqRow);
+    setApprovePassword("");
+    setApproveError("");
   };
 
-  // Step 2 — admin confirmed, now call the API
+  // Step 2 — admin confirmed, now call the API. No longer clears
+  // confirmTarget/closes the modal before the request -- if the password
+  // is wrong we need the modal to stay open so the error is visible next
+  // to the field the admin needs to fix.
   const handleApprove = async () => {
     if (!confirmTarget) return;
+    if (!approvePassword) {
+      setApproveError("Please enter your password to confirm.");
+      return;
+    }
     const reqRow = confirmTarget;
-    setConfirmTarget(null);
     setBusyId(reqRow.id);
+    setApproveError("");
     try {
       const res = await api.patch(
         `/admin/remittance-requests/${reqRow.id}/approve`,
+        { password: approvePassword },
       );
       setRequests((prev) => prev.filter((r) => r.id !== reqRow.id));
       showToast(
@@ -77,8 +89,10 @@ export default function AdminRemittanceRequestsPage() {
           reqRow.seller?.business_name || "seller"
         }.`,
       );
+      setConfirmTarget(null);
+      setApprovePassword("");
     } catch (err) {
-      showToast(err?.response?.data?.message || "Failed to approve request.");
+      setApproveError(err?.response?.data?.message || "Failed to approve request.");
     } finally {
       setBusyId(null);
     }
@@ -291,15 +305,71 @@ export default function AdminRemittanceRequestsPage() {
               </div>
             </div>
 
+            <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid #eee" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  color: "#444",
+                  marginBottom: 6,
+                }}
+              >
+                Your Password
+              </label>
+              <input
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={approvePassword}
+                onChange={(e) => {
+                  setApprovePassword(e.target.value);
+                  setApproveError("");
+                }}
+                disabled={busyId === confirmTarget.id}
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  border: "1.5px solid #ddd",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontFamily: "inherit",
+                  boxSizing: "border-box",
+                  outline: "none",
+                }}
+              />
+              {approveError && (
+                <div
+                  style={{
+                    background: "#fff0f0",
+                    color: "#cc0000",
+                    padding: "9px 12px",
+                    borderRadius: 6,
+                    fontSize: 12.5,
+                    marginTop: 10,
+                    border: "1px solid #ffb3b3",
+                  }}
+                >
+                  ⚠️ {approveError}
+                </div>
+              )}
+            </div>
+
             <div style={s.modalActions}>
               <button
                 style={s.modalCancelBtn}
                 onClick={() => setConfirmTarget(null)}
+                disabled={busyId === confirmTarget.id}
               >
                 Cancel
               </button>
-              <button style={s.modalConfirmBtn} onClick={handleApprove}>
-                Remit {toMoney(confirmBreakdown.net)}
+              <button
+                style={s.modalConfirmBtn}
+                onClick={handleApprove}
+                disabled={busyId === confirmTarget.id}
+              >
+                {busyId === confirmTarget.id
+                  ? "Processing..."
+                  : `Remit ${toMoney(confirmBreakdown.net)}`}
               </button>
             </div>
           </div>
