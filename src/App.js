@@ -132,6 +132,7 @@ import AdminReviewModerationPage from "./pages/admin/AdminReviewModerationPage";
 import AdminBroadcastsPage from "./pages/admin/AdminBroadcastsPage";
 import AdminNewsletterPage from "./pages/admin/AdminNewsletterPage";
 import AdminProductApprovalsPage from "./pages/admin/AdminProductApprovalsPage";
+import AdminFinancePage from "./pages/admin/AdminFinancePage";
 import StaffComplaintsPage from "./pages/staff/StaffComplaintsPage";
 import StaffComplaintDetailPage from "./pages/staff/StaffComplaintDetailPage";
 import StaffNotificationsPage from "./pages/staff/StaffNotificationsPage";
@@ -541,6 +542,14 @@ const router = createBrowserRouter([
             element: (
               <ProtectedRoute adminOnly>
                 <ManageLoansPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "finance",
+            element: (
+              <ProtectedRoute adminOnly>
+                <AdminFinancePage />
               </ProtectedRoute>
             ),
           },

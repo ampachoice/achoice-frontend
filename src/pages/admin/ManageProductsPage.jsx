@@ -803,12 +803,19 @@ export default function ManageProductsPage() {
                               ₦{Number(p.discount_price).toLocaleString()}
                             </div>
                             <div style={s.originalPrice}>
-                              ₦{Number(p.price).toLocaleString()}
+                              ₦{Number(p.price).toLocaleString()} <span style={{fontSize:10,color:"#888"}}>(live)</span>
                             </div>
                           </div>
                         ) : (
-                          <div style={s.priceVal}>
-                            ₦{Number(p.price).toLocaleString()}
+                          <div>
+                            <div style={s.priceVal}>
+                              ₦{Number(p.price).toLocaleString()} <span style={{fontSize:10,color:"#888"}}>(live)</span>
+                            </div>
+                            {p.seller_price && Number(p.seller_price) !== Number(p.price) && (
+                              <div style={{fontSize:11,color:"#888",marginTop:2}}>
+                                Seller: ₦{Number(p.seller_price).toLocaleString()}
+                              </div>
+                            )}
                           </div>
                         )}
                       </td>

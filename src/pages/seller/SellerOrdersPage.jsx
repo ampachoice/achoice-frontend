@@ -132,7 +132,7 @@ export default function SellerOrdersPage() {
                     <td style={s.td}>{item.product_name || item.product?.name}</td>
                     <td style={s.td}>{item.order?.buyer?.name}</td>
                     <td style={s.td}>{item.quantity} {item.unit}</td>
-                    <td style={s.td}>₦{Number(item.subtotal).toLocaleString()}</td>
+                    <td style={s.td}>₦{Number(item.seller_subtotal ?? item.subtotal).toLocaleString()}</td>
                     <td style={s.td}>{timeAgo(item.created_at)}</td>
                     <td style={s.td}>
                       <span style={{ ...s.statusBadge, background: colors.bg, color: colors.color }}>
@@ -172,7 +172,7 @@ export default function SellerOrdersPage() {
             <div style={s.modalTitle}>{detailItem.order?.order_number || `Order #${detailItem.order_id}`}</div>
 
             <DetailRow label="Product" value={`${detailItem.product_name || detailItem.product?.name} × ${detailItem.quantity} ${detailItem.unit}`} />
-            <DetailRow label="Subtotal" value={`₦${Number(detailItem.subtotal).toLocaleString()}`} />
+            <DetailRow label="Subtotal" value={`₦${Number(detailItem.seller_subtotal ?? detailItem.subtotal).toLocaleString()}`} />
             <DetailRow label="Status" value={detailItem.status.replace(/_/g, " ")} />
             <DetailRow label="Buyer" value={detailItem.order?.buyer?.name} />
             <DetailRow label="Buyer Contact" value={`${detailItem.order?.buyer?.email || ""} ${detailItem.order?.buyer?.phone ? "· " + detailItem.order.buyer.phone : ""}`} />

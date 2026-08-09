@@ -141,7 +141,7 @@ export default function SellerProductsPage() {
     setForm({
       name: product.name || "",
       description: product.description || "",
-      price: String(product.price ?? ""),
+      price: String(product.seller_price ?? product.price ?? ""),
       discount_price: product.discount_price
         ? String(product.discount_price)
         : "",
@@ -397,12 +397,12 @@ export default function SellerProductsPage() {
                             textDecoration: "line-through",
                           }}
                         >
-                          ₦{Number(p.price).toLocaleString()}
+                          ₦{Number(p.seller_price ?? p.price).toLocaleString()}
                         </span>
                       </>
                     ) : (
                       <span style={{ fontWeight: 700, color: "#111" }}>
-                        ₦{Number(p.price).toLocaleString()}
+                        ₦{Number(p.seller_price ?? p.price).toLocaleString()}
                       </span>
                     )}
                   </div>
