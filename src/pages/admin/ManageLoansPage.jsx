@@ -479,7 +479,7 @@ export default function ManageLoansPage() {
               {loading ? "⏳" : "🔄"} Refresh
             </button>
             <div style={s.flowBar}>
-              {["pending", "approved", "disbursed", "active", "due", "completed"].map(
+              {["pending", "approved", "disbursed", "active", "completed"].map(
                 (step, i, arr) => (
                   <div key={step} style={s.flowStep}>
                     <div
