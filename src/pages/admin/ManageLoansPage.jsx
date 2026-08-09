@@ -3,7 +3,6 @@ import api from "../../services/api";
 import AdminLayout from "../../components/admin/AdminLayout";
 import PasswordConfirmModal from "../../components/common/PasswordConfirmModal";
 
-
 export default function ManageLoansPage() {
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
