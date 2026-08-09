@@ -479,7 +479,7 @@ export default function ManageLoansPage() {
               {loading ? "⏳" : "🔄"} Refresh
             </button>
             <div style={s.flowBar}>
-              {["pending", "approved", "disbursed", "active", "completed"].map(
+              {["pending", "approved", "disbursed", "active", "due", "completed"].map(
                 (step, i, arr) => (
                   <div key={step} style={s.flowStep}>
                     <div
@@ -511,6 +511,7 @@ export default function ManageLoansPage() {
               "approved",
               "disbursed",
               "active",
+              "due",
               "rejected",
               "completed",
             ].map((tab) => (
@@ -519,12 +520,12 @@ export default function ManageLoansPage() {
                 style={filter === tab ? s.filterTabActive : s.filterTab}
                 onClick={() => handleFilterChange(tab)}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === "due" ? "Due Loans" : tab.charAt(0).toUpperCase() + tab.slice(1)}
                 {tab !== "all" && statusCounts[tab] > 0 && (
                   <span
                     style={{
                       ...s.tabBadge,
-                      background: tab === "pending" ? "#cc0000" : "#888",
+                      background: tab === "pending" || tab === "due" ? "#cc0000" : "#888",
                     }}
                   >
                     {statusCounts[tab]}
@@ -641,6 +642,41 @@ export default function ManageLoansPage() {
                   </div>
                 ))}
               </div>
+
+              {loan.overdue_amount != null && (
+                <div
+                  style={{
+                    background: "#fff0f0",
+                    border: "1px solid #ffb3b3",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    marginBottom: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: "#cc0000", fontWeight: 600 }}>
+                    ⚠️ Overdue: {toMoney(loan.overdue_amount)} was due on{" "}
+                    {fmtDate(loan.overdue_due_date)}
+                  </div>
+                  <div
+                    style={{
+                      background: "#cc0000",
+                      color: "#fff",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: "4px 12px",
+                      borderRadius: 99,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {loan.days_overdue} day{loan.days_overdue === 1 ? "" : "s"} overdue
+                  </div>
+                </div>
+              )}
 
               {(loan.nin_number || loan.bvn_number) && (
                 <div
