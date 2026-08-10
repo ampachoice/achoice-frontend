@@ -3,6 +3,7 @@ import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useNavigate, Link } from "react-router-dom";
 import { getAllProducts } from "../services/productService";
 import api from "../services/api";
+import axios from "axios";
 import farmerImg from "../assets/farmer.jpg";
 import CategorySidebar from "../components/buyer/CategorySidebar";
 import NotificationBell from "../components/buyer/NotificationBell";
@@ -442,8 +443,10 @@ export default function HomePage() {
     // Flash sales — poll every 45s (within the 30-60s window) since
     // quantity_left can hit 0 before the countdown does.
     const fetchFlashSales = () => {
-      api
-        .get("/flash-sales")
+      axios
+        .get(`${process.env.REACT_APP_API_URL}/flash-sales`, {
+          headers: { Accept: "application/json" },
+        })
         .then((r) => {
           setFlashSales(
             Array.isArray(r.data?.flash_sales) ? r.data.flash_sales : [],
@@ -758,7 +761,9 @@ export default function HomePage() {
           }));
         }).catch(() => {});
     });
-    await api.get('/flash-sales')
+    await axios.get(`${process.env.REACT_APP_API_URL}/flash-sales`, {
+        headers: { Accept: "application/json" },
+      })
       .then((r) => {
         setFlashSales(Array.isArray(r.data?.flash_sales) ? r.data.flash_sales : []);
         setFlashSalesFetchedAt(Date.now());

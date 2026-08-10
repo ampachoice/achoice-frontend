@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../services/api';
+import axios from 'axios';
 import BuyerNav from '../../components/buyer/BuyerNav';
 
 export default function CartPage() {
@@ -172,7 +173,10 @@ export default function CartPage() {
     // One item per customer per flash sale (backend-enforced) — fetch the
     // active list so we can cap the stepper at 1 and label the item here,
     // instead of letting the buyer hit the 422 at checkout.
-    api.get('/flash-sales')
+    axios
+      .get(`${process.env.REACT_APP_API_URL}/flash-sales`, {
+        headers: { Accept: "application/json" },
+      })
       .then(r => {
         const map = {};
         (r.data?.flash_sales || []).forEach(sale => { map[sale.product.id] = sale; });
@@ -211,7 +215,11 @@ export default function CartPage() {
     showFeedback('Cart cleared');
   };
 
-  const total = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+  const total = cart.reduce((sum, item) => {
+    const flashSale = flashSaleMap[item.id];
+    const effectivePrice = flashSale ? Number(flashSale.sale_price) : Number(item.price);
+    return sum + effectivePrice * item.quantity;
+  }, 0);
 
   return (
     <div className="crt-wrap">
@@ -255,6 +263,7 @@ export default function CartPage() {
 
               {cart.map(item => {
                 const flashSale = flashSaleMap[item.id];
+                const effectivePrice = flashSale ? Number(flashSale.sale_price) : Number(item.price);
                 return (
                 <div key={item.id} className="crt-item">
                   <div className="crt-item-img">
@@ -265,7 +274,14 @@ export default function CartPage() {
                   <div className="crt-item-info">
                     <div className="crt-item-name">{item.name}</div>
                     <div className="crt-item-seller">{item.seller?.business_name || 'Verified ACHOICE Seller'}</div>
-                    <div className="crt-item-price">₦{Number(item.price).toLocaleString()} / unit</div>
+                    <div className="crt-item-price">
+                      ₦{effectivePrice.toLocaleString()} / unit
+                      {flashSale && (
+                        <span style={{ marginLeft: 6, textDecoration: 'line-through', color: '#aaa', fontSize: 12 }}>
+                          ₦{Number(item.price).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
                     {flashSale && <div className="crt-flash-badge">⚡ Flash Sale — limit 1</div>}
                     {flashSale && item.quantity > 1 && (
                       <div className="crt-flash-warning">
@@ -285,7 +301,7 @@ export default function CartPage() {
                         title={flashSale ? 'Flash sale items are limited to 1 per customer' : undefined}
                       >+</button>
                     </div>
-                    <div className="crt-item-total">₦{(Number(item.price) * item.quantity).toLocaleString()}</div>
+                    <div className="crt-item-total">₦{(effectivePrice * item.quantity).toLocaleString()}</div>
                     <button className="crt-remove-btn" onClick={() => removeItem(item.id)}>Remove</button>
                   </div>
                 </div>
@@ -349,6 +365,3 @@ export default function CartPage() {
     </div>
   );
 }
-
-
-
