@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createOrder } from "../../services/orderService";
 import api from "../../services/api";
+import axios from "axios";
 import NotificationBell from "../../components/buyer/NotificationBell";
 import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 import { getAddresses, createAddress } from "../../services/addressService";
@@ -66,6 +67,7 @@ export default function CheckoutPage() {
   const [deliveryZones, setDeliveryZones] = useState([]);
   const [showSummary, setShowSummary] = useState(false); // mobile toggle
   const [paymentMethod, setPaymentMethod] = useState('paystack');
+  const [flashSaleMap, setFlashSaleMap] = useState({});
 
   // Address Book — Phase 3. selectedAddressId is null when the buyer is
   // entering an address manually (either because they have no saved
@@ -225,6 +227,22 @@ export default function CheckoutPage() {
       return;
     }
     setCart(saved);
+
+    // Fetch flash sales without auth token so a stale/idle session
+    // never silently prevents checkout from showing the correct price.
+    axios
+      .get(`${process.env.REACT_APP_API_URL}/flash-sales`, {
+        headers: { Accept: "application/json" },
+      })
+      .then((r) => {
+        const map = {};
+        (r.data?.flash_sales || []).forEach((sale) => {
+          if (sale.product?.id) map[sale.product.id] = sale;
+        });
+        setFlashSaleMap(map);
+      })
+      .catch(() => {});
+
     api
       .get("/delivery-zones")
       .then((res) => setDeliveryZones(res.data?.data || res.data || []))
@@ -311,7 +329,11 @@ export default function CheckoutPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const subtotal = cart.reduce(
-    (sum, item) => sum + Number(item.price) * item.quantity,
+    (sum, item) => {
+      const flash = flashSaleMap[item.id];
+      const effectivePrice = flash ? Number(flash.sale_price) : Number(item.price);
+      return sum + effectivePrice * item.quantity;
+    },
     0,
   );
   const grandTotal = subtotal + deliveryFee;
@@ -400,17 +422,24 @@ export default function CheckoutPage() {
   const SummaryContent = () => (
     <>
       <div className="ckp-item-list">
-        {cart.map((item) => (
+        {cart.map((item) => {
+          const flash = flashSaleMap[item.id];
+          const effectivePrice = flash ? Number(flash.sale_price) : Number(item.price);
+          return (
           <div key={item.id} className="ckp-item-row">
             <div className="ckp-item-left">
               <span className="ckp-item-name">{item.name}</span>
               <span className="ckp-item-qty">×{item.quantity}</span>
             </div>
             <span className="ckp-item-price">
-              ₦{(Number(item.price) * item.quantity).toLocaleString()}
+              ₦{(effectivePrice * item.quantity).toLocaleString()}
+              {flash && (
+                <span style={{ fontSize: 10, color: "#cc0000", marginLeft: 4 }}>⚡</span>
+              )}
             </span>
           </div>
-        ))}
+        );
+        })}
       </div>
       <div className="ckp-divider" />
       <div className="ckp-sub-row">
@@ -746,9 +775,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-
-
-
-
-
-

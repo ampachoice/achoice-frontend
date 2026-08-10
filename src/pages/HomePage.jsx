@@ -566,6 +566,16 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flashSales, flashSalesFetchedAt, tick]);
 
+  // product_id → flash sale — so the full product grid can show flash badges
+  // and the correct sale price, not just the dedicated Flash Sales section.
+  const flashProductMap = useMemo(() => {
+    const map = {};
+    liveFlashSales.forEach((sale) => {
+      if (sale.product?.id) map[sale.product.id] = sale;
+    });
+    return map;
+  }, [liveFlashSales]);
+
   const formatCountdown = (totalSeconds) => {
     const h = Math.floor(totalSeconds / 3600);
     const m = Math.floor((totalSeconds % 3600) / 60);
@@ -1348,9 +1358,13 @@ export default function HomePage() {
               product.images?.[0]?.image_url ||
               product.images?.[0]?.url ||
               product.image;
-            const price = Number(product.discount_price || product.price);
+            const flashSale    = flashProductMap[product.id];
+            const price        = flashSale
+              ? Number(flashSale.sale_price)
+              : Number(product.discount_price || product.price);
             const originalPrice = Number(product.price);
-            const hasDiscount = product.discount_price && price < originalPrice;
+            const hasDiscount  = (!flashSale && product.discount_price && price < originalPrice)
+              || (flashSale && Number(flashSale.sale_price) < originalPrice);
             return (
               <div
                 key={product.id}
@@ -1381,7 +1395,24 @@ export default function HomePage() {
                   ) : (
                     <div style={{ fontSize: 48 }}>🌿</div>
                   )}
-                  {hasDiscount && (
+                  {flashSale && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        background: "#cc0000",
+                        color: "#fff",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        padding: "2px 7px",
+                        borderRadius: 4,
+                      }}
+                    >
+                      ⚡ -{flashSale.discount_percent}%
+                    </div>
+                  )}
+                  {!flashSale && hasDiscount && (
                     <div
                       style={{
                         position: "absolute",
@@ -1467,6 +1498,9 @@ export default function HomePage() {
                             }}
                           >
                             ₦{price.toLocaleString()}
+                            {flashSale && (
+                              <span style={{ fontSize: 9, marginLeft: 4, color: "#cc0000" }}>⚡ Flash</span>
+                            )}
                           </div>
                         </>
                       ) : (
