@@ -23,7 +23,7 @@ const SIDEBAR_ITEMS = [
   { icon: "🏪", label: "Sellers", path: "/admin/sellers" },
   { icon: "🌾", label: "Products", path: "/admin/products" },
   { icon: "⚡", label: "Flash Sales", path: "/admin/flash-sales" },
-  { icon: "🎫", label: "Flash Sale Requests", path: "/admin/flash-sale-requests" },
+//{ icon: "🎫", label: "Flash Sale Requests", path: "/admin/flash-sale-requests" },
   { icon: "📦", label: "Orders", path: "/admin/orders" },
   { icon: "💰", label: "Loans", path: "/admin/loans" },
   { icon: "💵", label: "Finance", path: "/admin/finance" },
