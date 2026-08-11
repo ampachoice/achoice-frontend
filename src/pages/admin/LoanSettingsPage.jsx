@@ -7,6 +7,7 @@ const TABS = [
   { key: "duration", label: "🗓️ Duration Rates" },
   { key: "general", label: "⚙️ General Settings" },
   { key: "loyalty", label: "🏅 Loyalty Discounts" },
+  { key: "credit_score", label: "📉 Credit Score" },
   { key: "calculator", label: "🧮 Live Calculator" },
 ];
 
@@ -59,6 +60,7 @@ export default function LoanSettingsPage() {
     document_threshold: "",
     auto_approve: false,
     auto_approve_max_amount: "",
+    max_concurrent_loans: "",
   });
   const [savingGeneral, setSavingGeneral] = useState(false);
   const [purposes, setPurposes] = useState([]);
@@ -75,6 +77,19 @@ export default function LoanSettingsPage() {
     max_total_discount: "",
   });
   const [savingLoyalty, setSavingLoyalty] = useState(false);
+
+  // ── Tab: Credit Score ──────────────────────────────────────────────────────
+  const [creditScoreForm, setCreditScoreForm] = useState({
+    min_score_to_borrow: "",
+    default_threshold_days: "",
+    weight_payment_history: "",
+    weight_delinquency: "",
+    weight_completion: "",
+    weight_loyalty: "",
+    weight_recency: "",
+    recency_window_months: "",
+  });
+  const [savingCreditScore, setSavingCreditScore] = useState(false);
 
   // ── Tab 5: Live Calculator ────────────────────────────────────────────────
   const [calcAmount, setCalcAmount] = useState(100000);
@@ -117,6 +132,7 @@ export default function LoanSettingsPage() {
       document_threshold: g.document_threshold ?? "",
       auto_approve: !!g.auto_approve,
       auto_approve_max_amount: g.auto_approve_max_amount ?? "",
+      max_concurrent_loans: g.max_concurrent_loans ?? "",
     });
 
     const ds = data.duration_settings || [];
@@ -147,6 +163,18 @@ export default function LoanSettingsPage() {
       "3_loans": l["3_loans_discount"] ?? "",
       "5_loans": l["5_loans_discount"] ?? "",
       max_total_discount: l.max_total_discount ?? "",
+    });
+
+    const cs = data.credit_score || {};
+    setCreditScoreForm({
+      min_score_to_borrow: cs.min_score_to_borrow ?? "",
+      default_threshold_days: cs.default_threshold_days ?? "",
+      weight_payment_history: cs.weight_payment_history ?? "",
+      weight_delinquency: cs.weight_delinquency ?? "",
+      weight_completion: cs.weight_completion ?? "",
+      weight_loyalty: cs.weight_loyalty ?? "",
+      weight_recency: cs.weight_recency ?? "",
+      recency_window_months: cs.recency_window_months ?? "",
     });
   };
 
@@ -268,6 +296,7 @@ export default function LoanSettingsPage() {
           document_threshold: Number(generalForm.document_threshold),
           auto_approve: !!generalForm.auto_approve,
           auto_approve_max_amount: Number(generalForm.auto_approve_max_amount),
+          max_concurrent_loans: Number(generalForm.max_concurrent_loans),
         },
       });
       applySettings(res.data.settings);
@@ -300,6 +329,39 @@ export default function LoanSettingsPage() {
       showToast(err.response?.data?.message || "Failed to save loyalty rules.");
     } finally {
       setSavingLoyalty(false);
+    }
+  };
+
+  const handleSaveCreditScore = async () => {
+    setSavingCreditScore(true);
+    setError("");
+    try {
+      const res = await api.post("/admin/settings/loan", {
+        credit_score: {
+          min_score_to_borrow: Number(creditScoreForm.min_score_to_borrow),
+          default_threshold_days: Number(
+            creditScoreForm.default_threshold_days,
+          ),
+          weight_payment_history: Number(
+            creditScoreForm.weight_payment_history,
+          ),
+          weight_delinquency: Number(creditScoreForm.weight_delinquency),
+          weight_completion: Number(creditScoreForm.weight_completion),
+          weight_loyalty: Number(creditScoreForm.weight_loyalty),
+          weight_recency: Number(creditScoreForm.weight_recency),
+          recency_window_months: Number(
+            creditScoreForm.recency_window_months,
+          ),
+        },
+      });
+      applySettings(res.data.settings);
+      showToast("✅ Credit score settings updated!");
+    } catch (err) {
+      showToast(
+        err.response?.data?.message || "Failed to save credit score settings.",
+      );
+    } finally {
+      setSavingCreditScore(false);
     }
   };
 
@@ -768,6 +830,30 @@ export default function LoanSettingsPage() {
                   require documents.
                 </div>
               </div>
+              <div style={s.field}>
+                <label style={s.label}>Maximum Concurrent Loans</label>
+                <input
+                  style={s.input}
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={generalForm.max_concurrent_loans}
+                  onChange={(e) =>
+                    setGeneralForm((p) => ({
+                      ...p,
+                      max_concurrent_loans: e.target.value,
+                    }))
+                  }
+                />
+                <div style={s.hint}>
+                  How many loans (approved/disbursed/active) a buyer can have
+                  running at once before "You already have N running
+                  loan(s)..." blocks a new application. This is the value
+                  that error actually enforces — the "Allow Multiple Active
+                  Loans" toggle below is kept for backward compatibility but
+                  is no longer read by the apply endpoint.
+                </div>
+              </div>
             </div>
 
             <div style={s.sectionLabel}>FEATURE TOGGLES</div>
@@ -781,8 +867,8 @@ export default function LoanSettingsPage() {
               {
                 key: "allow_multiple",
                 icon: "📑",
-                title: "Allow Multiple Active Loans",
-                desc: "Let a buyer apply for a new loan while one is still active",
+                title: "Allow Multiple Active Loans (legacy)",
+                desc: "No longer enforced — replaced by \"Maximum Concurrent Loans\" above. Kept only so old data isn't lost.",
               },
               {
                 key: "auto_approve",
@@ -990,6 +1076,162 @@ export default function LoanSettingsPage() {
               disabled={savingLoyalty}
             >
               {savingLoyalty ? "⏳ Saving..." : "💾 Save Loyalty Rules"}
+            </button>
+          </div>
+        )}
+
+        {/* ════ TAB: CREDIT SCORE ════ */}
+        {activeTab === "credit_score" && (
+          <div style={s.card}>
+            <div style={s.cardTitle}>📉 Credit Score Rules</div>
+            <p style={s.cardDesc}>
+              Controls the score used to gate new loan applications
+              (CREDIT_SCORE_TOO_LOW) and how it's calculated. Nothing here is
+              hardcoded in the backend — every value below is read live from
+              these settings.
+            </p>
+
+            <div style={s.formGrid}>
+              <div style={s.field}>
+                <label style={s.label}>Minimum Score to Borrow (%)</label>
+                <input
+                  style={s.input}
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={creditScoreForm.min_score_to_borrow}
+                  onChange={(e) =>
+                    setCreditScoreForm((p) => ({
+                      ...p,
+                      min_score_to_borrow: e.target.value,
+                    }))
+                  }
+                />
+                <div style={s.hint}>
+                  Applicants scoring below this are blocked with
+                  CREDIT_SCORE_TOO_LOW.
+                </div>
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>Default Threshold (days overdue)</label>
+                <input
+                  style={s.input}
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={creditScoreForm.default_threshold_days}
+                  onChange={(e) =>
+                    setCreditScoreForm((p) => ({
+                      ...p,
+                      default_threshold_days: e.target.value,
+                    }))
+                  }
+                />
+                <div style={s.hint}>
+                  Days overdue before a loan is auto-flagged "defaulted" for
+                  scoring purposes.
+                </div>
+              </div>
+              <div style={s.field}>
+                <label style={s.label}>Recency Window (months)</label>
+                <input
+                  style={s.input}
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={creditScoreForm.recency_window_months}
+                  onChange={(e) =>
+                    setCreditScoreForm((p) => ({
+                      ...p,
+                      recency_window_months: e.target.value,
+                    }))
+                  }
+                />
+                <div style={s.hint}>
+                  A default within this many months counts heavier than an
+                  older one.
+                </div>
+              </div>
+            </div>
+
+            <div style={s.sectionLabel}>SCORE COMPONENT WEIGHTS (%)</div>
+            {[
+              {
+                key: "weight_payment_history",
+                label: "Payment History Rate",
+                desc: "% of due installments paid without going overdue",
+              },
+              {
+                key: "weight_delinquency",
+                label: "Active Delinquency",
+                desc: "Full marks unless something is overdue right now",
+              },
+              {
+                key: "weight_completion",
+                label: "Loan Completion Rate",
+                desc: "Completed ÷ (completed + defaulted)",
+              },
+              {
+                key: "weight_loyalty",
+                label: "Loyalty / Depth",
+                desc: "Rewards a track record of completed loans",
+              },
+              {
+                key: "weight_recency",
+                label: "Recency of Default",
+                desc: "A recent default costs more than an old one",
+              },
+            ].map((row) => (
+              <div key={row.key} style={s.loyaltyRow}>
+                <div style={s.loyaltyIcon}>📉</div>
+                <div style={s.loyaltyLabelCol}>
+                  <div style={s.loyaltyLabel}>{row.label}</div>
+                  <div style={s.toggleDesc}>{row.desc}</div>
+                </div>
+                <div style={s.loyaltyInputCol}>
+                  <label style={s.tierFieldLabel}>Weight (%)</label>
+                  <div style={s.monthInputRow}>
+                    <input
+                      style={s.tierInput}
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={creditScoreForm[row.key]}
+                      onChange={(e) =>
+                        setCreditScoreForm((p) => ({
+                          ...p,
+                          [row.key]: e.target.value,
+                        }))
+                      }
+                    />
+                    <span style={s.loyaltyPreview}>
+                      {creditScoreForm[row.key] || 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <div style={s.infoBox}>
+              💡 Weights sum to{" "}
+              {(
+                Number(creditScoreForm.weight_payment_history || 0) +
+                Number(creditScoreForm.weight_delinquency || 0) +
+                Number(creditScoreForm.weight_completion || 0) +
+                Number(creditScoreForm.weight_loyalty || 0) +
+                Number(creditScoreForm.weight_recency || 0)
+              ).toFixed(1)}
+              % — they don't need to total exactly 100, the score is
+              normalized either way, but 100 keeps it easiest to reason
+              about.
+            </div>
+
+            <button
+              style={savingCreditScore ? s.saveBtnDisabled : s.saveBtn}
+              onClick={handleSaveCreditScore}
+              disabled={savingCreditScore}
+            >
+              {savingCreditScore ? "⏳ Saving..." : "💾 Save Credit Score Rules"}
             </button>
           </div>
         )}
