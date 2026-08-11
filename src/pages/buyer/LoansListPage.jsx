@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getLoanSummary, verifyLoanPayment, payAllDue, liquidateAll, getCreditScore } from '../../services/loanService';
+import { getLoanSummary, verifyLoanPayment, payAllDue, liquidateAll } from '../../services/loanService';
 import LoanHeaderActions from '../../components/common/LoanHeaderActions';
 import MobileNavDrawer from '../../components/buyer/MobileNavDrawer';
 import BuyerNav from '../../components/buyer/BuyerNav';
-import CreditScoreGauge from '../../components/common/CreditScoreGauge';
 
 export default function LoansListPage() {
   let isSeller = false;
@@ -19,7 +18,6 @@ export default function LoansListPage() {
   const [verifying, setVerifying] = useState(false);
   const [payingAll, setPayingAll] = useState(false);
   const [liquidatingAll, setLiquidatingAll] = useState(false);
-  const [creditScore, setCreditScore] = useState(null);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -88,16 +86,6 @@ export default function LoansListPage() {
   useEffect(() => {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCartCount(cart.reduce((acc, item) => acc + (item.quantity || 1), 0));
-
-    // Only shown for returning borrowers — a first-time applicant has no
-    // meaningful score yet.
-    getCreditScore()
-      .then((res) => {
-        if (res.data && res.data.is_new_borrower === false) {
-          setCreditScore(res.data);
-        }
-      })
-      .catch(() => {});
 
     // Confirm a payment when returning from Paystack. Check the URL first
     // (the normal path), then fall back to whatever reference was last
@@ -191,17 +179,6 @@ export default function LoansListPage() {
             Open new
           </span>
         </div>
-
-        {creditScore && (
-          <div style={s.creditScoreRow}>
-            <CreditScoreGauge
-              score={creditScore.score}
-              minimumToBorrow={creditScore.minimum_to_borrow}
-              canBorrow={creditScore.can_borrow}
-              compact
-            />
-          </div>
-        )}
 
         {loading && <div style={s.loadingText}>Loading your loans...</div>}
 
@@ -361,7 +338,6 @@ const s = {
     marginBottom: 24,
   },
   title: { fontSize: 28, fontWeight: 800, color: '#111' },
-  creditScoreRow: { marginBottom: 20 },
   openNew: {
     color: '#1f4d1f',
     fontWeight: 700,
