@@ -34,6 +34,10 @@ export const getLoanSummary = () => api.get('/loans/summary');
 export const payAllDue = () => api.post('/loans/pay-all-due');
 export const liquidateAll = () => api.post('/loans/liquidate-all');
 
+// Credit score — score (0-100), can_borrow flag, and a components breakdown.
+// Used for the credit score gauge on LoanApplyPage / LoansListPage.
+export const getCreditScore = () => api.get('/loans/credit-score');
+
 // Loan Detail page — balance, progress ring data, next payment, last 5 payments
 export const getLoanDetails = (id) => api.get(`/loans/${id}/details`);
 

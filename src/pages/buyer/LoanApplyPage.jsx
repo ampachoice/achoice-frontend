@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { getCreditScore } from "../../services/loanService";
 import LoanHeaderActions from "../../components/common/LoanHeaderActions";
 import MobileNavDrawer from "../../components/buyer/MobileNavDrawer";
 import BuyerNav from "../../components/buyer/BuyerNav";
+import CreditScoreGauge from "../../components/common/CreditScoreGauge";
 
 const LOGO_PATH = "/android-chrome-192x192.png";
 
@@ -26,6 +28,16 @@ export default function LoanApplyPage() {
   const [ninBvnLocked, setNinBvnLocked] = useState(false);
   const [error, setError] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+
+  // Credit score — only shown for returning borrowers (a brand-new
+  // applicant has no meaningful score yet).
+  const [creditScore, setCreditScore] = useState(null);
+
+  // Blocking-error modal for the three known /loans/apply 422 codes
+  // (OVERDUE_LOAN_BLOCK, MAX_CONCURRENT_LOANS_REACHED, CREDIT_SCORE_TOO_LOW).
+  // Kept separate from the inline `error` banner used for ordinary
+  // validation/API errors, since these need their own copy + action button.
+  const [blockingError, setBlockingError] = useState(null);
 
   // Step 1 — Loan Details
   const [loanForm, setLoanForm] = useState({
@@ -77,6 +89,16 @@ export default function LoanApplyPage() {
     api
       .get("/settings/loan-tiers")
       .then((res) => setTiers(res.data?.tiers || []))
+      .catch(() => {});
+
+    // Only shown for returning borrowers — a first-time applicant has no
+    // meaningful score yet, so we don't render a "52%" that reads oddly.
+    getCreditScore()
+      .then((res) => {
+        if (res.data && res.data.is_new_borrower === false) {
+          setCreditScore(res.data);
+        }
+      })
       .catch(() => {});
 
     // Prefill identity/bank details from the buyer's most recent loan, if any.
@@ -334,16 +356,100 @@ export default function LoanApplyPage() {
       setSubmittedLoan(res.data?.loan || null);
       setSuccess(true);
     } catch (err) {
-      const errors = err.response?.data?.errors;
-      if (errors) setError(Object.values(errors)[0][0]);
-      else
-        setError(
-          err.response?.data?.message ||
-            "Failed to submit application. Please try again.",
-        );
+      const code = err.response?.data?.code;
+      const blockingCodes = [
+        "OVERDUE_LOAN_BLOCK",
+        "MAX_CONCURRENT_LOANS_REACHED",
+        "CREDIT_SCORE_TOO_LOW",
+      ];
+      if (blockingCodes.includes(code)) {
+        setBlockingError({
+          code,
+          message: err.response.data.message,
+          credit_score: err.response.data.credit_score,
+          minimum_required: err.response.data.minimum_required,
+        });
+      } else {
+        const errors = err.response?.data?.errors;
+        if (errors) setError(Object.values(errors)[0][0]);
+        else
+          setError(
+            err.response?.data?.message ||
+              "Failed to submit application. Please try again.",
+          );
+      }
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // ── Blocking-error modal (overdue / concurrent limit / credit score) ───────
+  const BlockingErrorModal = () => {
+    if (!blockingError) return null;
+    const titles = {
+      OVERDUE_LOAN_BLOCK: "Overdue Repayment",
+      MAX_CONCURRENT_LOANS_REACHED: "Loan Limit Reached",
+      CREDIT_SCORE_TOO_LOW: "Credit Score Too Low",
+    };
+    const icons = {
+      OVERDUE_LOAN_BLOCK: "⚠️",
+      MAX_CONCURRENT_LOANS_REACHED: "🚫",
+      CREDIT_SCORE_TOO_LOW: "📉",
+    };
+    return (
+      <div style={s.modalOverlay} onClick={() => setBlockingError(null)}>
+        <div style={s.modalBox} onClick={(e) => e.stopPropagation()}>
+          <div style={s.modalHeader}>
+            <h3 style={s.modalTitle}>
+              {icons[blockingError.code]} {titles[blockingError.code]}
+            </h3>
+            <button
+              style={s.modalClose}
+              onClick={() => setBlockingError(null)}
+            >
+              ✕
+            </button>
+          </div>
+          <div style={s.modalBody}>
+            <p style={s.termText}>{blockingError.message}</p>
+            {blockingError.code === "CREDIT_SCORE_TOO_LOW" &&
+              blockingError.credit_score != null && (
+                <div style={{ marginTop: 18 }}>
+                  <CreditScoreGauge
+                    score={blockingError.credit_score}
+                    minimumToBorrow={blockingError.minimum_required}
+                    canBorrow={false}
+                  />
+                </div>
+              )}
+          </div>
+          <div style={s.modalFooter}>
+            {blockingError.code === "OVERDUE_LOAN_BLOCK" && (
+              <button
+                style={s.modalAgreeBtn}
+                onClick={() => navigate("/loans")}
+              >
+                Pay Now
+              </button>
+            )}
+            {blockingError.code === "MAX_CONCURRENT_LOANS_REACHED" && (
+              <button
+                style={s.modalAgreeBtn}
+                onClick={() => navigate("/loans")}
+              >
+                Go to My Loans
+              </button>
+            )}
+            <button
+              style={s.modalCloseBtn}
+              onClick={() => setBlockingError(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) return <div style={s.center}>Loading loan settings...</div>;
@@ -523,6 +629,7 @@ export default function LoanApplyPage() {
   return (
     <div style={s.page}>
       {showTerms && <TermsModal />}
+      {blockingError && <BlockingErrorModal />}
 
       {/* Navbar */}
       {isSeller ? (
@@ -1359,6 +1466,15 @@ export default function LoanApplyPage() {
 
           {/* Right panel — info */}
           <div style={s.infoCol}>
+            {creditScore && (
+              <CreditScoreGauge
+                score={creditScore.score}
+                minimumToBorrow={creditScore.minimum_to_borrow}
+                canBorrow={creditScore.can_borrow}
+                components={creditScore.components}
+              />
+            )}
+
             <div style={s.infoCard}>
               <div style={s.infoCardTitle}>Why ACHOICE Loans?</div>
               {[
