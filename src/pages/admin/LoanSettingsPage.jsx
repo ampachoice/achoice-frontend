@@ -333,6 +333,23 @@ export default function LoanSettingsPage() {
   };
 
   const handleSaveCreditScore = async () => {
+    const weightSum =
+      Number(creditScoreForm.weight_payment_history || 0) +
+      Number(creditScoreForm.weight_delinquency || 0) +
+      Number(creditScoreForm.weight_completion || 0) +
+      Number(creditScoreForm.weight_loyalty || 0) +
+      Number(creditScoreForm.weight_recency || 0);
+
+    if (Math.abs(weightSum - 100) > 0.5) {
+      const proceed = window.confirm(
+        `These weights sum to ${weightSum.toFixed(1)}%, not 100%. ` +
+          `The score will still be calculated (it's normalized either way), ` +
+          `but each weight's percentage won't mean what it looks like it means. ` +
+          `Save anyway?`,
+      );
+      if (!proceed) return;
+    }
+
     setSavingCreditScore(true);
     setError("");
     try {
@@ -1212,19 +1229,30 @@ export default function LoanSettingsPage() {
               </div>
             ))}
 
-            <div style={s.infoBox}>
-              💡 Weights sum to{" "}
-              {(
+            {(() => {
+              const weightSum =
                 Number(creditScoreForm.weight_payment_history || 0) +
                 Number(creditScoreForm.weight_delinquency || 0) +
                 Number(creditScoreForm.weight_completion || 0) +
                 Number(creditScoreForm.weight_loyalty || 0) +
-                Number(creditScoreForm.weight_recency || 0)
-              ).toFixed(1)}
-              % — they don't need to total exactly 100, the score is
-              normalized either way, but 100 keeps it easiest to reason
-              about.
-            </div>
+                Number(creditScoreForm.weight_recency || 0);
+              const isOff = Math.abs(weightSum - 100) > 0.5;
+              return isOff ? (
+                <div style={s.errorBox}>
+                  ⚠️ Weights sum to {weightSum.toFixed(1)}%, not 100%. The
+                  score is still mathematically normalized either way, but a
+                  set that doesn't total 100 makes the resulting percentage
+                  misleading to read at a glance — a component's real
+                  influence on the score won't match the number typed in.
+                  Double-check before saving.
+                </div>
+              ) : (
+                <div style={s.infoBox}>
+                  💡 Weights sum to {weightSum.toFixed(1)}% — good, this
+                  keeps each weight's percentage meaningful at a glance.
+                </div>
+              );
+            })()}
 
             <button
               style={savingCreditScore ? s.saveBtnDisabled : s.saveBtn}
