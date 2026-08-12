@@ -14,6 +14,7 @@ export default function DeliveryZonesPage() {
   const [defaultFee, setDefaultFee] = useState("");
   const [savingThreshold, setSavingThreshold] = useState(false);
   const [editedZones, setEditedZones] = useState({});
+  const [expandedZone, setExpandedZone] = useState(null);
 
   useEffect(() => {
     api
@@ -45,7 +46,12 @@ export default function DeliveryZonesPage() {
     if (editedZones[zone.id] && editedZones[zone.id][field] !== undefined) {
       return editedZones[zone.id][field];
     }
-    return field === "fee" ? zone.fee : zone.estimated_days;
+    if (field === "fee") return zone.fee;
+    if (field === "estimated_days") return zone.estimated_days;
+    if (field === "free_delivery_available") return zone.free_delivery_available || false;
+    if (field === "free_delivery_min_order") return zone.free_delivery_min_order ?? "";
+    if (field === "free_delivery_label") return zone.free_delivery_label ?? "";
+    return "";
   };
 
   const handleSaveZone = async (zone) => {
@@ -54,14 +60,15 @@ export default function DeliveryZonesPage() {
       const payload = {
         fee: Number(getZoneValue(zone, "fee")),
         estimated_days: Number(getZoneValue(zone, "estimated_days")),
+        free_delivery_available: getZoneValue(zone, "free_delivery_available"),
+        free_delivery_min_order: getZoneValue(zone, "free_delivery_min_order") === ""
+          ? null
+          : Number(getZoneValue(zone, "free_delivery_min_order")),
+        free_delivery_label: getZoneValue(zone, "free_delivery_label") || null,
       };
       await api.put(`/admin/delivery-zones/${zone.id}`, payload);
       setZones(
-        zones.map((z) =>
-          z.id === zone.id
-            ? { ...z, fee: payload.fee, estimated_days: payload.estimated_days }
-            : z,
-        ),
+        zones.map((z) => z.id === zone.id ? { ...z, ...payload } : z),
       );
       setSavedIds((prev) => [...prev, zone.id]);
       showToast(`${zone.state} delivery zone updated successfully!`);
@@ -100,11 +107,15 @@ export default function DeliveryZonesPage() {
       const zone = zones.find((z) => z.id === Number(id));
       if (!zone) continue;
       try {
+        const edited = editedZones[id];
         const payload = {
-          fee: Number(editedZones[id].fee || zone.fee),
-          estimated_days: Number(
-            editedZones[id].estimated_days || zone.estimated_days,
-          ),
+          fee: Number(edited.fee ?? zone.fee),
+          estimated_days: Number(edited.estimated_days ?? zone.estimated_days),
+          free_delivery_available: edited.free_delivery_available ?? zone.free_delivery_available ?? false,
+          free_delivery_min_order: (edited.free_delivery_min_order ?? zone.free_delivery_min_order) === ""
+            ? null
+            : Number(edited.free_delivery_min_order ?? zone.free_delivery_min_order),
+          free_delivery_label: edited.free_delivery_label ?? zone.free_delivery_label ?? null,
         };
         await api.put(`/admin/delivery-zones/${id}`, payload);
         setZones((prev) =>
@@ -239,6 +250,7 @@ export default function DeliveryZonesPage() {
                   <th style={s.th}>State</th>
                   <th style={s.th}>Delivery Fee (₦)</th>
                   <th style={s.th}>Estimated Days</th>
+                  <th style={s.th}>Free Delivery</th>
                   <th style={s.th}>Status</th>
                   <th style={s.th}>Action</th>
                 </tr>
@@ -250,8 +262,13 @@ export default function DeliveryZonesPage() {
                   const isSaving = saving === zone.id;
                   const fee = getZoneValue(zone, "fee");
                   const days = getZoneValue(zone, "estimated_days");
+                  const freeAvailable = getZoneValue(zone, "free_delivery_available");
+                  const freeMinOrder = getZoneValue(zone, "free_delivery_min_order");
+                  const freeLabel = getZoneValue(zone, "free_delivery_label");
+                  const isExpanded = expandedZone === zone.id;
 
                   return (
+                    <>
                     <tr
                       key={zone.id}
                       style={{
@@ -294,6 +311,31 @@ export default function DeliveryZonesPage() {
                           <span style={s.daysLabel}>days</span>
                         </div>
                       </td>
+                      {/* Free delivery toggle cell */}
+                      <td style={s.td}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <input
+                            type="checkbox"
+                            checked={!!freeAvailable}
+                            onChange={(e) => {
+                              handleZoneChange(zone.id, "free_delivery_available", e.target.checked);
+                              if (e.target.checked) setExpandedZone(zone.id);
+                            }}
+                            style={{ width: 15, height: 15, cursor: "pointer", accentColor: "#1f4d1f" }}
+                          />
+                          <span style={{ fontSize: 12, color: freeAvailable ? "#1a7a3a" : "#aaa", fontWeight: 600 }}>
+                            {freeAvailable ? "On" : "Off"}
+                          </span>
+                          {freeAvailable && (
+                            <span
+                              style={{ fontSize: 11, color: "#1f4d1f", cursor: "pointer", textDecoration: "underline" }}
+                              onClick={() => setExpandedZone(isExpanded ? null : zone.id)}
+                            >
+                              {isExpanded ? "▲ hide" : "▼ configure"}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td style={s.td}>
                         {isSaved && !isEdited ? (
                           <span style={s.savedBadge}>✓ Saved</span>
@@ -319,6 +361,51 @@ export default function DeliveryZonesPage() {
                         </button>
                       </td>
                     </tr>
+                    {/* Expanded free delivery config row */}
+                    {isExpanded && (
+                      <tr style={{ background: "#f0fff4" }}>
+                        <td colSpan={6} style={{ padding: "12px 20px", borderTop: "1px dashed #a8d5a8" }}>
+                          <div style={{ display: "flex", gap: 20, alignItems: "flex-end", flexWrap: "wrap" }}>
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 5 }}>
+                                MIN. ORDER FOR FREE DELIVERY (₦)
+                              </div>
+                              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
+                                Leave blank = always free for this state
+                              </div>
+                              <div style={s.inputWrapper}>
+                                <span style={s.currency}>₦</span>
+                                <input
+                                  style={{ ...s.feeInput, width: 130 }}
+                                  type="number"
+                                  min="0"
+                                  placeholder="e.g. 20000"
+                                  value={freeMinOrder}
+                                  onChange={(e) => handleZoneChange(zone.id, "free_delivery_min_order", e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: "#555", marginBottom: 5 }}>
+                                CUSTOM LABEL (optional)
+                              </div>
+                              <div style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>
+                                Shown to buyer at checkout. Auto-generated if blank.
+                              </div>
+                              <input
+                                style={{ ...s.feeInput, width: "100%" }}
+                                type="text"
+                                maxLength={100}
+                                placeholder={`e.g. Free delivery for ${zone.state} this weekend!`}
+                                value={freeLabel}
+                                onChange={(e) => handleZoneChange(zone.id, "free_delivery_label", e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </>
                   );
                 })}
               </tbody>

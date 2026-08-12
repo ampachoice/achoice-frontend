@@ -68,6 +68,10 @@ export default function CheckoutPage() {
   const [showSummary, setShowSummary] = useState(false); // mobile toggle
   const [paymentMethod, setPaymentMethod] = useState('paystack');
   const [flashSaleMap, setFlashSaleMap] = useState({});
+  const [freeDeliveryAvailable, setFreeDeliveryAvailable] = useState(false);
+  const [freeDeliveryEligible, setFreeDeliveryEligible] = useState(false);
+  const [freeDeliveryLabel, setFreeDeliveryLabel] = useState('');
+  const [useFreeDelivery, setUseFreeDelivery] = useState(false);
 
   // Address Book — Phase 3. selectedAddressId is null when the buyer is
   // entering an address manually (either because they have no saved
@@ -304,26 +308,39 @@ export default function CheckoutPage() {
     if (!formData.delivery_state) {
       setDeliveryFee(0);
       setDeliveryDays(null);
+      setFreeDeliveryAvailable(false);
+      setFreeDeliveryEligible(false);
+      setFreeDeliveryLabel('');
+      setUseFreeDelivery(false);
       return;
     }
     setDeliveryLoading(true);
     api
-      .get(`/delivery-zones/${encodeURIComponent(formData.delivery_state)}`)
+      .get(`/delivery-zones/${encodeURIComponent(formData.delivery_state)}`, {
+        params: { subtotal },
+      })
       .then((res) => {
         const zone = res.data?.data || res.data;
-        setDeliveryFee(Number(zone?.delivery_fee || zone?.fee || 0));
-        setDeliveryDays(zone?.estimated_days || zone?.days || null);
+        setDeliveryFee(Number(zone?.fee || 0));
+        setDeliveryDays(zone?.estimated_days || null);
+        setFreeDeliveryAvailable(!!zone?.free_delivery_available);
+        setFreeDeliveryEligible(!!zone?.free_delivery_eligible);
+        setFreeDeliveryLabel(zone?.free_delivery_label || '');
+        // Auto-deselect free delivery if no longer eligible (e.g. cart changed)
+        if (!zone?.free_delivery_eligible) setUseFreeDelivery(false);
       })
       .catch(() => {
         const match = deliveryZones.find(
-          (z) =>
-            z.state?.toLowerCase() === formData.delivery_state.toLowerCase(),
+          (z) => z.state?.toLowerCase() === formData.delivery_state.toLowerCase(),
         );
-        setDeliveryFee(Number(match?.delivery_fee || match?.fee || 0));
-        setDeliveryDays(match?.estimated_days || match?.days || null);
+        setDeliveryFee(Number(match?.fee || 0));
+        setDeliveryDays(match?.estimated_days || null);
+        setFreeDeliveryAvailable(false);
+        setFreeDeliveryEligible(false);
+        setUseFreeDelivery(false);
       })
       .finally(() => setDeliveryLoading(false));
-  }, [formData.delivery_state]);
+  }, [formData.delivery_state, subtotal]);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -336,7 +353,8 @@ export default function CheckoutPage() {
     },
     0,
   );
-  const grandTotal = subtotal + deliveryFee;
+  const effectiveDeliveryFee = useFreeDelivery && freeDeliveryEligible ? 0 : deliveryFee;
+  const grandTotal = subtotal + effectiveDeliveryFee;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -359,7 +377,7 @@ export default function CheckoutPage() {
               delivery_lga: formData.delivery_lga,
             }),
         notes: formData.note,
-        delivery_fee: deliveryFee,
+        use_free_delivery: useFreeDelivery && freeDeliveryEligible,
         payment_method: paymentMethod,
       });
       if (res.data.payment_url) {
@@ -389,33 +407,72 @@ export default function CheckoutPage() {
 
   const DeliveryFeeInfo = () => {
     if (deliveryLoading)
-      return (
-        <div className="ckp-delivery-hint">⏳ Fetching delivery fee...</div>
-      );
+      return <div className="ckp-delivery-hint">⏳ Fetching delivery fee...</div>;
     if (!formData.delivery_state) return null;
-    if (deliveryFee === 0)
-      return (
-        <div className="ckp-delivery-box-free">
-          🎉 Free delivery to <strong>{formData.delivery_state}</strong>!
-          {deliveryDays && (
-            <span className="ckp-delivery-days">
-              {" "}
-              · Est. {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
-      );
+
+    const isFree = useFreeDelivery && freeDeliveryEligible;
+
     return (
-      <div className="ckp-delivery-box">
-        🚚 Delivery to <strong>{formData.delivery_state}</strong>:{" "}
-        <strong>₦{deliveryFee.toLocaleString()}</strong>
-        {deliveryDays && (
-          <span className="ckp-delivery-days">
-            {" "}
-            · Est. {deliveryDays} day{deliveryDays > 1 ? "s" : ""}
-          </span>
+      <>
+        {/* Free delivery opt-in — only shown when zone has it available
+            AND the buyer's current subtotal qualifies */}
+        {freeDeliveryAvailable && freeDeliveryEligible && (
+          <div
+            style={{
+              marginTop: 8,
+              background: '#f0fff4',
+              border: '1.5px solid #a8d5a8',
+              borderRadius: 8,
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              cursor: 'pointer',
+            }}
+            onClick={() => setUseFreeDelivery((v) => !v)}
+          >
+            <input
+              type="checkbox"
+              id="use-free-delivery"
+              checked={useFreeDelivery}
+              onChange={() => setUseFreeDelivery((v) => !v)}
+              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#1f4d1f' }}
+            />
+            <label htmlFor="use-free-delivery" style={{ fontSize: 13, color: '#1f4d1f', fontWeight: 600, cursor: 'pointer', margin: 0 }}>
+              🎉 {freeDeliveryLabel || `Free delivery available for ${formData.delivery_state}`} — tap to use it
+            </label>
+          </div>
         )}
-      </div>
+
+        {/* Show "not eligible yet" nudge if zone has free delivery but subtotal doesn't qualify */}
+        {freeDeliveryAvailable && !freeDeliveryEligible && (
+          <div style={{ marginTop: 8, fontSize: 12, color: '#888', fontStyle: 'italic' }}>
+            💡 {freeDeliveryLabel || `Free delivery available for ${formData.delivery_state} — add more items to qualify`}
+          </div>
+        )}
+
+        {/* Fee display */}
+        {isFree ? (
+          <div className="ckp-delivery-box-free" style={{ marginTop: 8 }}>
+            🎉 Free delivery to <strong>{formData.delivery_state}</strong>!
+            {deliveryDays && (
+              <span className="ckp-delivery-days">
+                {' '}· Est. {deliveryDays} day{deliveryDays > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="ckp-delivery-box" style={{ marginTop: freeDeliveryAvailable ? 6 : 8 }}>
+            🚚 Delivery to <strong>{formData.delivery_state}</strong>:{' '}
+            <strong>₦{deliveryFee.toLocaleString()}</strong>
+            {deliveryDays && (
+              <span className="ckp-delivery-days">
+                {' '}· Est. {deliveryDays} day{deliveryDays > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
+      </>
     );
   };
 
@@ -455,9 +512,9 @@ export default function CheckoutPage() {
           {deliveryLoading
             ? "..."
             : formData.delivery_state
-              ? deliveryFee === 0
+              ? effectiveDeliveryFee === 0
                 ? "Free 🎉"
-                : `₦${deliveryFee.toLocaleString()}`
+                : `₦${effectiveDeliveryFee.toLocaleString()}`
               : "— select state"}
         </span>
       </div>
