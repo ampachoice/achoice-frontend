@@ -339,7 +339,7 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
-            {/* ── Top Products & Top Sellers ── */}
+            {/* ── Top Products & Top Sellers ── */ bar is good}
             {revenueStats && (
               <div style={s.topRow}>
                 {/* Top Products */}
