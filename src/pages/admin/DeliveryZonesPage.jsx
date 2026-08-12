@@ -314,15 +314,37 @@ export default function DeliveryZonesPage() {
                       {/* Free delivery toggle cell */}
                       <td style={s.td}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <input
-                            type="checkbox"
-                            checked={!!freeAvailable}
-                            onChange={(e) => {
-                              handleZoneChange(zone.id, "free_delivery_available", e.target.checked);
-                              if (e.target.checked) setExpandedZone(zone.id);
+                          {/* Toggle switch */}
+                          <div
+                            onClick={() => {
+                              const newVal = !freeAvailable;
+                              handleZoneChange(zone.id, "free_delivery_available", newVal);
+                              if (newVal) setExpandedZone(zone.id);
+                              else setExpandedZone(null);
                             }}
-                            style={{ width: 15, height: 15, cursor: "pointer", accentColor: "#1f4d1f" }}
-                          />
+                            style={{
+                              width: 44,
+                              height: 24,
+                              borderRadius: 99,
+                              background: freeAvailable ? "#1f4d1f" : "#ccc",
+                              cursor: "pointer",
+                              position: "relative",
+                              transition: "background 0.2s",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <div style={{
+                              position: "absolute",
+                              top: 3,
+                              left: freeAvailable ? 23 : 3,
+                              width: 18,
+                              height: 18,
+                              borderRadius: "50%",
+                              background: "#fff",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                              transition: "left 0.2s",
+                            }} />
+                          </div>
                           <span style={{ fontSize: 12, color: freeAvailable ? "#1a7a3a" : "#aaa", fontWeight: 600 }}>
                             {freeAvailable ? "On" : "Off"}
                           </span>
