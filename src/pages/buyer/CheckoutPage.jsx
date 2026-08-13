@@ -338,8 +338,9 @@ export default function CheckoutPage() {
         setFreeDeliveryAvailable(!!zone?.free_delivery_available);
         setFreeDeliveryEligible(!!zone?.free_delivery_eligible);
         setFreeDeliveryLabel(zone?.free_delivery_label || '');
-        // Auto-deselect free delivery if no longer eligible (e.g. cart changed)
-        if (!zone?.free_delivery_eligible) setUseFreeDelivery(false);
+        // If globally free (threshold met), auto-apply — no opt-in needed
+        if (zone?.globally_free) setUseFreeDelivery(true);
+        else if (!zone?.free_delivery_eligible) setUseFreeDelivery(false);
       })
       .catch(() => {
         const match = deliveryZones.find(
