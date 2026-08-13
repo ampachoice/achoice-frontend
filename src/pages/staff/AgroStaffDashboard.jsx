@@ -888,7 +888,7 @@ export default function AgroStaffDashboard() {
                         </div>
                       </td>
                       <td style={s.td}>
-                        <span style={s.categoryBadge}>{p.category}</span>
+                        <span style={s.categoryBadge}>{p.category?.name || p.category || "—"}</span>
                       </td>
                       <td style={s.td}>{toMoney(p.price)}</td>
                       <td style={s.td}>
@@ -1116,7 +1116,7 @@ export default function AgroStaffDashboard() {
                       <div style={s.reportInfo}>
                         <div style={s.reportName}>{p.product_name}</div>
                         <div style={s.reportMeta}>
-                          {p.category} · {p.total_quantity || 0} sold
+                          {(p.category?.name || p.category || "—")} · {p.total_quantity || 0} sold
                         </div>
                       </div>
                       <div style={s.reportValue}>

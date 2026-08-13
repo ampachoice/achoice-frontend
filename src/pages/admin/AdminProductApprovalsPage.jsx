@@ -149,7 +149,7 @@ export default function AdminProductApprovalsPage() {
 
               <div style={s.metaRow}>
                 <span>
-                  <strong>Category:</strong> {product.category || "—"}
+                  <strong>Category:</strong> {product.category?.name || product.category || "—"}
                 </span>
                 <span>
                   <strong>Qty:</strong> {product.quantity}{" "}

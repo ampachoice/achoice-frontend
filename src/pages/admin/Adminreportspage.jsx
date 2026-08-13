@@ -292,7 +292,7 @@ export default function AdminReportsPage() {
       <tr style="background:${i % 2 === 0 ? "#f9fafb" : "#fff"}">
         <td style="padding:8px;border-bottom:1px solid #eee">${i + 1}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;font-weight:600">${p.name || "—"}</td>
-        <td style="padding:8px;border-bottom:1px solid #eee">${p.category || "—"}</td>
+        <td style="padding:8px;border-bottom:1px solid #eee">${p.category?.name || p.category || "—"}</td>
         <td style="padding:8px;border-bottom:1px solid #eee">${p.items_sold || 0}</td>
         <td style="padding:8px;border-bottom:1px solid #eee;color:#1f4d1f;font-weight:700">₦${Number(p.revenue || 0).toLocaleString()}</td>
       </tr>`,
@@ -643,7 +643,7 @@ export default function AdminReportsPage() {
                             </td>
                             <td style={s.td}>
                               <span style={s.categoryBadge}>
-                                {p.category || "—"}
+                                {p.category?.name || p.category || "—"}
                               </span>
                             </td>
                             <td style={s.td}>{p.items_sold || 0}</td>

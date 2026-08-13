@@ -353,7 +353,7 @@ export default function AdminDashboardPage() {
                       <div style={s.topInfo}>
                         <div style={s.topName}>{p.name}</div>
                         <div style={s.topMeta}>
-                          {p.category} · {p.order_items_count} sold
+                          {(p.category?.name || p.category || "—")} · {p.sold_order_items_count ?? p.order_items_count} sold
                         </div>
                       </div>
                       <div style={s.topValue}>

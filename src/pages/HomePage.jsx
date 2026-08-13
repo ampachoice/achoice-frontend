@@ -1443,7 +1443,7 @@ export default function HomePage() {
                       textTransform: "capitalize",
                     }}
                   >
-                    {product.category}
+                    {product.category?.name || product.category}
                   </div>
                 </div>
                 <div style={{ padding: 13 }}>
