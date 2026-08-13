@@ -1327,7 +1327,7 @@ export default function ProductPage() {
                         )}
                         {pDisc && <div className="pp-sale-badge">SALE</div>}
                         {p.category && (
-                          <div className="pp-cat-badge">{p.category}</div>
+                          <div className="pp-cat-badge">{p.category?.name || p.category}</div>
                         )}
                         <button
                           style={{
@@ -1464,7 +1464,7 @@ export default function ProductPage() {
               {/* Info column */}
               <div>
                 {product.category && (
-                  <div className="pp-detail-cat">{product.category}</div>
+                  <div className="pp-detail-cat">{product.category?.name || product.category}</div>
                 )}
                 <h1 className="pp-detail-name">{product.name}</h1>
 
