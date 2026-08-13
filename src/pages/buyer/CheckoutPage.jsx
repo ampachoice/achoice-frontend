@@ -304,6 +304,18 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const subtotal = cart.reduce(
+    (sum, item) => {
+      const flash = flashSaleMap[item.id];
+      const effectivePrice = flash ? Number(flash.sale_price) : Number(item.price);
+      return sum + effectivePrice * item.quantity;
+    },
+    0,
+  );
+
   useEffect(() => {
     if (!formData.delivery_state) {
       setDeliveryFee(0);
@@ -342,17 +354,6 @@ export default function CheckoutPage() {
       .finally(() => setDeliveryLoading(false));
   }, [formData.delivery_state, subtotal]);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  const subtotal = cart.reduce(
-    (sum, item) => {
-      const flash = flashSaleMap[item.id];
-      const effectivePrice = flash ? Number(flash.sale_price) : Number(item.price);
-      return sum + effectivePrice * item.quantity;
-    },
-    0,
-  );
   const effectiveDeliveryFee = useFreeDelivery && freeDeliveryEligible ? 0 : deliveryFee;
   const grandTotal = subtotal + effectiveDeliveryFee;
 
