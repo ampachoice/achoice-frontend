@@ -269,7 +269,7 @@ export default function ManageProductsPage() {
     const matchSearch = (p.name || "")
       .toLowerCase()
       .includes(search.toLowerCase());
-    const matchCat = filterCategory === "all" || p.category === filterCategory;
+    const matchCat = filterCategory === "all" || (p.category?.name || p.category) === filterCategory;
     const matchStatus = filterStatus === "all" || p.status === filterStatus;
     return matchSearch && matchCat && matchStatus;
   });
@@ -794,7 +794,7 @@ export default function ManageProductsPage() {
                         </div>
                       </td>
                       <td style={s.td}>
-                        <span style={s.categoryBadge}>{p.category}</span>
+                        <span style={s.categoryBadge}>{p.category?.name || p.category || '—'}</span>
                       </td>
                       <td style={s.td}>
                         {p.discount_price ? (
