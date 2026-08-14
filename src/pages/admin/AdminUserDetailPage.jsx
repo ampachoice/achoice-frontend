@@ -170,7 +170,7 @@ export default function AdminUserDetailPage() {
   return (
     <>
     <AdminLayout
-      title={user.name}
+      title={user.name && user.name !== user.email ? user.name : user.email}
       subtitle={`User ID: ${user.id}`}
       headerActions={
         <button style={s.backBtn} onClick={() => navigate(-1)}>← Back</button>
@@ -181,9 +181,9 @@ export default function AdminUserDetailPage() {
       {/* Summary strip */}
       <div style={s.summaryCard}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={s.avatar}>{(user.name || "?").charAt(0).toUpperCase()}</div>
+          <div style={s.avatar}>{(user.name && user.name !== user.email ? user.name : user.email || "?").charAt(0).toUpperCase()}</div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>{user.name}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>{user.name && user.name !== user.email ? user.name : user.email}</div>
             <div style={{ fontSize: 12.5, color: "#888", marginTop: 2 }}>
               Registered {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </div>
@@ -195,7 +195,7 @@ export default function AdminUserDetailPage() {
         </div>
       </div>
 
-      {(user.restrict_orders || user.restrict_loans) && (
+      {(!!user.restrict_orders || !!user.restrict_loans) && (
         <div style={s.restrictBanner}>
           ⚠️ Restricted from: {[user.restrict_orders && "placing orders", user.restrict_loans && "applying for loans"].filter(Boolean).join(" and ")}.
           {user.restrict_reason && <div style={{ marginTop: 4, fontSize: 12 }}>Reason: {user.restrict_reason}</div>}
@@ -206,7 +206,7 @@ export default function AdminUserDetailPage() {
         {/* Registration details */}
         <div style={s.card}>
           <div style={s.cardTitle}>Registration Details</div>
-          <Detail label="Full Name" value={user.name} />
+          <Detail label="Full Name" value={user.name && user.name !== user.email ? user.name : "—"} />
           <Detail label="Email" value={user.email} />
           <Detail label="Phone" value={user.phone} />
           <Detail label="Address" value={user.address} />
