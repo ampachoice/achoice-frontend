@@ -214,21 +214,18 @@ export default function AdminUserDetailPage() {
           <Detail label="Role" value={user.role} />
         </div>
 
-        {/* Buyer loan bank details — pulled from their most recent loan application */}
-        {user.role === "buyer" && user.loans && user.loans.length > 0 && (() => {
-          // Find the most recent loan that has bank details filled in
-          const loanWithBank = user.loans.find(l => l.bank_name || l.account_number || l.account_name);
-          if (!loanWithBank) return null;
-          return (
-            <div style={s.card}>
-              <div style={s.cardTitle}>Bank Account Details</div>
-              <div style={s.bankNote}>Collected during loan application</div>
-              <Detail label="Bank Name" value={loanWithBank.bank_name} />
-              <Detail label="Account Number" value={loanWithBank.account_number} />
-              <Detail label="Account Name" value={loanWithBank.account_name} />
+        {/* Bank account details — pulled from user's most recent loan application */}
+        {user.bank_details && (
+          <div style={s.card}>
+            <div style={s.cardTitle}>🏦 Bank Account Details</div>
+            <div style={{ fontSize: 11, color: "#888", marginBottom: 12 }}>
+              From most recent loan application
             </div>
-          );
-        })()}
+            <Detail label="Bank Name"       value={user.bank_details.bank_name} />
+            <Detail label="Account Number"  value={user.bank_details.account_number} />
+            <Detail label="Account Name"    value={user.bank_details.account_name} />
+          </div>
+        )}
 
         {/* Seller-specific */}
         {user.role === "seller" && user.seller && (
@@ -462,7 +459,6 @@ const s = {
   cardTitle: { fontSize: 14.5, fontWeight: 700, color: "#111", marginBottom: 12 },
   cardSubTitle: { fontSize: 12, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.4, marginTop: 14, marginBottom: 8 },
   frozenNote: { fontSize: 11.5, color: "#a86a00", background: "#fff8e7", borderRadius: 6, padding: "8px 10px", marginTop: 10 },
-  bankNote: { fontSize: 11.5, color: "#888", fontStyle: "italic", marginBottom: 10, marginTop: -6 },
   actionsCol: { display: "flex", flexDirection: "column", gap: 10 },
   actionBtnWarn: { padding: "11px 16px", background: "#fff8e7", color: "#a86a00", border: "1px solid #f0c050", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" },
   actionBtnGood: { padding: "11px 16px", background: "#1f4d1f", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" },

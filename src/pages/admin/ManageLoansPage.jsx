@@ -695,29 +695,33 @@ export default function ManageLoansPage() {
                 </div>
               )}
 
-              {/* Bank account details — the account to disburse into */}
-              {(loan.bank_name || loan.account_number || loan.account_name) && (
-                <div style={s.bankDetailsCard}>
-                  <div style={s.bankDetailsTitle}>🏦 Disbursement Account</div>
-                  <div style={s.bankDetailsGrid}>
-                    {loan.bank_name && (
-                      <div style={s.bankDetailItem}>
-                        <div style={s.bankDetailLabel}>Bank</div>
-                        <div style={s.bankDetailValue}>{loan.bank_name}</div>
-                      </div>
-                    )}
-                    {loan.account_number && (
-                      <div style={s.bankDetailItem}>
-                        <div style={s.bankDetailLabel}>Account Number</div>
-                        <div style={s.bankDetailValue}>{loan.account_number}</div>
-                      </div>
-                    )}
-                    {loan.account_name && (
-                      <div style={s.bankDetailItem}>
-                        <div style={s.bankDetailLabel}>Account Name</div>
-                        <div style={s.bankDetailValue}>{loan.account_name}</div>
-                      </div>
-                    )}
+              {/* Bank account details for disbursement */}
+              {(loan.bank_name || loan.account_number) && (
+                <div
+                  style={{
+                    background: "#f0f7ff",
+                    border: "1.5px solid #b3d4f5",
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    marginBottom: 14,
+                  }}
+                >
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a4a7a", letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }}>
+                    🏦 Bank Account (for disbursement)
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px" }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>Bank Name</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a" }}>{loan.bank_name || "—"}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>Account Number</div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a", letterSpacing: 1 }}>{loan.account_number || "—"}</div>
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>Account Name</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a" }}>{loan.account_name || "—"}</div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -800,29 +804,6 @@ export default function ManageLoansPage() {
                       <div style={s.borrowerDetail}>{loan.user.email}</div>
                       {loan.user.phone && (
                         <div style={s.borrowerDetail}>📞 {loan.user.phone}</div>
-                      )}
-                      {(loan.bank_name || loan.account_number || loan.account_name) && (
-                        <div style={s.borrowerAccountBox}>
-                          <div style={s.borrowerAccountLabel}>Transfer to:</div>
-                          {loan.bank_name && (
-                            <div style={s.borrowerAccountRow}>
-                              <span style={s.borrowerAccountKey}>Bank</span>
-                              <span style={s.borrowerAccountVal}>{loan.bank_name}</span>
-                            </div>
-                          )}
-                          {loan.account_number && (
-                            <div style={s.borrowerAccountRow}>
-                              <span style={s.borrowerAccountKey}>Account No.</span>
-                              <span style={s.borrowerAccountVal}>{loan.account_number}</span>
-                            </div>
-                          )}
-                          {loan.account_name && (
-                            <div style={s.borrowerAccountRow}>
-                              <span style={s.borrowerAccountKey}>Account Name</span>
-                              <span style={s.borrowerAccountVal}>{loan.account_name}</span>
-                            </div>
-                          )}
-                        </div>
                       )}
                     </div>
                   )}
@@ -1663,50 +1644,6 @@ const s = {
     borderRadius: 6,
     fontWeight: 600,
   },
-  bankDetailsCard: {
-    background: "#f0f7ec",
-    border: "1px solid #c8e0c8",
-    borderRadius: 10,
-    padding: "14px 16px",
-    marginBottom: 14,
-  },
-  bankDetailsTitle: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#1f4d1f",
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  bankDetailsGrid: {
-    display: "flex",
-    gap: 24,
-    flexWrap: "wrap",
-  },
-  bankDetailItem: { display: "flex", flexDirection: "column", gap: 2 },
-  bankDetailLabel: { fontSize: 11, color: "#666", fontWeight: 600 },
-  bankDetailValue: { fontSize: 14, color: "#111", fontWeight: 700 },
-  borrowerAccountBox: {
-    marginTop: 12,
-    borderTop: "1px solid #e8e4dc",
-    paddingTop: 10,
-  },
-  borrowerAccountLabel: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: "#888",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 6,
-  },
-  borrowerAccountRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  borrowerAccountKey: { fontSize: 12, color: "#888" },
-  borrowerAccountVal: { fontSize: 13, color: "#111", fontWeight: 700 },
   actionRow: {
     display: "flex",
     flexDirection: "column",
