@@ -10,7 +10,7 @@ import NotificationBell from "../components/buyer/NotificationBell";
 import { getHomePathForUser } from "../utils/authRedirect";
 
 const LOGO_PATH = "/achoice logo.png";
-const PRODUCTS_PER_PAGE = 8;
+const PRODUCTS_PER_PAGE = 15;
 
 // Category quick-links / rails — slug must match the backend's product
 // `category` enum exactly (grains, vegetables, fruits, tubers, livestock,
